@@ -1,0 +1,190 @@
+<!-- Metrics.vue -->
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import axios from 'axios';
+import Datepicker from 'vue3-datepicker';
+import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
+
+const props = defineProps({
+  selectedCampaigns: Array
+});
+
+const spend = ref('0');
+const impressions = ref('0');
+const clicks = ref('0');
+const conversions = ref('0');
+const dateRange = ref('00/00/0000 - 0/00/0000');
+
+const today = new Date();
+const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const selectedStartDate = ref(startOfMonth);
+const selectedEndDate = ref(today);
+const lastValidStartDate = ref(startOfMonth);
+const lastValidEndDate = ref(today);
+const url = '/api/linkedin';
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+};
+
+const formatDate = (date) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const fetchMetrics = async (startDate, endDate, campaigns) => {
+  try {
+    let params = {
+      start: formatDate(startDate),
+      end: formatDate(endDate)
+    };
+
+    if (campaigns && campaigns.length > 0) {
+      const campaignList = campaigns.map(id => `urn%3Ali%3AsponsoredCampaign%3A${id}`).join(',');
+      params.campaigns = `List(${campaignList})`;
+    }
+
+    const response = await axios.get(url, { params });
+    const data = response.data.elements;
+
+    let totalSpend = 0;
+    let totalImpressions = 0;
+    let totalClicks = 0;
+    let totalConversions = 0;
+
+    data.forEach(item => {
+      totalSpend += parseFloat(item.costInLocalCurrency) || 0;
+      totalImpressions += item.impressions || 0;
+      totalClicks += item.landingPageClicks || 0;
+      totalConversions += item.externalWebsiteConversions || 0;
+    });
+
+    spend.value = formatCurrency(totalSpend);
+    impressions.value = totalImpressions;
+    clicks.value = totalClicks;
+    conversions.value = totalConversions;
+
+    dateRange.value = `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear()} - ${endDate.getMonth() + 1}/${endDate.getDate()}/${endDate.getFullYear()}`;
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+  }
+};
+
+onMounted(() => {
+  fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
+});
+
+watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([newStartDate, newEndDate, newCampaigns]) => {
+  if (newStartDate > newEndDate) {
+    alert('Start date cannot be later than end date. Please select a valid date range.');
+    selectedStartDate.value = lastValidStartDate.value;
+    selectedEndDate.value = lastValidEndDate.value;
+  } else {
+    lastValidStartDate.value = newStartDate;
+    lastValidEndDate.value = newEndDate;
+    fetchMetrics(newStartDate, newEndDate, newCampaigns);
+  }
+});
+</script>
+
+<template>
+  <div class="metrics">
+    <h3 class="metrics-header">Metrics</h3>
+    <div class="metrics-info">
+      <div class="metrics-pods">
+        <div class="metrics-label">Spend</div>
+        <div class="metrics-numbers">{{ spend }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Impressions</div>
+        <div class="metrics-numbers">{{ impressions }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Clicks</div>
+        <div class="metrics-numbers">{{ clicks }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Conversions</div>
+        <div class="metrics-numbers">{{ conversions }}</div>
+      </div>
+      <div class="metrics-date">
+        <div class="metrics-label">Date Range</div>
+        <div class="datepicker-wrapper">
+          <Datepicker v-model="selectedStartDate" class="custom-datepicker" />
+          <i class="fas fa-calendar-alt calendar-icon"></i>
+        </div>
+        <div class="datepicker-wrapper">
+          <Datepicker v-model="selectedEndDate" class="custom-datepicker" />
+          <i class="fas fa-calendar-alt calendar-icon"></i>
+        </div>
+        <div class="metrics-numbers">{{ dateRange }}</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+@import '@fortawesome/fontawesome-free/css/all.css';
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.metrics-header {
+  margin: 5px 0;
+  font-size: 1.5em;
+  color: #333;
+}
+
+.datepicker-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  pointer-events: none;
+}
+
+.metrics-info {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.metrics-pods {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  margin: 5px;
+}
+
+.metrics-date {
+  flex: 2;
+  text-align: right;
+}
+
+.metrics-label {
+  font-weight: bold;
+  color: #666;
+}
+
+.metrics-numbers {
+  font-size: 1.2em;
+  color: #000;
+}
+</style>
