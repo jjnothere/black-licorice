@@ -1,14 +1,15 @@
-<!-- Metrics.vue -->
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
+import BudgetTracker from './BudgetTracker.vue'; // Import the new component
 
 const props = defineProps({
   selectedCampaigns: Array
 });
 
+const metrics = ref([]);
 const spend = ref('0');
 const impressions = ref('0');
 const clicks = ref('0');
@@ -44,18 +45,41 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     }
 
     const response = await axios.get(url, { params });
-    const data = response.data.elements;
+    let data = response.data.elements;
+
+    // Filter data to ensure it falls within the specified date range
+    data = data.filter(item => {
+      const itemStartDate = new Date(item.dateRange.start.year, item.dateRange.start.month - 1, item.dateRange.start.day);
+      const itemEndDate = new Date(item.dateRange.end.year, item.dateRange.end.month - 1, item.dateRange.end.day);
+      return (itemStartDate >= startDate && itemEndDate <= endDate);
+    });
 
     let totalSpend = 0;
     let totalImpressions = 0;
     let totalClicks = 0;
     let totalConversions = 0;
 
-    data.forEach(item => {
+    const sortedData = data.sort((a, b) => {
+      const dateA = new Date(a.dateRange.start.year, a.dateRange.start.month - 1, a.dateRange.start.day);
+      const dateB = new Date(b.dateRange.start.year, b.dateRange.start.month - 1, b.dateRange.start.day);
+      return dateA - dateB; // Sort by oldest to newest
+    });
+
+    metrics.value = sortedData.map(item => {
       totalSpend += parseFloat(item.costInLocalCurrency) || 0;
       totalImpressions += item.impressions || 0;
       totalClicks += item.landingPageClicks || 0;
       totalConversions += item.externalWebsiteConversions || 0;
+
+      return {
+        id: `${item.pivotValues[0]}-${item.dateRange.start.month}-${item.dateRange.start.day}-${item.dateRange.start.year}`, // Unique key for each entry
+        campaign: item.pivotValues[0], // Assuming pivotValues contains the campaign information
+        spend: formatCurrency(parseFloat(item.costInLocalCurrency) || 0),
+        impressions: item.impressions,
+        clicks: item.landingPageClicks,
+        conversions: item.externalWebsiteConversions,
+        dateRange: `${item.dateRange.start.month}/${item.dateRange.start.day}/${item.dateRange.start.year} - ${item.dateRange.end.month}/${item.dateRange.end.day}/${item.dateRange.end.year}`
+      };
     });
 
     spend.value = formatCurrency(totalSpend);
@@ -120,6 +144,7 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
       </div>
     </div>
   </div>
+  <BudgetTracker :metrics="metrics" />
 </template>
 
 <style scoped>
@@ -186,5 +211,29 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 .metrics-numbers {
   font-size: 1.2em;
   color: #000;
+}
+
+.metrics-details {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.metrics-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.metrics-details th, .metrics-details td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.metrics-details th {
+  background-color: #f2f2f2;
+}
+
+.metrics-details td {
+  background-color: #fff;
 }
 </style>

@@ -46,26 +46,32 @@ onMounted(async () => {
 
 <style scoped>
 .header {
-  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
 }
 
 .nav-bar {
   display: flex;
-  border: 1px solid #000;
   margin-top: 10px;
 }
 
 .nav-link {
   padding: 10px 20px;
-  border: 1px solid #ccc;
-  margin: 0 5px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  margin: 0 5px 0 0;
   text-decoration: none;
   font-weight: bold;
   color: black;
+  background-color: #f9f9f9;
 }
 
 .nav-link:hover {
-  background-color: #f0f0f0;
+  background-color: #e0e0e0;
 }
 
 .active-link {
@@ -74,7 +80,9 @@ onMounted(async () => {
 
 .layout {
   display: flex;
-  margin-top: 10px;
+  width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
 .content {
