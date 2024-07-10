@@ -4,12 +4,12 @@ import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
-import BudgetTracker from './BudgetTracker.vue'; // Import the new component
 
 const props = defineProps({
   selectedCampaigns: Array
 });
 
+const emit = defineEmits(['update:metrics']);
 const metrics = ref([]);
 const spend = ref('0');
 const impressions = ref('0');
@@ -23,7 +23,6 @@ const selectedStartDate = ref(startOfMonth);
 const selectedEndDate = ref(today);
 const lastValidStartDate = ref(startOfMonth);
 const lastValidEndDate = ref(today);
-const url = '/api/linkedin';
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -45,7 +44,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params.campaigns = `List(${campaignList})`;
     }
 
-    const response = await axios.get(url, { params });
+    const response = await axios.get('/api/linkedin', { params });
     let data = response.data.elements;
 
     // Filter data to ensure it falls within the specified date range
@@ -54,8 +53,6 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       const itemEndDate = new Date(item.dateRange.end.year, item.dateRange.end.month - 1, item.dateRange.end.day);
       return (itemStartDate >= startDate && itemEndDate <= endDate);
     });
-
-    console.log("🐒 ~ data:", data);
 
     let totalSpend = 0;
     let totalImpressions = 0;
@@ -91,6 +88,9 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     conversions.value = totalConversions;
 
     dateRange.value = `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear()} - ${endDate.getMonth() + 1}/${endDate.getDate()}/${endDate.getFullYear()}`;
+
+    // Emit metrics data to the parent component
+    emit('update:metrics', metrics.value);
   } catch (error) {
     console.error('Error fetching metrics:', error);
   }
@@ -147,7 +147,6 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
       </div>
     </div>
   </div>
-  <BudgetTracker :metrics="metrics" />
 </template>
 
 <style scoped>

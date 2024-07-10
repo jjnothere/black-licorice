@@ -7,14 +7,20 @@ import Metrics from '@/components/Metrics.vue';
 
 const adAccountName = ref('Account Name');
 const selectedCampaigns = ref([]);
+const metrics = ref([]);
+const campaignsData = ref([]);
 
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
 };
 
+const updateMetrics = (newMetrics) => {
+  metrics.value = newMetrics;
+};
+
 onMounted(async () => {
   try {
-    const response = await axios.get('api/ad-account-name');
+    const response = await axios.get('/api/ad-account-name');
     adAccountName.value = response.data.name;
   } catch (error) {
     console.error('Error fetching ad account name:', error);
@@ -38,10 +44,10 @@ onMounted(async () => {
       <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
     </div>
     <div class="content">
-      <Metrics :selectedCampaigns="selectedCampaigns" />
+      <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
     </div>
   </div>
-  <RouterView />
+  <RouterView :metrics="metrics" />
 </template>
 
 <style scoped>

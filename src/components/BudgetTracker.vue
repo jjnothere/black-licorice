@@ -11,7 +11,7 @@
         <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
       </div>
       <div class="pie-chart-container">
-        Campagings with no cost will not show up here
+        Campaigns with no cost will not show up here
         <pie-chart :chart-data="pieChartData" :options="pieChartOptions"></pie-chart>
       </div>
     </div>
@@ -27,7 +27,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="metric in metrics" :key="metric.id">
+        <tr v-for="metric in props.metrics" :key="metric.id">
           <td>{{ metric.campaign }}</td>
           <td>{{ metric.spend }}</td>
           <td>{{ metric.impressions }}</td>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import LineChart from './LineChart.vue';
 import PieChart from './PieChart.vue';
 
@@ -99,7 +99,7 @@ const chartOptions = ref({
   }
 });
 
-const updateChart = () => {
+const updateChart = async () => {
   chartData.value = {
     labels: labels.value,
     datasets: [
@@ -118,12 +118,16 @@ const updateChart = () => {
       }
     ]
   };
+  await nextTick();
 };
 
 watch(budget, updateChart);
 watch(() => props.metrics, updateChart);
 
-onMounted(updateChart);
+onMounted(() => {
+  updateChart();
+  updatePieChart();
+});
 
 // Predefined distinct colors
 const distinctColors = [
@@ -168,7 +172,7 @@ const pieChartOptions = ref({
   }
 });
 
-const updatePieChart = () => {
+const updatePieChart = async () => {
   const campaignSpend = props.metrics.reduce((acc, metric) => {
     const campaign = metric.campaign;
     const spend = parseFloat(metric.spend.replace(/[$,]/g, '')) || 0;
@@ -181,11 +185,8 @@ const updatePieChart = () => {
   }, {});
 
   const filteredCampaignSpend = Object.entries(campaignSpend).filter(([_, spend]) => spend > 0);
-  console.log("🐒 ~ filteredCampaignSpend:", filteredCampaignSpend)
   const filteredLabels = filteredCampaignSpend.map(([campaign]) => campaign);
-  console.log("🐒 ~ filteredLabels:", filteredLabels)
   const filteredData = filteredCampaignSpend.map(([_, spend]) => spend);
-  console.log("🐒 ~ filteredData:", filteredData)
 
   pieChartData.value = {
     labels: filteredLabels,
@@ -196,6 +197,7 @@ const updatePieChart = () => {
       }
     ]
   };
+  await nextTick();
 };
 
 watch(() => props.metrics, updatePieChart);

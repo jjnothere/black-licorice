@@ -1,11 +1,17 @@
 <!-- BudgetPacing.vue -->
 <template>
   <div class="content">
-    <!-- Content related to budget pacing goes here -->
+    <BudgetTracker :metrics="metrics" />
   </div>
 </template>
 
 <script setup>
+import { defineProps } from 'vue';
+import BudgetTracker from '@/components/BudgetTracker.vue';
+
+const props = defineProps({
+  metrics: Array
+});
 </script>
 
 <style scoped>
