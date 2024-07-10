@@ -1,3 +1,4 @@
+<!-- Metrics.vue -->
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
@@ -54,6 +55,8 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       return (itemStartDate >= startDate && itemEndDate <= endDate);
     });
 
+    console.log("🐒 ~ data:", data);
+
     let totalSpend = 0;
     let totalImpressions = 0;
     let totalClicks = 0;
@@ -62,7 +65,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     const sortedData = data.sort((a, b) => {
       const dateA = new Date(a.dateRange.start.year, a.dateRange.start.month - 1, a.dateRange.start.day);
       const dateB = new Date(b.dateRange.start.year, b.dateRange.start.month - 1, b.dateRange.start.day);
-      return dateA - dateB; // Sort by oldest to newest
+      return dateB - dateA; // Sort by newest to oldest
     });
 
     metrics.value = sortedData.map(item => {

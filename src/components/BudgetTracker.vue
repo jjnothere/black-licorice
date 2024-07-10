@@ -1,3 +1,4 @@
+<!-- BudgetTracker.vue -->
 <template>
   <div class="budget-tracker">
     <h4>Details</h4>
@@ -5,7 +6,15 @@
       <label for="budget">Budget: $</label>
       <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" />
     </div>
-    <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
+    <div class="charts-container">
+      <div class="line-chart-container">
+        <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
+      </div>
+      <div class="pie-chart-container">
+        Campagings with no cost will not show up here
+        <pie-chart :chart-data="pieChartData" :options="pieChartOptions"></pie-chart>
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
@@ -33,7 +42,8 @@
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
-import LineChart from './LineChart.vue'; // Ensure you have the correct path
+import LineChart from './LineChart.vue';
+import PieChart from './PieChart.vue';
 
 const props = defineProps({
   metrics: Array
@@ -83,6 +93,9 @@ const chartOptions = ref({
         text: 'Amount'
       }
     }
+  },
+  plugins: {
+    datalabels: false // Disable datalabels plugin for the line chart
   }
 });
 
@@ -111,6 +124,81 @@ watch(budget, updateChart);
 watch(() => props.metrics, updateChart);
 
 onMounted(updateChart);
+
+// Predefined distinct colors
+const distinctColors = [
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#66FF66', '#FF6666', '#66B2FF', '#FF66B2'
+];
+
+// Pie chart data and options
+const pieChartData = ref({
+  labels: [],
+  datasets: []
+});
+
+const pieChartOptions = ref({
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top'
+    },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
+          const value = context.raw;
+          const percentage = ((value / total) * 100).toFixed(2);
+          return `${context.label}: $${value} (${percentage}%)`;
+        }
+      }
+    },
+    datalabels: {
+      formatter: (value, context) => {
+        const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+        const percentage = ((value / total) * 100).toFixed(2);
+        return `${percentage}%`;
+      },
+      color: '#fff',
+      backgroundColor: '#404040',
+      borderRadius: 3,
+      font: {
+        weight: 'bold'
+      }
+    }
+  }
+});
+
+const updatePieChart = () => {
+  const campaignSpend = props.metrics.reduce((acc, metric) => {
+    const campaign = metric.campaign;
+    const spend = parseFloat(metric.spend.replace(/[$,]/g, '')) || 0;
+    if (acc[campaign]) {
+      acc[campaign] += spend;
+    } else {
+      acc[campaign] = spend;
+    }
+    return acc;
+  }, {});
+
+  const filteredCampaignSpend = Object.entries(campaignSpend).filter(([_, spend]) => spend > 0);
+  console.log("🐒 ~ filteredCampaignSpend:", filteredCampaignSpend)
+  const filteredLabels = filteredCampaignSpend.map(([campaign]) => campaign);
+  console.log("🐒 ~ filteredLabels:", filteredLabels)
+  const filteredData = filteredCampaignSpend.map(([_, spend]) => spend);
+  console.log("🐒 ~ filteredData:", filteredData)
+
+  pieChartData.value = {
+    labels: filteredLabels,
+    datasets: [
+      {
+        data: filteredData,
+        backgroundColor: filteredLabels.map((_, index) => distinctColors[index % distinctColors.length])
+      }
+    ]
+  };
+};
+
+watch(() => props.metrics, updatePieChart);
 
 const validateBudgetInput = (event) => {
   let value = event.target.value;
@@ -146,6 +234,20 @@ const validateBudgetInput = (event) => {
   margin-left: 5px;
   width: 100px;
   padding: 5px;
+}
+
+.charts-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.line-chart-container {
+  flex: 70%;
+}
+
+.pie-chart-container {
+  flex: 30%;
 }
 
 table {

@@ -1,4 +1,4 @@
-<!-- Filters.vue -->
+<!-- FilterFunction.vue -->
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
