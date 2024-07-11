@@ -17,6 +17,5 @@ const props = defineProps({
 <style scoped>
 .content {
   width: 100%;
-  padding: 10px;
 }
 </style>

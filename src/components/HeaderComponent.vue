@@ -2,7 +2,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import FilterFunction from '@/components/FilterFuncion.vue';
+import FilterFunction from '@/components/FilterFunction.vue';
 import Metrics from '@/components/Metrics.vue';
 
 const adAccountName = ref('Account Name');
@@ -87,12 +87,12 @@ onMounted(async () => {
 .layout {
   display: flex;
   width: 100%;
-  padding: 0 20px;
+
   box-sizing: border-box;
 }
 
 .content {
-  width: 75%;
-  padding: 10px;
+  width: 100%;
+  padding-top: 10px;
 }
 </style>

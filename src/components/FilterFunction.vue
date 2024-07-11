@@ -96,13 +96,16 @@ watch(selectedCampaigns, (newSelectedCampaigns) => {
 .layout {
   display: flex;
   margin-top: 10px;
+  width: 100%;
 }
 
 .filter-function {
+  min-width: 200px;
   width: 100%;
   border: 1px solid #ccc;
   padding: 10px;
   border-radius: 8px;
+  margin-right: 10px;
 }
 
 .filter-header {

@@ -1,5 +1,13 @@
 @import './base.css';
 
+.old-value {
+  background-color: #ffb8b8;
+}
+
+.new-value {
+  background-color: #bdffbd;
+}
+
 /* #app {
   max-width: 1280px;
   margin: 0 auto;

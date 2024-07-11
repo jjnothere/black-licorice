@@ -1,4 +1,3 @@
-<!-- BudgetTracker.vue -->
 <template>
   <div class="budget-tracker">
     <h4>Details</h4>
@@ -11,7 +10,6 @@
         <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
       </div>
       <div class="pie-chart-container">
-        Campaigns with no cost will not show up here
         <pie-chart :chart-data="pieChartData" :options="pieChartOptions"></pie-chart>
       </div>
     </div>
@@ -28,7 +26,7 @@
       </thead>
       <tbody>
         <tr v-for="metric in props.metrics" :key="metric.id">
-          <td>{{ metric.campaign }}</td>
+          <td>{{ getCampaignName(metric.campaign) }}</td>
           <td>{{ metric.spend }}</td>
           <td>{{ metric.impressions }}</td>
           <td>{{ metric.clicks }}</td>
@@ -44,6 +42,7 @@
 import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import LineChart from './LineChart.vue';
 import PieChart from './PieChart.vue';
+import axios from 'axios';
 
 const props = defineProps({
   metrics: Array
@@ -51,6 +50,7 @@ const props = defineProps({
 
 const budget = ref(0); // User-defined budget
 const formattedBudget = ref('0.00');
+const campaignNames = ref({}); // Store campaign names
 
 const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]));
 const spendData = computed(() => {
@@ -125,13 +125,36 @@ watch(budget, updateChart);
 watch(() => props.metrics, updateChart);
 
 onMounted(() => {
+  fetchCampaignNames();
   updateChart();
   updatePieChart();
 });
 
+// Fetch campaign names from the server
+const fetchCampaignNames = async () => {
+  try {
+    const response = await axios.get('/api/linkedin/ad-campaigns');
+    // Extract campaign ID and name from the response
+    const campaigns = response.data.elements;
+    campaigns.forEach(campaign => {
+      campaignNames.value[campaign.id] = campaign.name;
+    });
+    updatePieChart(); // Ensure the pie chart is updated with the new campaign names
+  } catch (error) {
+    console.error('Error fetching campaign names:', error);
+  }
+};
+
+const getCampaignName = (urn) => {
+  const id = urn.split(':').pop(); // Extract the ID from the URN
+  return campaignNames.value[id] || urn; // Return the name if found, otherwise the original URN
+};
+
 // Predefined distinct colors
 const distinctColors = [
-  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#66FF66', '#FF6666', '#66B2FF', '#FF66B2'
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#66FF66', '#FF6666', '#66B2FF', '#FF66B2',
+  '#FF5733', '#33FF57', '#3357FF', '#FF33A6', '#33FFA6', '#A633FF', '#FFA633', '#33A6FF', '#FF33FF', '#33FF33',
+  '#FFB533', '#33FFB5', '#FF33B5', '#B533FF', '#FF5733', '#A6FF33', '#FF33A6', '#33FFA6', '#33A633', '#FFA6FF'
 ];
 
 // Pie chart data and options
@@ -144,37 +167,31 @@ const pieChartOptions = ref({
   responsive: true,
   plugins: {
     legend: {
-      position: 'top'
+      position: 'top',
+      align: 'start',
+      labels: {
+        usePointStyle: true
+      }
     },
     tooltip: {
       callbacks: {
+        title: function(context) {
+          return context[0].label.split(' ($')[0]; // Extract campaign name
+        },
         label: function(context) {
-          const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
-          const value = context.raw;
-          const percentage = ((value / total) * 100).toFixed(2);
-          return `${context.label}: $${value} (${percentage}%)`;
+          const value = parseFloat(context.raw).toFixed(2); // Format value to 2 decimal places
+          const percentage = context.label.split(' - ')[1];
+          return `$${value} (${percentage}`;
         }
       }
     },
-    datalabels: {
-      formatter: (value, context) => {
-        const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
-        const percentage = ((value / total) * 100).toFixed(2);
-        return `${percentage}%`;
-      },
-      color: '#fff',
-      backgroundColor: '#404040',
-      borderRadius: 3,
-      font: {
-        weight: 'bold'
-      }
-    }
+    datalabels: false // Disable datalabels plugin for the pie chart
   }
 });
 
 const updatePieChart = async () => {
   const campaignSpend = props.metrics.reduce((acc, metric) => {
-    const campaign = metric.campaign;
+    const campaign = getCampaignName(metric.campaign);
     const spend = parseFloat(metric.spend.replace(/[$,]/g, '')) || 0;
     if (acc[campaign]) {
       acc[campaign] += spend;
@@ -184,9 +201,13 @@ const updatePieChart = async () => {
     return acc;
   }, {});
 
-  const filteredCampaignSpend = Object.entries(campaignSpend).filter(([_, spend]) => spend > 0);
-  const filteredLabels = filteredCampaignSpend.map(([campaign]) => campaign);
-  const filteredData = filteredCampaignSpend.map(([_, spend]) => spend);
+  const filteredLabels = Object.keys(campaignSpend).map(campaign => {
+    const spend = campaignSpend[campaign];
+    const total = Object.values(campaignSpend).reduce((sum, s) => sum + s, 0);
+    const percentage = ((spend / total) * 100).toFixed(2);
+    return `${campaign} ($${spend.toFixed(2)} - ${percentage}%)`;
+  });
+  const filteredData = Object.values(campaignSpend);
 
   pieChartData.value = {
     labels: filteredLabels,
