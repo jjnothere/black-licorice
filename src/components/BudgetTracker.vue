@@ -13,28 +13,6 @@
         <pie-chart :chart-data="pieChartData" :options="pieChartOptions"></pie-chart>
       </div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Campaign</th>
-          <th>Spend</th>
-          <th>Impressions</th>
-          <th>Clicks</th>
-          <th>Conversions</th>
-          <th>Date Range</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="metric in props.metrics" :key="metric.id">
-          <td>{{ getCampaignName(metric.campaign) }}</td>
-          <td>{{ metric.spend }}</td>
-          <td>{{ metric.impressions }}</td>
-          <td>{{ metric.clicks }}</td>
-          <td>{{ metric.conversions }}</td>
-          <td>{{ metric.dateRange }}</td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
