@@ -1,3 +1,4 @@
+<!-- TableComponent.vue -->
 <template>
   <div>
     <table>

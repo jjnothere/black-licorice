@@ -1,4 +1,3 @@
-<!-- HistoryChecker.vue -->
 <template>
     <div class="comparison-component">
       <button @click="checkForChanges">Check for Changes</button>
@@ -6,15 +5,34 @@
         <thead>
           <tr>
             <th>Campaign Name</th>
-            <th>Changes</th>
             <th>Date</th>
+            <th>Changes</th>
+            <th>Notes</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="difference in differences" :key="difference.campaign">
+          <tr v-for="difference in differences" :key="difference._id">
             <td>{{ difference.campaign }}</td>
-            <td v-html="difference.date + '<br>' + difference.changes"></td>
-            <td>Notes</td>
+            <td>{{ difference.date }}</td>
+            <td v-html="difference.changes"></td>
+            <td>
+              <ul>
+                <li v-for="(note, noteIndex) in difference.notes" :key="noteIndex">
+                  <span v-if="!note.isEditing">{{ note.note }} ({{ note.timestamp }})</span>
+                  <input
+                    v-if="note.isEditing"
+                    v-model="note.newNote"
+                    @keyup.enter="saveNotePrompt(difference._id, noteIndex)"
+                    @blur="saveNotePrompt(difference._id, noteIndex)"
+                  />
+                  <button v-if="!note.isEditing" @click="enableEditMode(difference._id, noteIndex)">Edit</button>
+                  <button v-if="note.isEditing" @click="saveNotePrompt(difference._id, noteIndex)">Save</button>
+                  <button @click="deleteNotePrompt(difference._id, noteIndex)">Delete</button>
+                </li>
+              </ul>
+              <input v-model="difference.newNote" placeholder="Add a new note" />
+              <button @click="addNotePrompt(difference._id)">Add Note</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -22,11 +40,11 @@
   </template>
   
   <script setup>
-  import { ref, onMounted } from 'vue';
-  import axios from 'axios';
-  
-  const differences = ref([]);
-  const const2 = {
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
+
+const differences = ref([]);
+const const2 = {
     "paging": {
         "start": 0,
         "count": 10,
@@ -313,7 +331,7 @@
             "version": {
                 "versionTag": "5"
             },
-            "objectiveType": "LLLLAMA",
+            "objectiveType": "WEBSITE_VISIT",
             "associatedEntity": "urn:li:organization:102033074",
             "offsitePreferences": {
                 "iabCategories": {
@@ -326,11 +344,11 @@
             },
             "campaignGroup": "urn:li:sponsoredCampaignGroup:688364006",
             "dailyBudget": {
-                "currencyCode": "USD",
+                "currencyCode": "TEST",
                 "amount": "10"
             },
             "unitCost": {
-                "currencyCode": "USD",
+                "currencyCode": "TEST",
                 "amount": "1"
             },
             "name": "Test Traffic Campaign",
@@ -339,43 +357,135 @@
         }
     ]
 }
-  
-  const checkForChanges = async () => {
-    differences.value = [];
-  
-    try {
-      const response = await axios.get('/api/linkedin/ad-campaigns');
-      const const1 = response.data?.elements || []; // Ensure const1 is an array
-  
-      const parsedConst2 = const2.elements || []; // Ensure parsedConst2 is an array
-  
-      const1.forEach((campaign1) => {
-        const campaign2 = parsedConst2.find((c) => c.id === campaign1.id);
-        if (campaign2) {
-          const changes = [];
-          Object.keys(campaign1).forEach((key) => {
-            if (JSON.stringify(campaign1[key]) !== JSON.stringify(campaign2[key])) {
-              changes.push(`${key}: <span class="old-value">${JSON.stringify(campaign1[key])}</span> => <span class="new-value">${JSON.stringify(campaign2[key])}</span>`);
-            }
-          });
-          if (changes.length > 0) {
-            differences.value.push({
-              campaign: campaign1.name,
-              changes: changes.join('<br>'),
-              date: new Date().toLocaleDateString()
-            });
-          }
+
+const fetchCurrentCampaigns = async () => {
+  try {
+    const response = await axios.get('/api/get-current-campaigns');
+    return response.data?.elements || [];
+  } catch (error) {
+    console.error('Error fetching current campaigns from database:', error);
+    return [];
+  }
+};
+
+const fetchAllChanges = async () => {
+  try {
+    const response = await axios.get('/api/get-all-changes');
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching all changes from database:', error);
+    return [];
+  }
+};
+
+const saveCampaigns = async () => {
+  try {
+    await axios.post('/api/save-campaigns', { campaigns: const2 });
+    console.log('Campaigns saved successfully');
+  } catch (error) {
+    console.error('Error saving campaigns:', error);
+  }
+};
+
+const checkForChanges = async () => {
+  const currentCampaigns = await fetchCurrentCampaigns();
+  const parsedConst2 = const2.elements || [];
+
+  parsedConst2.forEach((campaign2) => {
+    const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
+    if (campaign1) {
+      const changes = [];
+      Object.keys(campaign1).forEach((key) => {
+        if (JSON.stringify(campaign1[key]) !== JSON.stringify(campaign2[key])) {
+          changes.push(`${key}: <span class="old-value">${JSON.stringify(campaign1[key])}</span> => <span class="new-value">${JSON.stringify(campaign2[key])}</span>`);
         }
       });
-    } catch (error) {
-      console.error('Error fetching const1 from server:', error);
+      if (changes.length > 0) {
+        differences.value.push({
+          campaign: campaign2.name,
+          date: new Date().toLocaleDateString(),
+          changes: changes.join('<br>'),
+          notes: campaign2.notes || [],
+        });
+      }
+    } else {
+      differences.value.push({
+        campaign: campaign2.name,
+        date: new Date().toLocaleDateString(),
+        changes: `New campaign added: ${JSON.stringify(campaign2)}`,
+        notes: campaign2.notes || [],
+      });
     }
-  };
-  
-  onMounted(() => {
-    checkForChanges();
   });
-  </script>
+
+  // Save new changes to the database
+  if (differences.value.length > 0) {
+    try {
+      await axios.post('/api/save-changes', { changes: differences.value });
+      console.log('New changes saved successfully');
+    } catch (error) {
+      console.error('Error saving new changes:', error);
+    }
+  }
+
+  // Save campaigns to the database
+  await saveCampaigns();
+
+  // Fetch all changes from the database
+  const allChanges = await fetchAllChanges();
+  differences.value = allChanges;
+};
+
+const addNotePrompt = async (id) => {
+  const difference = differences.value.find(diff => diff._id === id);
+  if (!difference.newNote) return;
+  try {
+    await axios.post('/api/update-notes', { id, newNote: difference.newNote });
+    difference.notes.push({ note: difference.newNote, timestamp: new Date().toISOString() });
+    difference.newNote = ''; // Clear input
+  } catch (error) {
+    console.error('Error adding note:', error);
+  }
+};
+
+const enableEditMode = (id, noteIndex) => {
+  const difference = differences.value.find(diff => diff._id === id);
+  const note = difference.notes[noteIndex];
+  note.isEditing = true;
+  note.newNote = note.note;
+};
+
+const saveNotePrompt = async (id, noteIndex) => {
+  const difference = differences.value.find(diff => diff._id === id);
+  const note = difference.notes[noteIndex];
+  if (note.newNote === note.note) {
+    note.isEditing = false;
+    return;
+  }
+  try {
+    await axios.post('/api/edit-note', { id, noteIndex, updatedNote: note.newNote });
+    note.note = note.newNote;
+    note.timestamp = new Date().toISOString();
+    note.isEditing = false;
+  } catch (error) {
+    console.error('Error saving note:', error);
+  }
+};
+
+const deleteNotePrompt = async (id, noteIndex) => {
+  try {
+    await axios.post('/api/delete-note', { id, noteIndex });
+    const difference = differences.value.find(diff => diff._id === id);
+    difference.notes.splice(noteIndex, 1);
+  } catch (error) {
+    console.error('Error deleting note:', error);
+  }
+};
+
+onMounted(() => {
+  checkForChanges();
+});
+</script>
   
   <style scoped>
   .comparison-component {
@@ -409,11 +519,4 @@
     text-align: left;
   }
   
-  th {
-    background-color: #f2f2f2;
-  }
-  
-  td {
-    background-color: #fff;
-  }
   </style>
