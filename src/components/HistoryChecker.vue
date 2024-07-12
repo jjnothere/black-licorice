@@ -16,8 +16,10 @@
             <td>{{ difference.date }}</td>
             <td v-html="difference.changes"></td>
             <td>
+              <input v-model="difference.newNote" placeholder="Add a new note" />
+              <button @click="addNotePrompt(difference._id)">Add Note</button>
               <ul>
-                <li v-for="(note, noteIndex) in difference.notes" :key="noteIndex">
+                <li v-for="(note, noteIndex) in difference.notes.slice().reverse()" :key="noteIndex">
                   <span v-if="!note.isEditing">{{ note.note }} ({{ note.timestamp }})</span>
                   <input
                     v-if="note.isEditing"
@@ -30,8 +32,6 @@
                   <button @click="deleteNotePrompt(difference._id, noteIndex)">Delete</button>
                 </li>
               </ul>
-              <input v-model="difference.newNote" placeholder="Add a new note" />
-              <button @click="addNotePrompt(difference._id)">Add Note</button>
             </td>
           </tr>
         </tbody>
@@ -331,7 +331,7 @@
             "version": {
                 "versionTag": "5"
             },
-            "objectiveType": "OKRA_VISITS",
+            "objectiveType": "WEBSITE_VISIT",
             "associatedEntity": "urn:li:organization:102033074",
             "offsitePreferences": {
                 "iabCategories": {
