@@ -11,7 +11,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="difference in differences" :key="difference._id">
+          <tr v-for="difference in reversedDifferences" :key="difference._id">
             <td>{{ difference.campaign }}</td>
             <td>{{ difference.date }}</td>
             <td v-html="difference.changes"></td>
@@ -40,11 +40,11 @@
   </template>
   
   <script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
-
-const differences = ref([]);
-const const2 = {
+  import { ref, computed, onMounted } from 'vue';
+  import axios from 'axios';
+  
+  const differences = ref([]);
+  const const2 = {
     "paging": {
         "start": 0,
         "count": 10,
@@ -331,7 +331,7 @@ const const2 = {
             "version": {
                 "versionTag": "5"
             },
-            "objectiveType": "WEBSITE_VISIT",
+            "objectiveType": "OKRA_VISITS",
             "associatedEntity": "urn:li:organization:102033074",
             "offsitePreferences": {
                 "iabCategories": {
@@ -344,11 +344,11 @@ const const2 = {
             },
             "campaignGroup": "urn:li:sponsoredCampaignGroup:688364006",
             "dailyBudget": {
-                "currencyCode": "TEST",
+                "currencyCode": "USD",
                 "amount": "10"
             },
             "unitCost": {
-                "currencyCode": "TEST",
+                "currencyCode": "USD",
                 "amount": "1"
             },
             "name": "Test Traffic Campaign",
@@ -357,135 +357,139 @@ const const2 = {
         }
     ]
 }
-
-const fetchCurrentCampaigns = async () => {
-  try {
-    const response = await axios.get('/api/get-current-campaigns');
-    return response.data?.elements || [];
-  } catch (error) {
-    console.error('Error fetching current campaigns from database:', error);
-    return [];
-  }
-};
-
-const fetchAllChanges = async () => {
-  try {
-    const response = await axios.get('/api/get-all-changes');
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching all changes from database:', error);
-    return [];
-  }
-};
-
-const saveCampaigns = async () => {
-  try {
-    await axios.post('/api/save-campaigns', { campaigns: const2 });
-    console.log('Campaigns saved successfully');
-  } catch (error) {
-    console.error('Error saving campaigns:', error);
-  }
-};
-
-const checkForChanges = async () => {
-  const currentCampaigns = await fetchCurrentCampaigns();
-  const parsedConst2 = const2.elements || [];
-
-  parsedConst2.forEach((campaign2) => {
-    const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
-    if (campaign1) {
-      const changes = [];
-      Object.keys(campaign1).forEach((key) => {
-        if (JSON.stringify(campaign1[key]) !== JSON.stringify(campaign2[key])) {
-          changes.push(`${key}: <span class="old-value">${JSON.stringify(campaign1[key])}</span> => <span class="new-value">${JSON.stringify(campaign2[key])}</span>`);
+  
+  const reversedDifferences = computed(() => {
+    return differences.value.slice().reverse();
+  });
+  
+  const fetchCurrentCampaigns = async () => {
+    try {
+      const response = await axios.get('/api/get-current-campaigns');
+      return response.data?.elements || [];
+    } catch (error) {
+      console.error('Error fetching current campaigns from database:', error);
+      return [];
+    }
+  };
+  
+  const fetchAllChanges = async () => {
+    try {
+      const response = await axios.get('/api/get-all-changes');
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching all changes from database:', error);
+      return [];
+    }
+  };
+  
+  const saveCampaigns = async () => {
+    try {
+      await axios.post('/api/save-campaigns', { campaigns: const2 });
+      console.log('Campaigns saved successfully');
+    } catch (error) {
+      console.error('Error saving campaigns:', error);
+    }
+  };
+  
+  const checkForChanges = async () => {
+    const currentCampaigns = await fetchCurrentCampaigns();
+    const parsedConst2 = const2.elements || [];
+  
+    parsedConst2.forEach((campaign2) => {
+      const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
+      if (campaign1) {
+        const changes = [];
+        Object.keys(campaign1).forEach((key) => {
+          if (JSON.stringify(campaign1[key]) !== JSON.stringify(campaign2[key])) {
+            changes.push(`${key}: <span class="old-value">${JSON.stringify(campaign1[key])}</span> => <span class="new-value">${JSON.stringify(campaign2[key])}</span>`);
+          }
+        });
+        if (changes.length > 0) {
+          differences.value.push({
+            campaign: campaign2.name,
+            date: new Date().toLocaleDateString(),
+            changes: changes.join('<br>'),
+            notes: campaign2.notes || [],
+          });
         }
-      });
-      if (changes.length > 0) {
+      } else {
         differences.value.push({
           campaign: campaign2.name,
           date: new Date().toLocaleDateString(),
-          changes: changes.join('<br>'),
+          changes: `New campaign added: ${JSON.stringify(campaign2)}`,
           notes: campaign2.notes || [],
         });
       }
-    } else {
-      differences.value.push({
-        campaign: campaign2.name,
-        date: new Date().toLocaleDateString(),
-        changes: `New campaign added: ${JSON.stringify(campaign2)}`,
-        notes: campaign2.notes || [],
-      });
+    });
+  
+    // Save new changes to the database
+    if (differences.value.length > 0) {
+      try {
+        await axios.post('/api/save-changes', { changes: differences.value });
+        console.log('New changes saved successfully');
+      } catch (error) {
+        console.error('Error saving new changes:', error);
+      }
     }
-  });
-
-  // Save new changes to the database
-  if (differences.value.length > 0) {
-    try {
-      await axios.post('/api/save-changes', { changes: differences.value });
-      console.log('New changes saved successfully');
-    } catch (error) {
-      console.error('Error saving new changes:', error);
-    }
-  }
-
-  // Save campaigns to the database
-  await saveCampaigns();
-
-  // Fetch all changes from the database
-  const allChanges = await fetchAllChanges();
-  differences.value = allChanges;
-};
-
-const addNotePrompt = async (id) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  if (!difference.newNote) return;
-  try {
-    await axios.post('/api/update-notes', { id, newNote: difference.newNote });
-    difference.notes.push({ note: difference.newNote, timestamp: new Date().toISOString() });
-    difference.newNote = ''; // Clear input
-  } catch (error) {
-    console.error('Error adding note:', error);
-  }
-};
-
-const enableEditMode = (id, noteIndex) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  const note = difference.notes[noteIndex];
-  note.isEditing = true;
-  note.newNote = note.note;
-};
-
-const saveNotePrompt = async (id, noteIndex) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  const note = difference.notes[noteIndex];
-  if (note.newNote === note.note) {
-    note.isEditing = false;
-    return;
-  }
-  try {
-    await axios.post('/api/edit-note', { id, noteIndex, updatedNote: note.newNote });
-    note.note = note.newNote;
-    note.timestamp = new Date().toISOString();
-    note.isEditing = false;
-  } catch (error) {
-    console.error('Error saving note:', error);
-  }
-};
-
-const deleteNotePrompt = async (id, noteIndex) => {
-  try {
-    await axios.post('/api/delete-note', { id, noteIndex });
+  
+    // Save campaigns to the database
+    await saveCampaigns();
+  
+    // Fetch all changes from the database
+    const allChanges = await fetchAllChanges();
+    differences.value = allChanges;
+  };
+  
+  const addNotePrompt = async (id) => {
     const difference = differences.value.find(diff => diff._id === id);
-    difference.notes.splice(noteIndex, 1);
-  } catch (error) {
-    console.error('Error deleting note:', error);
-  }
-};
-
-onMounted(() => {
-  checkForChanges();
-});
-</script>
+    if (!difference.newNote) return;
+    try {
+      await axios.post('/api/update-notes', { id, newNote: difference.newNote });
+      difference.notes.push({ note: difference.newNote, timestamp: new Date().toISOString() });
+      difference.newNote = ''; // Clear input
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  };
+  
+  const enableEditMode = (id, noteIndex) => {
+    const difference = differences.value.find(diff => diff._id === id);
+    const note = difference.notes[noteIndex];
+    note.isEditing = true;
+    note.newNote = note.note;
+  };
+  
+  const saveNotePrompt = async (id, noteIndex) => {
+    const difference = differences.value.find(diff => diff._id === id);
+    const note = difference.notes[noteIndex];
+    if (note.newNote === note.note) {
+      note.isEditing = false;
+      return;
+    }
+    try {
+      await axios.post('/api/edit-note', { id, noteIndex, updatedNote: note.newNote });
+      note.note = note.newNote;
+      note.timestamp = new Date().toISOString();
+      note.isEditing = false;
+    } catch (error) {
+      console.error('Error saving note:', error);
+    }
+  };
+  
+  const deleteNotePrompt = async (id, noteIndex) => {
+    try {
+      await axios.post('/api/delete-note', { id, noteIndex });
+      const difference = differences.value.find(diff => diff._id === id);
+      difference.notes.splice(noteIndex, 1);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+  
+  onMounted(() => {
+    checkForChanges();
+  });
+  </script>
   
   <style scoped>
   .comparison-component {
@@ -519,4 +523,11 @@ onMounted(() => {
     text-align: left;
   }
   
+  th {
+    background-color: #f2f2f2;
+  }
+  
+  td {
+    background-color: #fff;
+  }
   </style>
