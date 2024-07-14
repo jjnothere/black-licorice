@@ -1,6 +1,7 @@
 <!-- HeaderComponent.vue -->
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import FilterFunction from '@/components/FilterFunction.vue';
 import Metrics from '@/components/Metrics.vue';
@@ -10,6 +11,9 @@ const selectedCampaigns = ref([]);
 const metrics = ref([]);
 const campaignsData = ref([]);
 
+// Check the current route
+const route = useRoute();
+
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
 };
@@ -17,6 +21,11 @@ const updateSelectedCampaigns = (newSelectedCampaigns) => {
 const updateMetrics = (newMetrics) => {
   metrics.value = newMetrics;
 };
+
+// Computed property to determine if FilterFunction should be shown
+const showFilterFunction = computed(() => {
+  return route.path !== '/';
+});
 
 onMounted(async () => {
   try {
@@ -40,7 +49,7 @@ onMounted(async () => {
     </header>
   </div>
   <div class="layout">
-    <div class="filter-function">
+    <div v-if="showFilterFunction" class="filter-function">
       <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
     </div>
     <div class="content">
@@ -87,7 +96,6 @@ onMounted(async () => {
 .layout {
   display: flex;
   width: 100%;
-
   box-sizing: border-box;
 }
 

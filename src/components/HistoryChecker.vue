@@ -1,5 +1,8 @@
 <template>
     <div class="comparison-component">
+      <router-link v-if="$route.path !== '/history'" to="/history" class="nav-link">
+        <h3>Change History Log Journal</h3>
+      </router-link>
       <button @click="checkForChanges">Check for Changes</button>
       <table v-if="differences.length > 0">
         <thead>
@@ -206,102 +209,102 @@
   </script>
   
 <style scoped>
-    .comparison-component {
-        padding: 20px;
-        background-color: white;
-        border: 1px solid #ccc;
-        padding: 20px;
-        border-radius: 8px;
-    }
+  .comparison-component {
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 8px;
+  }
 
-    button {
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
+  button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 
-    button:hover {
-        background-color: #0056b3;
-    }
+  button:hover {
+    background-color: #0056b3;
+  }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        border-radius: 8px;
-    }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+  }
 
-    th, td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: left;
-    }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+  }
 
-    th {
-        background-color: #f2f2f2;
-    }
+  th {
+    background-color: #f2f2f2;
+  }
 
-    td {
-        background-color: #fff;
-    }
+  td {
+    background-color: #fff;
+  }
 
-    .icon-buttons {
-        display: inline-flex;
-        gap: 5px;
-        margin-left: 5px;
-    }
+  .icon-buttons {
+    display: inline-flex;
+    gap: 5px;
+    margin-left: 5px;
+  }
 
-    .icon-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 5px;
-        color: #007bff;
-    }
+  .icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    color: #007bff;
+  }
 
-    .icon-button:hover {
-        color: #fff;
-        background-color: #007bff;
-    }
+  .icon-button:hover {
+    color: #fff;
+    background-color: #007bff;
+  }
 
-    .note-input {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        margin-bottom: 10px;
-    }
+  .note-input {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
 
-    .note {
-        position: relative;
-        padding-bottom: 5px;
-        margin-bottom: 5px;
-    }
+  .note {
+    position: relative;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+  }
 
-    .note:not(:last-child) .note-separator {
-        content: "";
-        display: block;
-        height: 1px;
-        background-color: #ccc;
-        margin-top: 5px;
-    }
+  .note:not(:last-child) .note-separator {
+    content: "";
+    display: block;
+    height: 1px;
+    background-color: #ccc;
+    margin-top: 5px;
+  }
 
-    .note-timestamp {
-        display: block;
-        font-size: 0.8em;
-        color: #888;
-        margin-bottom: 5px;
-    }
+  .note-timestamp {
+    display: block;
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 5px;
+  }
 
-    .add-note-button {
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
+  .add-note-button {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
 
-    .add-note-button .icon-button {
-        margin-left: 5px;
-    }
+  .add-note-button .icon-button {
+      margin-left: 5px;
+  }
 </style>
