@@ -1,31 +1,12 @@
-<!-- HeaderComponent.vue -->
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
-import FilterFunction from '@/components/FilterFunction.vue';
-import Metrics from '@/components/Metrics.vue';
 
 const adAccountName = ref('Account Name');
-const selectedCampaigns = ref([]);
-const metrics = ref([]);
-const campaignsData = ref([]);
 
 // Check the current route
 const route = useRoute();
-
-const updateSelectedCampaigns = (newSelectedCampaigns) => {
-  selectedCampaigns.value = newSelectedCampaigns;
-};
-
-const updateMetrics = (newMetrics) => {
-  metrics.value = newMetrics;
-};
-
-// Computed property to determine if FilterFunction should be shown
-const showFilterFunction = computed(() => {
-  return route.path !== '/';
-});
 
 onMounted(async () => {
   try {
@@ -48,15 +29,6 @@ onMounted(async () => {
       </nav>
     </header>
   </div>
-  <div class="layout">
-    <div v-if="showFilterFunction" class="filter-function">
-      <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
-    </div>
-    <div class="content">
-      <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-    </div>
-  </div>
-  <RouterView :metrics="metrics" />
 </template>
 
 <style scoped>
@@ -91,16 +63,5 @@ onMounted(async () => {
 
 .active-link {
   border: 2px solid green;
-}
-
-.layout {
-  display: flex;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.content {
-  width: 100%;
-  padding-top: 10px;
 }
 </style>

@@ -17,9 +17,11 @@ onMounted(async () => {
 </script>
 
 <template>
+   <div class="content">
   <!-- <TableComponent v-if="items.length" :items="items" @update-items="items = $event" />
   <div v-else>Loading...</div> -->
   <HistoryChecker /> <!-- Use the new component -->
+</div>
 </template>
 
 <style scoped>
