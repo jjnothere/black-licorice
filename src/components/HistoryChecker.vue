@@ -63,6 +63,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
@@ -73,11 +74,26 @@ const props = defineProps({
 });
 
 const differences = ref([]);
+const campaignsMap = ref({});
+
+const fetchAllChanges = async () => {
+  try {
+    const response = await axios.get('/api/get-all-changes');
+    differences.value = response.data.reverse(); // Reverse the order to show newest first
+  } catch (error) {
+    console.error('Error fetching all changes from database:', error);
+  }
+};
 
 const fetchCurrentCampaigns = async () => {
   try {
     const response = await axios.get('/api/get-current-campaigns');
-    return response.data?.elements || [];
+    const campaigns = response.data?.elements || [];
+    campaignsMap.value = campaigns.reduce((map, campaign) => {
+      map[campaign.id] = campaign.name;
+      return map;
+    }, {});
+    return campaigns;
   } catch (error) {
     console.error('Error fetching current campaigns from database:', error);
     return [];
@@ -91,15 +107,6 @@ const fetchLinkedInCampaigns = async () => {
   } catch (error) {
     console.error('Error fetching LinkedIn campaigns:', error);
     return [];
-  }
-};
-
-const fetchAllChanges = async () => {
-  try {
-    const response = await axios.get('/api/get-all-changes');
-    differences.value = response.data.reverse(); // Reverse the order to show newest first
-  } catch (error) {
-    console.error('Error fetching all changes from database:', error);
   }
 };
 
@@ -215,11 +222,12 @@ const filteredDifferences = computed(() => {
     console.error("Date range is not properly defined", props.dateRange);
     return differences.value;
   }
-  
+
   return differences.value.filter(diff => {
     const diffDate = new Date(diff.date);
     const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
-    const isSelectedCampaign = props.selectedCampaigns.length === 0 || props.selectedCampaigns.includes(diff.campaign);
+    const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
+    const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
     return isWithinDateRange && isSelectedCampaign;
   });
 });
