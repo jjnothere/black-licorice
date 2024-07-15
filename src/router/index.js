@@ -1,32 +1,34 @@
+// router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import BudgetTracker from '../views/BudgetPacing.vue'
 import HomeView from '@/views/Home.vue'
+import BudgetTracker from '@/views/BudgetPacing.vue'
+import HistoryChecker from '@/components/HistoryChecker.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomeView
+  },
+  {
+    path: '/budget-tracker',
+    name: 'BudgetTracker',
+    component: BudgetTracker
+  },
+  {
+    path: '/history',
+    name: 'History',
+    component: HistoryChecker,
+    props: (route) => ({ 
+      selectedCampaigns: route.params.selectedCampaigns, 
+      dateRange: route.params.dateRange 
+    })
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView
-    },
-    {
-      path: '/budget-tracker',
-      name: 'BudgetTracker',
-      // route level code-splitting
-      // this generates a separate chunk (BudgetTracker.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/BudgetPacing.vue')
-    },
-    {
-      path: '/history',
-      name: 'History',
-      // route level code-splitting
-      // this generates a separate chunk (History.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/History.vue')
-    }
-  ]
+  routes
 })
 
 export default router

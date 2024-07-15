@@ -89,8 +89,11 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
 
     dateRange.value = `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear()} - ${endDate.getMonth() + 1}/${endDate.getDate()}/${endDate.getFullYear()}`;
 
-    // Emit metrics data to the parent component
-    emit('update:metrics', metrics.value);
+    emit('update:metrics', {
+      metrics: metrics.value,
+      selectedStartDate: selectedStartDate.value,
+      selectedEndDate: selectedEndDate.value,
+    });
   } catch (error) {
     console.error('Error fetching metrics:', error);
   }
@@ -193,9 +196,13 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 .metrics-pods {
   flex: 1;
   text-align: center;
-  padding: 10px;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px; /* Increase padding for better spacing */
   border: 1px solid #eee;
-  border-radius: 5px;
+  border-radius: 8px;
   background-color: #f9f9f9;
   margin: 5px;
 }
@@ -213,6 +220,7 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 .metrics-numbers {
   font-size: 1.2em;
   color: #000;
+  margin-top: 5px; /* Add margin for better spacing between label and number */
 }
 
 .metrics-details {

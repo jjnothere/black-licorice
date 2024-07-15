@@ -1,6 +1,19 @@
 <!-- App.vue -->
+<<template>
+  <HeaderComponent :adAccountName="adAccountName" />
+  <div class="layout">
+    <div v-if="showFilterFunction" class="filter-function">
+      <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
+    </div>
+    <div class="main-content">
+      <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+      <RouterView :metrics="metrics" :selected-campaigns="selectedCampaigns" :date-range="dateRange" />
+    </div>
+  </div>
+</template>
+
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 import HeaderComponent from '@/components/HeaderComponent.vue';
@@ -10,8 +23,8 @@ import Metrics from '@/components/Metrics.vue';
 const adAccountName = ref('Account Name');
 const selectedCampaigns = ref([]);
 const metrics = ref([]);
+const dateRange = ref({ start: new Date(), end: new Date() });
 
-// Check the current route
 const route = useRoute();
 
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
@@ -19,12 +32,15 @@ const updateSelectedCampaigns = (newSelectedCampaigns) => {
 };
 
 const updateMetrics = (newMetrics) => {
-  metrics.value = newMetrics;
+  metrics.value = newMetrics.metrics;
+  dateRange.value = { start: newMetrics.selectedStartDate, end: newMetrics.selectedEndDate };
 };
 
-// Computed property to determine if FilterFunction should be shown
 const showFilterFunction = computed(() => {
   return route.path !== '/';
+});
+
+watch(dateRange, () => {
 });
 
 onMounted(async () => {
@@ -36,19 +52,6 @@ onMounted(async () => {
   }
 });
 </script>
-
-<template>
-  <HeaderComponent :adAccountName="adAccountName" />
-  <div class="layout">
-    <div v-if="showFilterFunction" class="filter-function">
-      <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
-    </div>
-    <div class="main-content">
-      <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-      <RouterView :metrics="metrics" />
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .layout {
