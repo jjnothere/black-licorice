@@ -1,5 +1,5 @@
 <!-- HistoryChecker.vue -->
-<<template>
+<template>
   <div class="history-checker">
     <h3>Change History Log Journal</h3>
     <button @click="checkForChanges">Check for Changes</button>
@@ -67,14 +67,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
-  selectedCampaigns: {
-    type: Array,
-    default: () => []
-  },
-  dateRange: {
-    type: Object,
-    default: () => ({ start: null, end: null })
-  }
+  selectedCampaigns: Array,
+  dateRange: Object
 });
 
 const differences = ref([]);
@@ -232,19 +226,17 @@ const filteredDifferences = computed(() => {
     const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
     const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
     const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
-return isWithinDateRange && isSelectedCampaign;
-});
+    return isWithinDateRange && isSelectedCampaign;
+  });
 });
 
 onMounted(async () => {
-await fetchAllChanges();
-await checkForChanges();
+  await fetchAllChanges();
+  await checkForChanges();
 });
-
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
 await fetchAllChanges();
 });
-
 </script>
 <style scoped>
   .history-checker {
