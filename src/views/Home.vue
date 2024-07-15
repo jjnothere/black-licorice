@@ -12,7 +12,7 @@
         </ul>
       </div>
       <div class="history">
-        <HistoryChecker />
+        <HistoryChecker :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
       </div>
     </div>
   </div>
@@ -32,7 +32,9 @@ export default {
       interval: 24 * 60 * 60 * 1000, // 24 hours
       campaigns: [],
       loading: false,
-      error: ''
+      error: '',
+      selectedCampaigns: [], // Default selected campaigns, adjust as needed
+      dateRange: { start: new Date(), end: new Date() } // Default date range, adjust as needed
     };
   },
   mounted() {

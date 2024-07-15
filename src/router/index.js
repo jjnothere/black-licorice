@@ -6,7 +6,7 @@ import HistoryChecker from '@/components/HistoryChecker.vue';
 const routes = [
   {
     path: '/',
-    name: 'Home',
+    name: 'home',
     component: HomeView
   },
   {
@@ -18,14 +18,10 @@ const routes = [
     path: '/history',
     name: 'History',
     component: HistoryChecker,
-    props: (route) => {
-      const selectedCampaigns = route.query.selectedCampaigns ? route.query.selectedCampaigns.split(',') : [];
-      const dateRange = route.query.dateRange ? JSON.parse(route.query.dateRange) : {};
-      return {
-        selectedCampaigns,
-        dateRange
-      };
-    }
+    props: route => ({
+      selectedCampaigns: route.query.selectedCampaigns ? route.query.selectedCampaigns.split(',') : [],
+      dateRange: route.query.dateRange ? JSON.parse(route.query.dateRange) : {}
+    })
   }
 ];
 

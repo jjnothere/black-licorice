@@ -1,9 +1,7 @@
 <!-- HistoryChecker.vue -->
-<template>
+<<template>
   <div class="history-checker">
-    <router-link v-if="$route.path !== '/history'" to="/history" class="nav-link">
-      <h3>Change History Log Journal</h3>
-    </router-link>
+    <h3>Change History Log Journal</h3>
     <button @click="checkForChanges">Check for Changes</button>
     <table v-if="filteredDifferences.length > 0">
       <thead>
@@ -69,8 +67,14 @@ import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
-  selectedCampaigns: Array,
-  dateRange: Object
+  selectedCampaigns: {
+    type: Array,
+    default: () => []
+  },
+  dateRange: {
+    type: Object,
+    default: () => ({ start: null, end: null })
+  }
 });
 
 const differences = ref([]);
@@ -228,18 +232,19 @@ const filteredDifferences = computed(() => {
     const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
     const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
     const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
-    return isWithinDateRange && isSelectedCampaign;
-  });
+return isWithinDateRange && isSelectedCampaign;
+});
 });
 
 onMounted(async () => {
-  await fetchAllChanges();
-  await checkForChanges();
+await fetchAllChanges();
+await checkForChanges();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
-  await fetchAllChanges();
+await fetchAllChanges();
 });
+
 </script>
 <style scoped>
   .history-checker {

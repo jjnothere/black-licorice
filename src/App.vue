@@ -6,14 +6,14 @@
     </div>
     <div class="main-content">
       <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-      <RouterView :metrics="metrics" :selected-campaigns="selectedCampaigns" :date-range="dateRange" />
+      <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
@@ -25,7 +25,6 @@ const metrics = ref([]);
 const dateRange = ref({ start: new Date(), end: new Date() });
 
 const route = useRoute();
-const router = useRouter();
 
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
@@ -34,22 +33,10 @@ const updateSelectedCampaigns = (newSelectedCampaigns) => {
 const updateMetrics = (newMetrics) => {
   metrics.value = newMetrics.metrics;
   dateRange.value = { start: newMetrics.selectedStartDate, end: newMetrics.selectedEndDate };
-  
-  // Push to history route with updated query params
-  router.push({
-    name: 'History',
-    query: {
-      selectedCampaigns: selectedCampaigns.value.join(','),
-      dateRange: JSON.stringify(dateRange.value)
-    }
-  });
 };
 
 const showFilterFunction = computed(() => {
   return route.path !== '/';
-});
-
-watch(dateRange, () => {
 });
 
 onMounted(async () => {
