@@ -9,13 +9,13 @@ const props = defineProps({
   selectedCampaigns: Array
 });
 
-const emit = defineEmits(['update:metrics']);
+const emit = defineEmits(['update:metrics', 'update-date-range']);
 const metrics = ref([]);
 const spend = ref('0');
 const impressions = ref('0');
 const clicks = ref('0');
 const conversions = ref('0');
-const dateRange = ref('00/00/0000 - 0/00/0000');
+const dateRange = ref('00/00/0000 - 00/00/0000');
 
 const today = new Date();
 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -94,6 +94,11 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       selectedStartDate: selectedStartDate.value,
       selectedEndDate: selectedEndDate.value,
     });
+
+    emit('update-date-range', {
+      start: selectedStartDate.value,
+      end: selectedEndDate.value
+    });
   } catch (error) {
     console.error('Error fetching metrics:', error);
   }
@@ -112,6 +117,10 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
     lastValidStartDate.value = newStartDate;
     lastValidEndDate.value = newEndDate;
     fetchMetrics(newStartDate, newEndDate, newCampaigns);
+    emit('update-date-range', {
+      start: newStartDate,
+      end: newEndDate
+    });
   }
 });
 </script>

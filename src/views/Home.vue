@@ -12,7 +12,7 @@
         </ul>
       </div>
       <div class="history">
-        <HistoryChecker :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
+        <HistoryChecker :selectedCampaigns="localSelectedCampaigns" :dateRange="dateRange" />
       </div>
     </div>
   </div>
@@ -24,6 +24,11 @@ import HistoryChecker from '@/components/HistoryChecker.vue';
 
 export default {
   name: 'Home',
+  props: {
+    metrics: Array,
+    selectedCampaigns: Array,
+    dateRange: Object
+  },
   components: {
     HistoryChecker
   },
@@ -31,10 +36,9 @@ export default {
     return {
       interval: 24 * 60 * 60 * 1000, // 24 hours
       campaigns: [],
+      localSelectedCampaigns: [], // Local property to handle the selected campaigns
       loading: false,
-      error: '',
-      selectedCampaigns: [], // Default selected campaigns, adjust as needed
-      dateRange: { start: new Date(), end: new Date() } // Default date range, adjust as needed
+      error: ''
     };
   },
   mounted() {
@@ -49,6 +53,7 @@ export default {
       try {
         const response = await axios.get(apiUrl);
         this.campaigns = response.data.elements || []; // Adjust according to the actual structure of your API response
+        this.localSelectedCampaigns = this.campaigns.map(campaign => campaign.id); // Select all campaigns
       } catch (error) {
         console.error('Error fetching data from server:', error);
         this.error = 'Failed to fetch ad campaigns.';

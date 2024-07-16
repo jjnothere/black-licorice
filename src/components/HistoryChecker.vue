@@ -234,8 +234,10 @@ onMounted(async () => {
   await fetchAllChanges();
   await checkForChanges();
 });
+
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
-await fetchAllChanges();
+  await fetchAllChanges();
+  await checkForChanges();
 });
 </script>
 <style scoped>
