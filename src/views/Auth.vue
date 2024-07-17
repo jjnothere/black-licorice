@@ -1,0 +1,116 @@
+<template>
+    <div class="auth-container">
+      <div class="form-container">
+        <h2>{{ isLogin ? 'Login' : 'Sign Up' }}</h2>
+        <form @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" v-model="email" required />
+          </div>
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" v-model="password" required />
+          </div>
+          <div v-if="!isLogin" class="form-group">
+            <label for="rePassword">Re-enter Password:</label>
+            <input type="password" v-model="rePassword" required />
+          </div>
+          <button type="submit">{{ isLogin ? 'Login' : 'Sign Up' }}</button>
+        </form>
+        <p @click="toggleForm">{{ isLogin ? 'Don\'t have an account? Sign Up' : 'Already have an account? Login' }}</p>
+      </div>
+    </div>
+  </template>
+  
+  <script setup>
+  import { ref } from 'vue';
+  import axios from 'axios';
+  import { useRouter } from 'vue-router';
+  import { useAuth } from '@/composables/auth';
+  
+  const isLogin = ref(true);
+  const email = ref('');
+  const password = ref('');
+  const rePassword = ref('');
+  const router = useRouter();
+  const { setAuth } = useAuth();
+  
+  const toggleForm = () => {
+    isLogin.value = !isLogin.value;
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      const url = isLogin.value ? '/api/login' : '/api/signup';
+      const data = isLogin.value ? { email: email.value, password: password.value } : { email: email.value, password: password.value, rePassword: rePassword.value };
+      
+      const response = await axios.post(url, data);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        setAuth(true); // Update auth state
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Error:', error.response ? error.response.data : error.message);
+    }
+  };
+  </script>
+  
+  <style scoped>
+  .auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  .form-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  form label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  form input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+  
+  p {
+    text-align: center;
+    cursor: pointer;
+    color: #007bff;
+    margin-top: 10px;
+  }
+  
+  p:hover {
+    text-decoration: underline;
+  }
+  </style>

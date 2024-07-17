@@ -1,19 +1,31 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, watchEffect } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { useAuth } from '@/composables/auth';
 
 const adAccountName = ref('Account Name');
+const { isLoggedIn, setAuth, checkAuthStatus } = useAuth();
+const router = useRouter();
 
-// Check the current route
-const route = useRoute();
+const logout = () => {
+  setAuth(false);
+  router.push('/auth');
+};
 
-onMounted(async () => {
+const fetchAdAccountName = async () => {
   try {
     const response = await axios.get('/api/ad-account-name');
     adAccountName.value = response.data.name;
   } catch (error) {
     console.error('Error fetching ad account name:', error);
+  }
+};
+
+watchEffect(() => {
+  checkAuthStatus();
+  if (isLoggedIn.value) {
+    fetchAdAccountName();
   }
 });
 </script>
@@ -23,9 +35,13 @@ onMounted(async () => {
     <header>
       <h1>{{ adAccountName }}</h1>
       <nav class="nav-bar">
-        <RouterLink to="/" class="nav-link" active-class="active-link">Home</RouterLink>
-        <RouterLink to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</RouterLink>
-        <RouterLink to="/history" class="nav-link" active-class="active-link">History</RouterLink>
+        <div class="nav-links">
+          <router-link to="/" class="nav-link" active-class="active-link">Home</router-link>
+          <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
+          <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
+        </div>
+        <div v-if="isLoggedIn" class="nav-link logout-link" @click="logout">Logout</div>
+        <router-link v-else to="/auth" class="nav-link auth-link">Login / Signup</router-link>
       </nav>
     </header>
   </div>
@@ -43,14 +59,20 @@ onMounted(async () => {
 
 .nav-bar {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 10px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 10px;
 }
 
 .nav-link {
   padding: 10px 20px;
   border: 1px solid #eee;
   border-radius: 5px;
-  margin: 0 5px 0 0;
   text-decoration: none;
   font-weight: bold;
   color: black;
@@ -59,6 +81,14 @@ onMounted(async () => {
 
 .nav-link:hover {
   background-color: #e0e0e0;
+}
+
+.auth-link {
+  margin-left: auto;
+}
+
+.logout-link {
+  cursor: pointer;
 }
 
 .active-link {

@@ -1,7 +1,10 @@
 <!-- HistoryChecker.vue -->
 <template>
   <div class="history-checker">
-    <h3>Change History Log Journal</h3>
+    <router-link to="/history" class="nav-link">
+      <h3>Change History Log Journal</h3>
+    </router-link>
+    <br />
     <button @click="checkForChanges">Check for Changes</button>
     <table v-if="filteredDifferences.length > 0">
       <thead>

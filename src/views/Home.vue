@@ -7,7 +7,7 @@
         </router-link>
         <ul v-if="campaigns.length">
           <li v-for="(campaign, index) in campaigns" :key="index">
-            {{ campaign.name }} - {{ campaign.status }}
+            {{ campaign.name }}
           </li>
         </ul>
       </div>
@@ -79,19 +79,20 @@ export default {
 
 .content {
   display: flex;
-  justify-content: space-between;
+  /* justify-content: space-between; */
 }
 
 .campaigns {
-  width: 48%;
+  width: 35%;
   padding: 20px;
   background-color: white;
   border: 1px solid #ccc;
   border-radius: 8px;
+  margin-right: 10px;
 }
 
 .history {
-  width: 48%;
+  width: 75%;
 }
 
 .history-pod {

@@ -1,25 +1,28 @@
 <template>
-  <HeaderComponent :adAccountName="adAccountName" />
-  <div class="layout">
-    <div v-if="showFilterFunction" class="filter-function">
-      <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
+  <div>
+    <HeaderComponent v-if="!isAuthRoute" />
+    <div v-if="isAuthRoute" class="auth-layout">
+      <router-view></router-view>
     </div>
-    <div class="main-content">
-      <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-      <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
+    <div v-else class="layout">
+      <div v-if="showFilterFunction" class="filter-function">
+        <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
+      </div>
+      <div class="main-content">
+        <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
 import Metrics from '@/components/Metrics.vue';
 
-const adAccountName = ref('Account Name');
 const selectedCampaigns = ref([]);
 const metrics = ref([]);
 const dateRange = ref({ start: new Date(), end: new Date() });
@@ -39,17 +42,26 @@ const showFilterFunction = computed(() => {
   return route.path !== '/';
 });
 
-onMounted(async () => {
-  try {
-    const response = await axios.get('/api/ad-account-name');
-    adAccountName.value = response.data.name;
-  } catch (error) {
-    console.error('Error fetching ad account name:', error);
+const isAuthRoute = computed(() => route.path === '/auth');
+
+watch(route, () => {
+  // To force a re-render when the route changes
+  if (isAuthRoute.value) {
+    selectedCampaigns.value = [];
+    metrics.value = [];
   }
 });
 </script>
 
 <style scoped>
+.auth-layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
 .layout {
   display: flex;
   width: 100%;
