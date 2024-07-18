@@ -5,6 +5,7 @@
         <router-link to="/budget-tracker" class="nav-link">
           <h3>Budget Tracker</h3>
         </router-link>
+        <h3>All Champaigns</h3>
         <ul v-if="campaigns.length">
           <li v-for="(campaign, index) in campaigns" :key="index">
             {{ campaign.name }}

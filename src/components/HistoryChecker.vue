@@ -1,11 +1,11 @@
 <!-- HistoryChecker.vue -->
 <template>
   <div class="history-checker">
-    <router-link to="/history" class="nav-link">
+    <router-link v-if="!isHistoryPage" to="/history" class="nav-link">
       <h3>Change History Log Journal</h3>
     </router-link>
     <br />
-    <button @click="checkForChanges">Check for Changes</button>
+    <button v-if="!isHomePage" @click="checkForChanges">Check for Changes</button>
     <table v-if="filteredDifferences.length > 0">
       <thead>
         <tr>
@@ -67,7 +67,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
+
+const route = useRoute();
+
+const isHomePage = computed(() => route.path === '/');
+const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
   selectedCampaigns: Array,
@@ -121,6 +127,7 @@ const checkForChanges = async () => {
     if (campaign1) {
       const changes = [];
       Object.keys(campaign1).forEach((key) => {
+        if (key === 'changeAuditStamps') return; // Skip the changeAuditStamps object
         if (JSON.stringify(campaign1[key]) !== JSON.stringify(campaign2[key])) {
           changes.push(`${key}: <span class="old-value">${JSON.stringify(campaign2[key])}</span> => <span class="new-value">${JSON.stringify(campaign1[key])}</span>`);
         }
@@ -214,33 +221,34 @@ const deleteNotePrompt = async (id, noteIndex, reversed) => {
 };
 
 const formatTimestamp = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toLocaleString();
+  const date =
+new Date(timestamp);
+return date.toLocaleString();
 };
 
 const filteredDifferences = computed(() => {
-  if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
-    console.error("Date range is not properly defined", props.dateRange);
-    return differences.value;
-  }
+if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
+console.error("Date range is not properly defined", props.dateRange);
+return differences.value;
+}
 
-  return differences.value.filter(diff => {
-    const diffDate = new Date(diff.date);
-    const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
-    const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
-    const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
-    return isWithinDateRange && isSelectedCampaign;
-  });
+return differences.value.filter(diff => {
+const diffDate = new Date(diff.date);
+const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
+const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
+const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
+return isWithinDateRange && isSelectedCampaign;
+});
 });
 
 onMounted(async () => {
-  await fetchAllChanges();
-  await checkForChanges();
+await fetchAllChanges();
+await checkForChanges();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
-  await fetchAllChanges();
-  await checkForChanges();
+await fetchAllChanges();
+await checkForChanges();
 });
 </script>
 <style scoped>
@@ -266,6 +274,7 @@ watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
   }
 
   table {
+    margin-top: 10px;
     width: 100%;
     border-collapse: collapse;
     border-radius: 8px;

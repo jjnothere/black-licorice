@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import TableComponent from '@/components/TableComponent.vue';
 import HistoryChecker from '@/components/HistoryChecker.vue'; // Import the new component
 import axios from 'axios';
 

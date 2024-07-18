@@ -30,11 +30,11 @@ const budget = ref(0); // User-defined budget
 const formattedBudget = ref('0.00');
 const campaignNames = ref({}); // Store campaign names
 
-const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]));
+const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
 const spendData = computed(() => {
   const data = [];
   let cumulativeSpend = 0;
-  props.metrics.forEach(metric => {
+  props.metrics.slice().reverse().forEach(metric => {
     cumulativeSpend += parseFloat(metric.spend.replace(/[$,]/g, '')) || 0;
     data.push(cumulativeSpend);
   });
