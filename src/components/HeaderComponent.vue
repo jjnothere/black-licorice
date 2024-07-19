@@ -1,3 +1,23 @@
+<template>
+  <div class="header">
+    <header>
+      <h1>{{ adAccountName }}</h1>
+      <nav class="nav-bar">
+        <div class="nav-links">
+          <router-link to="/" class="nav-link" active-class="active-link">Home</router-link>
+          <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
+          <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
+        </div>
+        <div class="nav-user-actions">
+          <router-link to="/profile" class="nav-link" active-class="active-link">Profile</router-link>
+          <div v-if="isLoggedIn" class="nav-link logout-link" @click="logout">Logout</div>
+          <router-link v-else to="/auth" class="nav-link auth-link">Login / Signup</router-link>
+        </div>
+      </nav>
+    </header>
+  </div>
+</template>
+
 <script setup>
 import { ref, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
@@ -30,23 +50,6 @@ watchEffect(() => {
 });
 </script>
 
-<template>
-  <div class="header">
-    <header>
-      <h1>{{ adAccountName }}</h1>
-      <nav class="nav-bar">
-        <div class="nav-links">
-          <router-link to="/" class="nav-link" active-class="active-link">Home</router-link>
-          <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
-          <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
-        </div>
-        <div v-if="isLoggedIn" class="nav-link logout-link" @click="logout">Logout</div>
-        <router-link v-else to="/auth" class="nav-link auth-link">Login / Signup</router-link>
-      </nav>
-    </header>
-  </div>
-</template>
-
 <style scoped>
 .header {
   display: flex;
@@ -65,6 +68,11 @@ watchEffect(() => {
 }
 
 .nav-links {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-user-actions {
   display: flex;
   gap: 10px;
 }

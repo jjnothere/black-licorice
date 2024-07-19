@@ -4,6 +4,7 @@ import BudgetTracker from '@/views/BudgetPacing.vue';
 import HistoryChecker from '@/components/HistoryChecker.vue';
 import Auth from '@/views/Auth.vue';
 import AuthLayout from '@/components/AuthLayout.vue';
+import Profile from '@/views/Profile.vue'; // Import the new Profile component
 
 const routes = [
   {
@@ -34,6 +35,12 @@ const routes = [
     children: [
       { path: '', name: 'Auth', component: Auth },
     ],
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: { requiresAuth: true }, // Protect this route
   },
 ];
 
