@@ -1,4 +1,40 @@
-<!-- Metrics.vue -->
+<template>
+  <div class="metrics">
+    <h3 class="metrics-header">Metrics</h3>
+    <!-- Metrics.vue -->
+    <div class="metrics-info">
+      <div class="metrics-pods">
+        <div class="metrics-label">Spend</div>
+        <div class="metrics-numbers">{{ spend }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Impressions</div>
+        <div class="metrics-numbers">{{ impressions }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Clicks</div>
+        <div class="metrics-numbers">{{ clicks }}</div>
+      </div>
+      <div class="metrics-pods">
+        <div class="metrics-label">Conversions</div>
+        <div class="metrics-numbers">{{ conversions }}</div>
+      </div>
+      <div class="metrics-date">
+        <div class="metrics-label">Date Range</div>
+        <div class="datepicker-wrapper">
+          <Datepicker v-model="selectedStartDate" class="custom-datepicker" />
+          <i class="fas fa-calendar-alt calendar-icon"></i>
+        </div>
+        <div class="datepicker-wrapper">
+          <Datepicker v-model="selectedEndDate" class="custom-datepicker" />
+          <i class="fas fa-calendar-alt calendar-icon"></i>
+        </div>
+        <div class="metrics-numbers">{{ dateRange }}</div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
@@ -44,7 +80,10 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params.campaigns = `List(${campaignList})`;
     }
 
-    const response = await axios.get('/api/linkedin', { params });
+    const response = await axios.get('/api/linkedin', {
+      params,
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
     let data = response.data.elements;
 
     // Filter data to ensure it falls within the specified date range
@@ -124,42 +163,6 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   }
 });
 </script>
-
-<template>
-  <div class="metrics">
-    <h3 class="metrics-header">Metrics</h3>
-    <div class="metrics-info">
-      <div class="metrics-pods">
-        <div class="metrics-label">Spend</div>
-        <div class="metrics-numbers">{{ spend }}</div>
-      </div>
-      <div class="metrics-pods">
-        <div class="metrics-label">Impressions</div>
-        <div class="metrics-numbers">{{ impressions }}</div>
-      </div>
-      <div class="metrics-pods">
-        <div class="metrics-label">Clicks</div>
-        <div class="metrics-numbers">{{ clicks }}</div>
-      </div>
-      <div class="metrics-pods">
-        <div class="metrics-label">Conversions</div>
-        <div class="metrics-numbers">{{ conversions }}</div>
-      </div>
-      <div class="metrics-date">
-        <div class="metrics-label">Date Range</div>
-        <div class="datepicker-wrapper">
-          <Datepicker v-model="selectedStartDate" class="custom-datepicker" />
-          <i class="fas fa-calendar-alt calendar-icon"></i>
-        </div>
-        <div class="datepicker-wrapper">
-          <Datepicker v-model="selectedEndDate" class="custom-datepicker" />
-          <i class="fas fa-calendar-alt calendar-icon"></i>
-        </div>
-        <div class="metrics-numbers">{{ dateRange }}</div>
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 @import '@fortawesome/fontawesome-free/css/all.css';

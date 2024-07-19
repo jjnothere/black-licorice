@@ -5,11 +5,11 @@
       <router-view></router-view>
     </div>
     <div v-else class="layout">
-      <div v-if="showFilterFunction" class="filter-function">
+      <div v-if="showFilterFunction && !isProfilePage" class="filter-function">
         <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
       </div>
       <div class="main-content">
-        <Metrics :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <Metrics v-if="!isProfilePage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
       </div>
     </div>
@@ -43,6 +43,7 @@ const showFilterFunction = computed(() => {
 });
 
 const isAuthRoute = computed(() => route.path === '/auth');
+const isProfilePage = computed(() => route.path === '/profile');
 
 watch(route, () => {
   // To force a re-render when the route changes

@@ -7,6 +7,10 @@
           <label for="email">Email:</label>
           <input type="email" v-model="email" required />
         </div>
+        <div v-if="!isLogin" class="form-group">
+          <label for="account-id">Account ID:</label>
+          <input type="text" v-model="accountId" maxlength="9" required @input="validateAccountId" />
+        </div>
         <div class="form-group">
           <label for="password">Password:</label>
           <input type="password" v-model="password" required />
@@ -31,6 +35,7 @@ import { useAuth } from '@/composables/auth';
 
 const isLogin = ref(true);
 const email = ref('');
+const accountId = ref(''); // New accountId state
 const password = ref('');
 const rePassword = ref('');
 const errorMessage = ref('');
@@ -40,11 +45,28 @@ const { setAuth } = useAuth();
 const toggleForm = () => {
   isLogin.value = !isLogin.value;
   errorMessage.value = ''; // Clear error message when toggling form
+  email.value = ''; // Clear email input
+  accountId.value = ''; // Clear accountId input
+  password.value = ''; // Clear password input
+  rePassword.value = ''; // Clear rePassword input
+};
+
+const validateAccountId = () => {
+  if (!/^\d{9}$/.test(accountId.value)) {
+    errorMessage.value = 'Account ID must be a 9-digit number.';
+  } else {
+    errorMessage.value = '';
+  }
 };
 
 const handleSubmit = async () => {
   errorMessage.value = ''; // Clear error message before submission
   
+  if (!isLogin.value && !/^\d{9}$/.test(accountId.value)) {
+    errorMessage.value = 'Account ID must be a 9-digit number.';
+    return;
+  }
+
   if (password.value.length < 6) {
     errorMessage.value = 'Password must be at least 6 characters long.';
     return;
@@ -57,13 +79,15 @@ const handleSubmit = async () => {
 
   try {
     const url = isLogin.value ? '/api/login' : '/api/signup';
-    const data = isLogin.value ? { email: email.value, password: password.value } : { email: email.value, password: password.value, rePassword: rePassword.value };
-    
+    const data = isLogin.value 
+      ? { email: email.value, password: password.value } 
+      : { email: email.value, password: password.value, rePassword: rePassword.value, accountId: accountId.value }; // Include accountId in signup
+
     const response = await axios.post(url, data);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       setAuth(true); // Update auth state
-      router.push('/');
+      router.push('/'); // Redirect to home page upon successful signup
     }
   } catch (error) {
     errorMessage.value = error.response ? error.response.data.message : error.message;
@@ -140,5 +164,10 @@ p:hover {
 
 .error-message:hover {
   text-decoration: none;
+}
+
+.error-container {
+  height: 1.2em; /* Fixed height for the error message container */
+  margin-top: 5px; /* Space between input and error message */
 }
 </style>

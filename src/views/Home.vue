@@ -5,12 +5,14 @@
         <router-link to="/budget-tracker" class="nav-link">
           <h3>Budget Tracker</h3>
         </router-link>
-        <h3>All Champaigns</h3>
+        <h3>All Campaigns</h3>
         <ul v-if="campaigns.length">
           <li v-for="(campaign, index) in campaigns" :key="index">
             {{ campaign.name }}
           </li>
         </ul>
+        <div v-if="loading" class="loading">Loading...</div>
+        <div v-if="error" class="error">{{ error }}</div>
       </div>
       <div class="history">
         <HistoryChecker :selectedCampaigns="localSelectedCampaigns" :dateRange="dateRange" />
@@ -52,7 +54,9 @@ export default {
       this.error = '';
 
       try {
-        const response = await axios.get(apiUrl);
+        const response = await axios.get(apiUrl, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         this.campaigns = response.data.elements || []; // Adjust according to the actual structure of your API response
         this.localSelectedCampaigns = this.campaigns.map(campaign => campaign.id); // Select all campaigns
       } catch (error) {

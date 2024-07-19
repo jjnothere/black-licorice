@@ -1,4 +1,3 @@
-<!-- FilterFunction.vue -->
 <template>
   <div class="layout">
     <div class="filter-function">
@@ -60,7 +59,9 @@ const selectedCampaigns = ref([]);
 
 const fetchCampaigns = async () => {
   try {
-    const response = await axios.get('/api/linkedin/ad-campaigns');
+    const response = await axios.get('/api/linkedin/ad-campaigns', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
     campaigns.value = response.data.elements.map(campaign => ({
       id: campaign.id,
       name: campaign.name
@@ -72,7 +73,9 @@ const fetchCampaigns = async () => {
 
 // const fetchCampaignGroups = async () => {
 //   try {
-//     const response = await axios.get('/api/linkedin/ad-campaign-groups');
+//     const response = await axios.get('/api/linkedin/ad-campaign-groups', {
+//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+//     });
 //     campaignGroups.value = response.data.elements.map(group => ({
 //       id: group.id,
 //       name: group.name
