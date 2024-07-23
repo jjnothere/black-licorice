@@ -40,6 +40,9 @@ import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
+import { useAuth } from '@/composables/auth';
+
+const { isLoggedIn } = useAuth();
 
 const props = defineProps({
   selectedCampaigns: Array
@@ -69,6 +72,10 @@ const formatDate = (date) => {
 };
 
 const fetchMetrics = async (startDate, endDate, campaigns) => {
+  if (!isLoggedIn.value) {
+    return;
+  }
+
   try {
     let params = {
       start: formatDate(startDate),
@@ -144,7 +151,9 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
 };
 
 onMounted(() => {
-  fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
+  if (isLoggedIn.value) {
+    fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
+  }
 });
 
 watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([newStartDate, newEndDate, newCampaigns]) => {
@@ -155,7 +164,9 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   } else {
     lastValidStartDate.value = newStartDate;
     lastValidEndDate.value = newEndDate;
-    fetchMetrics(newStartDate, newEndDate, newCampaigns);
+    if (isLoggedIn.value) {
+      fetchMetrics(newStartDate, newEndDate, newCampaigns);
+    }
     emit('update-date-range', {
       start: newStartDate,
       end: newEndDate

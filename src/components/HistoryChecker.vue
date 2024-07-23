@@ -22,7 +22,12 @@
           <td v-html="difference.changes"></td>
           <td>
             <div v-if="difference.addingNote" class="note-input">
-              <input v-model="difference.newNote" placeholder="Add a new note" />
+              <input
+                v-model="difference.newNote"
+                placeholder="Add a new note"
+                @keyup.enter="saveNewNotePrompt(difference._id)"
+                @keyup.esc="cancelAddNotePrompt(difference._id)"
+              />
               <button class="icon-button" @click="saveNewNotePrompt(difference._id)">
                 <i class="fas fa-save"></i>
               </button>
@@ -33,24 +38,25 @@
             <button v-else class="icon-button" @click="enableAddNotePrompt(difference._id)">
               <i class="fas fa-plus"></i> Add Note
             </button>
-            <div v-for="(note, noteIndex) in difference.notes.slice().reverse()" :key="noteIndex" class="note">
+            <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
               <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
               <span v-if="!note.isEditing">{{ note.note }}</span>
               <input
                 v-if="note.isEditing"
                 v-model="note.newNote"
-                @keyup.enter="saveNotePrompt(difference._id, noteIndex, true)"
-                @blur="saveNotePrompt(difference._id, noteIndex, true)"
+                @keyup.enter="saveNotePrompt(difference._id, note._id)"
+                @keyup.esc="cancelEditMode(difference._id, note._id)"
+                @blur="saveNotePrompt(difference._id, note._id)"
               />
               <div v-if="!note.isEditing" class="icon-buttons">
-                <button class="icon-button" @click="enableEditMode(difference._id, noteIndex, true)">
+                <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="icon-button" @click="deleteNotePrompt(difference._id, noteIndex, true)">
+                <button class="icon-button" @click="deleteNotePrompt(difference._id, note._id)">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
-              <button v-if="note.isEditing" class="icon-button" @click="saveNotePrompt(difference._id, noteIndex, true)">
+              <button v-if="note.isEditing" class="icon-button" @click="saveNotePrompt(difference._id, note._id)">
                 <i class="fas fa-save"></i>
               </button>
               <div class="note-separator"></div>
@@ -69,6 +75,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
+import ObjectID from 'bson-objectid';
 
 const route = useRoute();
 
@@ -88,7 +95,12 @@ const fetchAllChanges = async () => {
     const response = await axios.get('/api/get-all-changes', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    differences.value = response.data.reverse(); // Reverse the order to show newest first
+    differences.value = response.data.reverse().map(change => {
+      if (!change._id) {
+        change._id = ObjectID().toHexString();
+      }
+      return change;
+    });
   } catch (error) {
     console.error('Error fetching all changes from database:', error);
   }
@@ -123,6 +135,11 @@ const fetchLinkedInCampaigns = async () => {
   }
 };
 
+const addNewChange = (newChange) => {
+  newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
+  differences.value.push(newChange);
+};
+
 const checkForChanges = async () => {
   const currentCampaigns = await fetchCurrentCampaigns();
   const linkedInCampaigns = await fetchLinkedInCampaigns();
@@ -145,15 +162,17 @@ const checkForChanges = async () => {
           changes: changes.join('<br>'),
           notes: campaign2.notes || [],
           addingNote: false,
+          _id: campaign1._id // Ensure we have the correct MongoDB ID
         });
       }
     } else {
-      newDifferences.push({
+      addNewChange({
         campaign: campaign2.name,
         date: new Date().toLocaleDateString(),
         changes: `New campaign added: <span class="new-campaign">${campaign2.name}</span>`,
         notes: campaign2.notes || [],
         addingNote: false,
+        _id: campaign2._id // Include _id if available
       });
     }
   });
@@ -192,14 +211,19 @@ const cancelAddNotePrompt = (id) => {
   difference.newNote = '';
 };
 
-const saveNewNotePrompt = async (id) => {
-  const difference = differences.value.find(diff => diff._id === id);
+const saveNewNotePrompt = async (changeId) => {
+  const difference = differences.value.find(diff => diff._id === changeId);
   if (!difference.newNote) return;
+
   try {
-    await axios.post('/api/update-notes', { id, newNote: difference.newNote }, {
+    const response = await axios.post('/api/add-note', {
+      changeId, 
+      newNote: difference.newNote 
+    }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    difference.notes.push({ note: difference.newNote, timestamp: new Date().toISOString() });
+
+    difference.notes.push({ _id: ObjectID().toHexString(), note: difference.newNote, timestamp: new Date().toISOString() });
     difference.newNote = ''; // Clear input
     difference.addingNote = false; // Hide the input field
   } catch (error) {
@@ -207,39 +231,63 @@ const saveNewNotePrompt = async (id) => {
   }
 };
 
-const enableEditMode = (id, noteIndex, reversed) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  const note = reversed ? difference.notes[difference.notes.length - 1 - noteIndex] : difference.notes[noteIndex];
+const enableEditMode = (changeId, noteId) => {
+  const difference = differences.value.find(diff => diff._id === changeId);
+  const note = difference.notes.find(note => note._id === noteId);
   note.isEditing = true;
   note.newNote = note.note;
 };
 
-const saveNotePrompt = async (id, noteIndex, reversed) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  const note = reversed ? difference.notes[difference.notes.length - 1 - noteIndex] : difference.notes[noteIndex];
-  if (note.newNote === note.note) {
-    note.isEditing = false;
+const isValidObjectId = (id) => {
+  return ObjectID.isValid(id);
+};
+
+const saveNotePrompt = async (changeId, noteId) => {
+  if (!isValidObjectId(changeId) || !isValidObjectId(noteId)) {
+    console.error('Invalid ObjectId:', { changeId, noteId });
     return;
   }
+
+  const difference = differences.value.find(diff => diff._id === changeId);
+  const note = difference.notes.find(note => note._id === noteId);
+  if (!note.newNote) return;
   try {
-    await axios.post('/api/edit-note', { id, noteIndex: reversed ? difference.notes.length - 1 - noteIndex : noteIndex, updatedNote: note.newNote }, {
+    console.log("Attempting to save note:", { changeId, noteId, newNote: note.newNote });
+    const response = await axios.post('/api/edit-note', { 
+      changeId, 
+      noteId, 
+      updatedNote: note.newNote 
+    }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
+
     note.note = note.newNote;
-    note.timestamp = new Date().toISOString();
     note.isEditing = false;
+    note.timestamp = new Date().toISOString();
+    console.log("Note updated successfully:", { changeId, noteId });
   } catch (error) {
-    console.error('Error saving note:', error);
+    console.error('Error updating note:', error);
   }
 };
 
-const deleteNotePrompt = async (id, noteIndex, reversed) => {
+const cancelEditMode = (changeId, noteId) => {
+  const difference = differences.value.find(diff => diff._id === changeId);
+  const note = difference.notes.find(note => note._id === noteId);
+  note.isEditing = false;
+  note.newNote = note.note;
+};
+
+const deleteNotePrompt = async (changeId, noteId) => {
   try {
-    await axios.post('/api/delete-note', { id, noteIndex: reversed ? differences.value.find(diff => diff._id === id).notes.length - 1 - noteIndex : noteIndex }, {
+    await axios.post('/api/delete-note', { 
+      changeId, 
+      noteId 
+    }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    const difference = differences.value.find(diff => diff._id === id);
-    difference.notes.splice(reversed ? difference.notes.length - 1 - noteIndex : noteIndex, 1);
+
+    const difference = differences.value.find(diff => diff._id === changeId);
+    difference.notes = difference.notes.filter(note => note._id !== noteId);
   } catch (error) {
     console.error('Error deleting note:', error);
   }

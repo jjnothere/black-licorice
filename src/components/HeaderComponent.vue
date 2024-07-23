@@ -29,6 +29,7 @@ const { isLoggedIn, setAuth, checkAuthStatus } = useAuth();
 const router = useRouter();
 
 const logout = () => {
+  localStorage.removeItem('token');
   setAuth(false);
   router.push('/auth');
 };

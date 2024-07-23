@@ -23,6 +23,7 @@ export function useAuth() {
         user.email = response.data.email;
         user.accountId = response.data.accountId;
       } catch {
+        localStorage.removeItem('token');
         isLoggedIn.value = false;
         user.email = '';
         user.accountId = '';

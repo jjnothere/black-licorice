@@ -4,7 +4,10 @@ import BudgetTracker from '@/views/BudgetPacing.vue';
 import HistoryChecker from '@/components/HistoryChecker.vue';
 import Auth from '@/views/Auth.vue';
 import AuthLayout from '@/components/AuthLayout.vue';
-import Profile from '@/views/Profile.vue'; // Import the new Profile component
+import Profile from '@/views/Profile.vue';
+import { useAuth } from '@/composables/auth';
+
+const { isLoggedIn, setAuth } = useAuth();
 
 const routes = [
   {
@@ -40,7 +43,7 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true }, // Protect this route
+    meta: { requiresAuth: true },
   },
 ];
 
@@ -49,11 +52,24 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token');
   if (to.matched.some(record => record.meta.requiresAuth) && !token) {
+    setAuth(false);
     next('/auth');
   } else {
+    if (token && !isLoggedIn.value) {
+      try {
+        await axios.get('/api/user-profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAuth(true);
+      } catch {
+        localStorage.removeItem('token');
+        setAuth(false);
+        next('/auth');
+      }
+    }
     next();
   }
 });

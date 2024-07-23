@@ -7,10 +7,6 @@
           <label for="email">Email:</label>
           <input type="email" v-model="email" required />
         </div>
-        <div v-if="!isLogin" class="form-group">
-          <label for="account-id">Account ID:</label>
-          <input type="text" v-model="accountId" maxlength="9" required @input="validateAccountId" />
-        </div>
         <div class="form-group">
           <label for="password">Password:</label>
           <input type="password" v-model="password" required />
@@ -35,7 +31,7 @@ import { useAuth } from '@/composables/auth';
 
 const isLogin = ref(true);
 const email = ref('');
-const accountId = ref(''); // New accountId state
+const accountId = ref('512388408'); // Default Account ID
 const password = ref('');
 const rePassword = ref('');
 const errorMessage = ref('');
@@ -46,26 +42,12 @@ const toggleForm = () => {
   isLogin.value = !isLogin.value;
   errorMessage.value = ''; // Clear error message when toggling form
   email.value = ''; // Clear email input
-  accountId.value = ''; // Clear accountId input
   password.value = ''; // Clear password input
   rePassword.value = ''; // Clear rePassword input
 };
 
-const validateAccountId = () => {
-  if (!/^\d{9}$/.test(accountId.value)) {
-    errorMessage.value = 'Account ID must be a 9-digit number.';
-  } else {
-    errorMessage.value = '';
-  }
-};
-
 const handleSubmit = async () => {
   errorMessage.value = ''; // Clear error message before submission
-  
-  if (!isLogin.value && !/^\d{9}$/.test(accountId.value)) {
-    errorMessage.value = 'Account ID must be a 9-digit number.';
-    return;
-  }
 
   if (password.value.length < 6) {
     errorMessage.value = 'Password must be at least 6 characters long.';
