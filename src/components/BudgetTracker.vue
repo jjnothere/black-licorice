@@ -20,7 +20,7 @@
 import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import LineChart from './LineChart.vue';
 import PieChart from './PieChart.vue';
-import axios from 'axios';
+import api from '@/api';
 
 const props = defineProps({
   metrics: Array
@@ -111,7 +111,7 @@ onMounted(() => {
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
   try {
-    const response = await axios.get('/api/linkedin/ad-campaigns', {
+    const response = await api.get('/api/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     // Extract campaign ID and name from the response

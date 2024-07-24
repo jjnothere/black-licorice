@@ -1,5 +1,5 @@
 import { ref, reactive } from 'vue';
-import axios from 'axios';
+import api from '@/api';
 
 const isLoggedIn = ref(false);
 const user = reactive({
@@ -16,7 +16,7 @@ export function useAuth() {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await axios.get('/api/user-profile', {
+        const response = await api.get('/api/user-profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         isLoggedIn.value = true;

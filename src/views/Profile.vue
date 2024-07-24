@@ -27,7 +27,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/api';
 import { useAuth } from '@/composables/auth'; // Assuming you have a useAuth composable
 
 const { isLoggedIn, user, checkAuthStatus } = useAuth();
@@ -36,7 +36,7 @@ const accountIdError = ref('');
 
 const fetchUserProfile = async () => {
   try {
-    const response = await axios.get('/api/user-profile', {
+    const response = await api.get('/api/user-profile', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     user.email = response.data.email;
@@ -63,7 +63,7 @@ const updateAccountId = async () => {
 
   try {
     // Make an API call to update the account ID in the user's profile
-    await axios.post('/api/update-account-id', { accountId: accountId.value }, {
+    await api.post('/api/update-account-id', { accountId: accountId.value }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     user.accountId = accountId.value; // Update the reactive user object

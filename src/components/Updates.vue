@@ -19,7 +19,7 @@ export default {
   },
   async created() {
     try {
-      const response = await axios.get('/api/hello');
+      const response = await api.get('/api/hello');
       this.items = response.data.map(item => ({ ...item, newNote: '' })); // Initialize newNote for each item
     } catch (error) {
       console.error('Error fetching data:', error);

@@ -74,8 +74,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 import ObjectID from 'bson-objectid';
+import api from '@/api';
 
 const route = useRoute();
 
@@ -92,7 +92,7 @@ const campaignsMap = ref({});
 
 const fetchAllChanges = async () => {
   try {
-    const response = await axios.get('/api/get-all-changes', {
+    const response = await api.get('/api/get-all-changes', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     differences.value = response.data.reverse().map(change => {
@@ -108,7 +108,7 @@ const fetchAllChanges = async () => {
 
 const fetchCurrentCampaigns = async () => {
   try {
-    const response = await axios.get('/api/get-current-campaigns', {
+    const response = await api.get('/api/get-current-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     const campaigns = response.data?.elements || [];
@@ -125,7 +125,7 @@ const fetchCurrentCampaigns = async () => {
 
 const fetchLinkedInCampaigns = async () => {
   try {
-    const response = await axios.get('/api/linkedin/ad-campaigns', {
+    const response = await api.get('/api/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     return response.data.elements || [];
@@ -189,10 +189,10 @@ const checkForChanges = async () => {
   differences.value = [...uniqueDifferences, ...differences.value];
 
   try {
-    await axios.post('/api/save-campaigns', { campaigns: linkedInCampaigns }, {
+    await api.post('/api/save-campaigns', { campaigns: linkedInCampaigns }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    await axios.post('/api/save-changes', { changes: uniqueDifferences }, {
+    await api.post('/api/save-changes', { changes: uniqueDifferences }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
   } catch (error) {
@@ -216,7 +216,7 @@ const saveNewNotePrompt = async (changeId) => {
   if (!difference.newNote) return;
 
   try {
-    const response = await axios.post('/api/add-note', {
+    const response = await api.post('/api/add-note', {
       changeId, 
       newNote: difference.newNote 
     }, {
@@ -253,7 +253,7 @@ const saveNotePrompt = async (changeId, noteId) => {
   if (!note.newNote) return;
   try {
     console.log("Attempting to save note:", { changeId, noteId, newNote: note.newNote });
-    const response = await axios.post('/api/edit-note', { 
+    const response = await api.post('/api/edit-note', { 
       changeId, 
       noteId, 
       updatedNote: note.newNote 
@@ -279,7 +279,7 @@ const cancelEditMode = (changeId, noteId) => {
 
 const deleteNotePrompt = async (changeId, noteId) => {
   try {
-    await axios.post('/api/delete-note', { 
+    await api.post('/api/delete-note', { 
       changeId, 
       noteId 
     }, {

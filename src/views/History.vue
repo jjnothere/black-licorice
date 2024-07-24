@@ -1,13 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import HistoryChecker from '@/components/HistoryChecker.vue'; // Import the new component
-import axios from 'axios';
+import api from '@/api';
 
 const items = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/hello');
+    const response = await api.get('/api/hello');
     items.value = response.data;
   } catch (error) {
     console.error('Error fetching data:', error);

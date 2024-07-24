@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/api';
 import HistoryChecker from '@/components/HistoryChecker.vue';
 
 export default {
@@ -54,7 +54,7 @@ export default {
       this.error = '';
 
       try {
-        const response = await axios.get(apiUrl, {
+        const response = await api.get(apiUrl, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         this.campaigns = response.data.elements || []; // Adjust according to the actual structure of your API response

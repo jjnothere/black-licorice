@@ -25,7 +25,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import api from '@/api';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/auth';
 
@@ -65,7 +65,7 @@ const handleSubmit = async () => {
       ? { email: email.value, password: password.value } 
       : { email: email.value, password: password.value, rePassword: rePassword.value, accountId: accountId.value }; // Include accountId in signup
 
-    const response = await axios.post(url, data);
+    const response = await api.post(url, data);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       setAuth(true); // Update auth state

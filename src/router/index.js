@@ -6,6 +6,7 @@ import Auth from '@/views/Auth.vue';
 import AuthLayout from '@/components/AuthLayout.vue';
 import Profile from '@/views/Profile.vue';
 import { useAuth } from '@/composables/auth';
+import api from '@/api';
 
 const { isLoggedIn, setAuth } = useAuth();
 
@@ -60,7 +61,7 @@ router.beforeEach(async (to, from, next) => {
   } else {
     if (token && !isLoggedIn.value) {
       try {
-        await axios.get('/api/user-profile', {
+        await api.get('/api/user-profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAuth(true);

@@ -37,7 +37,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import axios from 'axios';
+import api from '@/api';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
 import { useAuth } from '@/composables/auth';
@@ -87,7 +87,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params.campaigns = `List(${campaignList})`;
     }
 
-    const response = await axios.get('/api/linkedin', {
+    const response = await api.get('/api/linkedin', {
       params,
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });

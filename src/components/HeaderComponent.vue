@@ -21,7 +21,7 @@
 <script setup>
 import { ref, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import api from '@/api';
 import { useAuth } from '@/composables/auth';
 
 const adAccountName = ref('Account Name');
@@ -36,7 +36,7 @@ const logout = () => {
 
 const fetchAdAccountName = async () => {
   try {
-    const response = await axios.get('/api/ad-account-name', {
+    const response = await api.get('/api/ad-account-name', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     adAccountName.value = response.data.name;
