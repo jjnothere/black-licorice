@@ -36,7 +36,7 @@ const accountIdError = ref('');
 
 const fetchUserProfile = async () => {
   try {
-    const response = await api.get('/api/user-profile', {
+    const response = await api.get('/user-profile', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     user.email = response.data.email;
@@ -63,7 +63,7 @@ const updateAccountId = async () => {
 
   try {
     // Make an API call to update the account ID in the user's profile
-    await api.post('/api/update-account-id', { accountId: accountId.value }, {
+    await api.post('/update-account-id', { accountId: accountId.value }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     user.accountId = accountId.value; // Update the reactive user object

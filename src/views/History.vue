@@ -7,7 +7,7 @@ const items = ref([]);
 
 onMounted(async () => {
   try {
-    const response = await api.get('/api/hello');
+    const response = await api.get('/hello');
     items.value = response.data;
   } catch (error) {
     console.error('Error fetching data:', error);

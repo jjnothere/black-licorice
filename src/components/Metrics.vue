@@ -87,7 +87,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params.campaigns = `List(${campaignList})`;
     }
 
-    const response = await api.get('/api/linkedin', {
+    const response = await api.get('/linkedin', {
       params,
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });

@@ -59,7 +59,7 @@ const selectedCampaigns = ref([]);
 
 const fetchCampaigns = async () => {
   try {
-    const response = await api.get('/api/linkedin/ad-campaigns', {
+    const response = await api.get('/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     campaigns.value = response.data.elements.map(campaign => ({
@@ -73,7 +73,7 @@ const fetchCampaigns = async () => {
 
 // const fetchCampaignGroups = async () => {
 //   try {
-//     const response = await api.get('/api/linkedin/ad-campaign-groups', {
+//     const response = await api.get('/linkedin/ad-campaign-groups', {
 //       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
 //     });
 //     campaignGroups.value = response.data.elements.map(group => ({

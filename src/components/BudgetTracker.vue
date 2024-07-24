@@ -111,7 +111,7 @@ onMounted(() => {
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
   try {
-    const response = await api.get('/api/linkedin/ad-campaigns', {
+    const response = await api.get('/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     // Extract campaign ID and name from the response

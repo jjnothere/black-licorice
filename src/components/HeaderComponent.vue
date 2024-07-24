@@ -36,7 +36,7 @@ const logout = () => {
 
 const fetchAdAccountName = async () => {
   try {
-    const response = await api.get('/api/ad-account-name', {
+    const response = await api.get('/ad-account-name', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     adAccountName.value = response.data.name;

@@ -29,6 +29,8 @@ import api from '@/api';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/auth';
 
+console.log("🐒 ~ API Instance in Auth.vue:", api);
+
 const isLogin = ref(true);
 const email = ref('');
 const accountId = ref('512388408'); // Default Account ID
@@ -60,7 +62,7 @@ const handleSubmit = async () => {
   }
 
   try {
-    const url = isLogin.value ? '/api/login' : '/api/signup';
+    const url = isLogin.value ? '/login' : '/signup';
     const data = isLogin.value 
       ? { email: email.value, password: password.value } 
       : { email: email.value, password: password.value, rePassword: rePassword.value, accountId: accountId.value }; // Include accountId in signup
@@ -75,6 +77,15 @@ const handleSubmit = async () => {
     errorMessage.value = error.response ? error.response.data.message : error.message;
   }
 };
+
+// Make a test request
+api.get('/test')
+  .then(response => {
+    console.log("🐒 ~ Test Request Response:", response.data);
+  })
+  .catch(error => {
+    console.error("🐒 ~ Test Request Error:", error);
+  });
 </script>
 
 <style scoped>

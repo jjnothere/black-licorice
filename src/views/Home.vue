@@ -49,7 +49,7 @@ export default {
   },
   methods: {
     async executeTask() {
-      const apiUrl = '/api/linkedin/ad-campaigns'; // Ensure the URL is correct
+      const apiUrl = '/linkedin/ad-campaigns'; // Ensure the URL is correct
       this.loading = true;
       this.error = '';
 
