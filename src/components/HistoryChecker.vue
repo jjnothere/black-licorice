@@ -5,7 +5,7 @@
       <h3>Change History Log Journal</h3>
     </router-link>
     <br />
-    <button v-if="!isHomePage" @click="checkForChanges">Check for Changes</button>
+    <!-- <button v-if="!isHomePage" @click="checkForChanges">Check for Changes</button> -->
     <table v-if="filteredDifferences.length > 0">
       <thead>
         <tr>
@@ -22,12 +22,8 @@
           <td v-html="difference.changes"></td>
           <td>
             <div v-if="difference.addingNote" class="note-input">
-              <input
-                v-model="difference.newNote"
-                placeholder="Add a new note"
-                @keyup.enter="saveNewNotePrompt(difference._id)"
-                @keyup.esc="cancelAddNotePrompt(difference._id)"
-              />
+              <input v-model="difference.newNote" placeholder="Add a new note"
+                @keyup.enter="saveNewNotePrompt(difference._id)" @keyup.esc="cancelAddNotePrompt(difference._id)" />
               <button class="icon-button" @click="saveNewNotePrompt(difference._id)">
                 <i class="fas fa-save"></i>
               </button>
@@ -41,13 +37,10 @@
             <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
               <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
               <span v-if="!note.isEditing">{{ note.note }}</span>
-              <input
-                v-if="note.isEditing"
-                v-model="note.newNote"
+              <input v-if="note.isEditing" v-model="note.newNote"
                 @keyup.enter="saveNotePrompt(difference._id, note._id)"
                 @keyup.esc="cancelEditMode(difference._id, note._id)"
-                @blur="saveNotePrompt(difference._id, note._id)"
-              />
+                @blur="saveNotePrompt(difference._id, note._id)" />
               <div v-if="!note.isEditing" class="icon-buttons">
                 <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
                   <i class="fas fa-edit"></i>
@@ -178,10 +171,10 @@ const checkForChanges = async () => {
   });
 
   // Add new differences to the state only if they are not already present
-  const uniqueDifferences = newDifferences.filter(newDiff => 
-    !differences.value.some(existingDiff => 
-      existingDiff.campaign === newDiff.campaign && 
-      existingDiff.date === newDiff.date && 
+  const uniqueDifferences = newDifferences.filter(newDiff =>
+    !differences.value.some(existingDiff =>
+      existingDiff.campaign === newDiff.campaign &&
+      existingDiff.date === newDiff.date &&
       existingDiff.changes === newDiff.changes
     )
   );
@@ -217,8 +210,8 @@ const saveNewNotePrompt = async (changeId) => {
 
   try {
     const response = await api.post('/add-note', {
-      changeId, 
-      newNote: difference.newNote 
+      changeId,
+      newNote: difference.newNote
     }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
@@ -253,10 +246,10 @@ const saveNotePrompt = async (changeId, noteId) => {
   if (!note.newNote) return;
   try {
     console.log("Attempting to save note:", { changeId, noteId, newNote: note.newNote });
-    const response = await api.post('/edit-note', { 
-      changeId, 
-      noteId, 
-      updatedNote: note.newNote 
+    const response = await api.post('/edit-note', {
+      changeId,
+      noteId,
+      updatedNote: note.newNote
     }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
@@ -279,9 +272,9 @@ const cancelEditMode = (changeId, noteId) => {
 
 const deleteNotePrompt = async (changeId, noteId) => {
   try {
-    await api.post('/delete-note', { 
-      changeId, 
-      noteId 
+    await api.post('/delete-note', {
+      changeId,
+      noteId
     }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
@@ -353,7 +346,8 @@ table {
   border-radius: 8px;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;
