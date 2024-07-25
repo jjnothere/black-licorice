@@ -25,7 +25,10 @@ import Metrics from '@/components/Metrics.vue';
 
 const selectedCampaigns = ref([]);
 const metrics = ref([]);
-const dateRange = ref({ start: new Date(), end: new Date() });
+const dateRange = ref({
+  start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  end: new Date()
+});
 
 const route = useRoute();
 
@@ -35,21 +38,19 @@ const updateSelectedCampaigns = (newSelectedCampaigns) => {
 
 const updateMetrics = (newMetrics) => {
   metrics.value = newMetrics.metrics;
-  dateRange.value = { start: newMetrics.selectedStartDate, end: newMetrics.selectedEndDate };
+  dateRange.value = {
+    start: newMetrics.selectedStartDate,
+    end: newMetrics.selectedEndDate
+  };
 };
 
-const showFilterFunction = computed(() => {
-  return route.path !== '/';
-});
-
+const showFilterFunction = computed(() => route.path !== '/');
 const isAuthRoute = computed(() => route.path === '/auth');
 const isProfilePage = computed(() => route.path === '/profile');
 
-watch(route, () => {
-  // To force a re-render when the route changes
-  if (isAuthRoute.value) {
+watch(route, (newRoute) => {
+  if (newRoute.path === '/') {
     selectedCampaigns.value = [];
-    metrics.value = [];
   }
 });
 </script>
@@ -81,7 +82,7 @@ watch(route, () => {
   gap: 0;
 }
 
-.main-content > * {
+.main-content>* {
   margin-bottom: 10px;
 }
 </style>

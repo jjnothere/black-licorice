@@ -2,7 +2,9 @@
   <div class="layout">
     <div class="filter-function">
       <div class="filter-header">
-        <strong><h3>Filters:</h3></strong>
+        <strong>
+          <h3>Filters:</h3>
+        </strong>
       </div>
       <div class="filter-content">
         <div class="filters">
@@ -21,7 +23,7 @@
               <label>{{ campaign.name }}</label>
             </div>
           </div>
-          
+
           <!-- <div class="filter-group">
             <p><strong>Campaign Groups</strong></p>
             <div v-for="group in campaignGroups" :key="group.id">
@@ -71,19 +73,19 @@ const fetchCampaigns = async () => {
   }
 };
 
-// const fetchCampaignGroups = async () => {
-//   try {
-//     const response = await api.get('/linkedin/ad-campaign-groups', {
-//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-//     });
-//     campaignGroups.value = response.data.elements.map(group => ({
-//       id: group.id,
-//       name: group.name
-//     }));
-//   } catch (error) {
-//     console.error('Error fetching campaign groups:', error);
-//   }
-// };
+const fetchCampaignGroups = async () => {
+  try {
+    const response = await api.get('/linkedin/ad-campaign-groups', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    campaignGroups.value = response.data.elements.map(group => ({
+      id: group.id,
+      name: group.name
+    }));
+  } catch (error) {
+    console.error('Error fetching campaign groups:', error);
+  }
+};
 
 onMounted(() => {
   fetchCampaigns();
