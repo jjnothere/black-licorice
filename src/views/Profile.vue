@@ -5,23 +5,16 @@
       <p><strong>Email:</strong> {{ user.email }}</p>
       <p><strong>Ad Account ID:</strong> {{ user.accountId }}</p>
     </div>
-    <form @submit.prevent="updateAccountId">
+    <!--<form @submit.prevent="updateAccountId">
       <div class="form-group">
         <label for="account-id">Ad Account ID:</label>
-        <input
-          type="text"
-          id="account-id"
-          v-model="accountId"
-          maxlength="9"
-          required
-          @input="validateAccountId"
-        />
+        <input type="text" id="account-id" v-model="accountId" maxlength="9" required @input="validateAccountId" />
         <div class="error-container">
           <p v-if="accountIdError" class="error-message">{{ accountIdError }}</p>
         </div>
       </div>
       <button type="submit">Update Account ID</button>
-    </form>
+    </form>-->
   </div>
 </template>
 
@@ -116,14 +109,17 @@ form input {
 }
 
 .error-container {
-  height: 1.2em; /* Fixed height for the error message container */
-  margin-top: 5px; /* Space between input and error message */
+  height: 1.2em;
+  /* Fixed height for the error message container */
+  margin-top: 5px;
+  /* Space between input and error message */
 }
 
 .error-message {
   color: red;
   font-size: 0.9em;
-  margin: 0; /* Remove default margin */
+  margin: 0;
+  /* Remove default margin */
 }
 
 button {
