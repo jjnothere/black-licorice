@@ -3,7 +3,7 @@
     <h4>Details</h4>
     <div class="budget-input">
       <label for="budget">Budget: $</label>
-      <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" />
+      <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" @change="saveBudget" />
     </div>
     <div class="charts-container">
       <div class="line-chart-container">
@@ -104,6 +104,7 @@ watch(() => props.metrics, updateChart);
 
 onMounted(() => {
   fetchCampaignNames();
+  fetchBudget(); // Fetch the budget from the database when the component is mounted
   updateChart();
   updatePieChart();
 });
@@ -122,6 +123,19 @@ const fetchCampaignNames = async () => {
     updatePieChart(); // Ensure the pie chart is updated with the new campaign names
   } catch (error) {
     console.error('Error fetching campaign names:', error);
+  }
+};
+
+// Fetch the budget from the server
+const fetchBudget = async () => {
+  try {
+    const response = await api.get('/get-budget', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    budget.value = response.data.budget;
+    formattedBudget.value = budget.value.toFixed(2);
+  } catch (error) {
+    console.error('Error fetching budget:', error);
   }
 };
 
@@ -155,10 +169,10 @@ const pieChartOptions = ref({
     },
     tooltip: {
       callbacks: {
-        title: function(context) {
+        title: function (context) {
           return context[0].label.split(' ($')[0]; // Extract campaign name
         },
-        label: function(context) {
+        label: function (context) {
           const value = parseFloat(context.raw).toFixed(2); // Format value to 2 decimal places
           const percentage = context.label.split(' - ')[1];
           return `$${value} (${percentage}`;
@@ -216,6 +230,17 @@ const validateBudgetInput = (event) => {
   formattedBudget.value = value;
   budget.value = parseFloat(value) || 0;
 };
+
+const saveBudget = async () => {
+  try {
+    const response = await api.post('/save-budget', { budget: budget.value }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    console.log('Budget saved successfully', response.data);
+  } catch (error) {
+    console.error('Error saving budget:', error);
+  }
+};
 </script>
 
 <style scoped>
@@ -258,7 +283,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ccc;
   padding: 8px;
   text-align: left;

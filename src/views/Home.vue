@@ -37,18 +37,17 @@ export default {
   },
   data() {
     return {
-      interval: 24 * 60 * 60 * 1000, // 24 hours
       campaigns: [],
       localSelectedCampaigns: [], // Local property to handle the selected campaigns
       loading: false,
       error: ''
     };
   },
-  mounted() {
-    this.scheduleTask();
+  async mounted() {
+    await this.fetchCampaigns();
   },
   methods: {
-    async executeTask() {
+    async fetchCampaigns() {
       const apiUrl = '/linkedin/ad-campaigns'; // Ensure the URL is correct
       this.loading = true;
       this.error = '';
@@ -65,20 +64,14 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    scheduleTask() {
-      // Execute the task immediately upon mounting
-      this.executeTask();
-
-      // Schedule the task to run at the defined interval
-      setInterval(this.executeTask, this.interval);
     }
   }
 };
 </script>
 
 <style scoped>
-.loading, .error {
+.loading,
+.error {
   margin: 20px 0;
 }
 
