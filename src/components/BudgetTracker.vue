@@ -236,7 +236,6 @@ const saveBudget = async () => {
     const response = await api.post('/save-budget', { budget: budget.value }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    console.log('Budget saved successfully', response.data);
   } catch (error) {
     console.error('Error saving budget:', error);
   }

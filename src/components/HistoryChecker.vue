@@ -80,6 +80,62 @@ const props = defineProps({
   dateRange: Object
 });
 
+const keyMapping = {
+  account: 'Account',
+  associatedEntity: 'Associated Entity',
+  audienceExpansionEnabled: 'Audience Expansion',
+  campaignGroup: 'Campaign Group',
+  costType: 'Cost Type',
+  creativeSelection: 'Creative Selection',
+  dailyBudget: 'Daily Budget',
+  format: 'Format',
+  id: 'ID',
+  locale: 'Locale',
+  name: 'Name',
+  objectiveType: 'Objective Type',
+  offsiteDeliveryEnabled: 'Offsite Delivery',
+  offsitePreferences: 'Offsite Preferences',
+  optimizationTargetType: 'Optimization Target Type',
+  pacingStrategy: 'Pacing Strategy',
+  runSchedule: 'Run Schedule',
+  servingStatuses: 'Serving Statuses',
+  status: 'Status',
+  storyDeliveryEnabled: 'Story Delivery',
+  targetingCriteria: 'Targeting Criteria',
+  test: 'Test',
+  type: 'Campaign Type',
+  unitCost: 'Unit Cost',
+  version: 'Version'
+};
+
+const colorMapping = {
+  //   'Account': 'red',
+  //   'Associated Entity': 'blue',
+  //   'Audience Expansion': 'green',
+  //   'Campaign Group': 'purple',
+  //   'Cost Type': 'orange',
+  //   'Creative Selection': 'pink',
+  //   'Daily Budget': 'cyan',
+  //   'Format': 'yellow',
+  //   'ID': 'magenta',
+  //   'Locale': 'brown',
+  //   'Name': 'lime',
+  //   'Objective Type': 'navy',
+  //   'Offsite Delivery': 'olive',
+  //   'Offsite Preferences': 'teal',
+  //   'Optimization Target Type': 'maroon',
+  //   'Pacing Strategy': 'gray',
+  //   'Run Schedule': 'black',
+  //   'Serving Statuses': 'darkblue',
+  //   'Status': 'darkgreen',
+  //   'Story Delivery': 'darkred',
+  //   'Targeting Criteria': 'darkorange',
+  //   'Test': 'darkcyan',
+  //   'Type': 'darkmagenta',
+  //   'Unit Cost': 'darkslateblue',
+  //   'Version': 'darkslategray'
+};
+
 const differences = ref([]);
 const campaignsMap = ref({});
 
@@ -133,17 +189,15 @@ const addNewChange = (newChange) => {
   differences.value.push(newChange);
 };
 
-const findDifferences = (obj1, obj2, prefix = '') => {
+const findDifferences = (obj1, obj2) => {
   const diffs = {};
   for (const key in obj1) {
-    if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
-      const nestedDiffs = findDifferences(obj1[key], obj2[key], `${prefix}${key}.`);
-      Object.assign(diffs, nestedDiffs);
-    } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
-      diffs[`${prefix}${key}`] = { old: obj1[key], new: obj2[key] };
+    if (key === 'changeAuditStamps') continue; // Exclude changeAuditStamps
+    if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+      diffs[key] = true; // Only keep the key
     }
   }
-  return diffs;
+  return Object.keys(diffs).map(key => keyMapping[key] || key);
 };
 
 const checkForChanges = async () => {
@@ -155,10 +209,13 @@ const checkForChanges = async () => {
     const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
     if (campaign1) {
       const changes = findDifferences(campaign1, campaign2);
-      if (Object.keys(changes).length > 0) {
-        const changesString = Object.entries(changes)
-          .map(([key, value]) => `${key}: <span class="old-value">${JSON.stringify(value.old)}</span> => <span class="new-value">${JSON.stringify(value.new)}</span>`)
-          .join('<br>');
+      console.log("🐒 ~ changes:", changes)
+      if (changes.length > 0) {
+        const changesString = changes.map(change => {
+          const color = colorMapping[change] || 'black'; // Default to black if color not found
+          console.log("🐒 ~ color:", color)
+          return `<span class="change-key" style="color:${color};">${change}</span>`;
+        }).join('<br>');
         newDifferences.push({
           campaign: campaign2.name,
           date: new Date().toLocaleDateString(),
@@ -172,7 +229,7 @@ const checkForChanges = async () => {
       addNewChange({
         campaign: campaign2.name,
         date: new Date().toLocaleDateString(),
-        changes: `New campaign added: <span class="new-campaign">${campaign2.name}</span>`,
+        changes: 'New campaign added',
         notes: campaign2.notes || [],
         addingNote: false,
         _id: campaign2._id // Include _id if available
@@ -180,7 +237,6 @@ const checkForChanges = async () => {
     }
   });
 
-  // Add new differences to the state only if they are not already present
   const uniqueDifferences = newDifferences.filter(newDiff =>
     !differences.value.some(existingDiff =>
       existingDiff.campaign === newDiff.campaign &&
@@ -255,7 +311,6 @@ const saveNotePrompt = async (changeId, noteId) => {
   const note = difference.notes.find(note => note._id === noteId);
   if (!note.newNote) return;
   try {
-    console.log("Attempting to save note:", { changeId, noteId, newNote: note.newNote });
     const response = await api.post('/edit-note', {
       changeId,
       noteId,
@@ -267,7 +322,6 @@ const saveNotePrompt = async (changeId, noteId) => {
     note.note = note.newNote;
     note.isEditing = false;
     note.timestamp = new Date().toISOString();
-    console.log("Note updated successfully:", { changeId, noteId });
   } catch (error) {
     console.error('Error updating note:', error);
   }
@@ -369,6 +423,11 @@ th {
 
 td {
   background-color: #fff;
+}
+
+.change-key {
+  display: block;
+  /* Ensure each change key is on a new line */
 }
 
 .icon-buttons {
