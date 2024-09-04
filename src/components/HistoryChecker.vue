@@ -209,11 +209,9 @@ const checkForChanges = async () => {
     const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
     if (campaign1) {
       const changes = findDifferences(campaign1, campaign2);
-      console.log("🐒 ~ changes:", changes)
       if (changes.length > 0) {
         const changesString = changes.map(change => {
           const color = colorMapping[change] || 'black'; // Default to black if color not found
-          console.log("🐒 ~ color:", color)
           return `<span class="change-key" style="color:${color};">${change}</span>`;
         }).join('<br>');
         newDifferences.push({
