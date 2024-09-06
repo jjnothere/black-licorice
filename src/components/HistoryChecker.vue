@@ -9,7 +9,7 @@
 
     <!-- Line chart section -->
     <div v-if="chartDataReady">
-      <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
+      <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
     </div>
 
     <!-- Table of differences -->
@@ -23,7 +23,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="difference in filteredDifferences" :key="difference._id">
+        <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
           <td>{{ difference.campaign }}</td>
           <td>{{ difference.date }}</td>
           <td v-html="difference.changes"></td>
@@ -197,6 +197,22 @@ const checkForChanges = async () => {
   }
 };
 
+const scrollToChange = (dateLabel) => {
+  console.log("🐒 ~ dateLabel:", dateLabel); // Log to verify the date label
+  const matchingIndex = filteredDifferences.value.findIndex(diff => {
+    // Ensure both dates are compared in the same format
+    return new Date(diff.date).toLocaleDateString() === new Date(dateLabel).toLocaleDateString();
+  });
+
+  if (matchingIndex !== -1) {
+    const changeRow = document.getElementById(`changeRow-${matchingIndex}`);
+    console.log("🐒 Scrolling to:", changeRow); // Log the row element
+    if (changeRow) {
+      changeRow.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+};
+
 
 
 onMounted(async () => {
@@ -335,9 +351,6 @@ const getAnalyticsData = () => {
             spend: 0 // Initialize spend to 0
           };
         }
-
-        // Logging spend to check if it's present
-        console.log(`🐒 Spend for item ${itemId}:`, item.spend);
 
         // Ensure spend is a number, remove the '$' symbol if present
         const spendValue = parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0; // Strip $ and parse
