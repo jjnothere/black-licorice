@@ -81,7 +81,7 @@ import LineChart from './LineChart.vue'; // Importing the line chart component
 
 const route = useRoute();
 
-const isHomePage = computed(() => route.path === '/');
+// const isHomePage = computed(() => route.path === '/');
 const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
@@ -94,6 +94,120 @@ const props = defineProps({
 const chartData = ref({});
 const chartOptions = ref({});
 const chartDataReady = ref(false);
+
+const fetchCurrentCampaigns = async () => {
+  try {
+    const response = await api.get('/get-current-campaigns', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    const campaigns = response.data?.elements || [];
+    campaignsMap.value = campaigns.reduce((map, campaign) => {
+      map[campaign.id] = campaign.name;
+      return map;
+    }, {});
+    return campaigns;
+  } catch (error) {
+    console.error('Error fetching current campaigns from database:', error);
+    return [];
+  }
+};
+
+const fetchLinkedInCampaigns = async () => {
+  try {
+    const response = await api.get('/linkedin/ad-campaigns', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    return response.data.elements || [];
+  } catch (error) {
+    console.error('Error fetching LinkedIn campaigns:', error);
+    return [];
+  }
+};
+
+const addNewChange = (newChange) => {
+  newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
+  differences.value.push(newChange);
+};
+
+const findDifferences = (obj1, obj2) => {
+  const diffs = {};
+  for (const key in obj1) {
+    if (key === 'changeAuditStamps') continue; // Exclude changeAuditStamps
+    if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+      diffs[key] = true; // Only keep the key
+    }
+  }
+  return Object.keys(diffs).map(key => keyMapping[key] || key);
+};
+
+const checkForChanges = async () => {
+  const currentCampaigns = await fetchCurrentCampaigns();
+  const linkedInCampaigns = await fetchLinkedInCampaigns();
+
+  const newDifferences = [];
+  linkedInCampaigns.forEach((campaign2) => {
+    const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
+    if (campaign1) {
+      const changes = findDifferences(campaign1, campaign2);
+      if (changes.length > 0) {
+        const changesString = changes.map(change => {
+          const color = colorMapping[change] || 'black'; // Default to black if color not found
+          return `<span class="change-key" style="color:${color};"><b>${change}<b/></span>`;
+        }).join('<br>');
+        newDifferences.push({
+          campaign: campaign2.name,
+          date: new Date().toLocaleDateString(),
+          changes: changesString,
+          notes: campaign2.notes || [],
+          addingNote: false,
+          _id: campaign1._id // Ensure we have the correct MongoDB ID
+        });
+      }
+    } else {
+      addNewChange({
+        campaign: campaign2.name,
+        date: new Date().toLocaleDateString(),
+        changes: 'New campaign added',
+        notes: campaign2.notes || [],
+        addingNote: false,
+        _id: campaign2._id // Include _id if available
+      });
+    }
+  });
+
+  const uniqueDifferences = newDifferences.filter(newDiff =>
+    !differences.value.some(existingDiff =>
+      existingDiff.campaign === newDiff.campaign &&
+      existingDiff.date === newDiff.date &&
+      existingDiff.changes === newDiff.changes
+    )
+  );
+
+  differences.value = [...uniqueDifferences, ...differences.value];
+
+  try {
+    await api.post('/save-campaigns', { campaigns: linkedInCampaigns }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    await api.post('/save-changes', { changes: uniqueDifferences }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+  } catch (error) {
+    console.error('Error saving campaigns and changes:', error);
+  }
+};
+
+
+
+onMounted(async () => {
+  await fetchAllChanges();
+  await checkForChanges();
+});
+
+watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
+  await fetchAllChanges();
+  await checkForChanges();
+});
 
 // Differences and campaigns
 const differences = ref([]);
