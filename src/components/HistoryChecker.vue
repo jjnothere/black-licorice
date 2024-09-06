@@ -6,6 +6,13 @@
     </router-link>
     <br />
     <!-- <button v-if="!isHomePage" @click="checkForChanges">Check for Changes</button> -->
+
+    <!-- Line chart section -->
+    <div v-if="chartDataReady">
+      <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
+    </div>
+
+    <!-- Table of differences -->
     <table v-if="filteredDifferences.length > 0">
       <thead>
         <tr>
@@ -58,6 +65,7 @@
         </tr>
       </tbody>
     </table>
+
     <div v-else>
       No changes found for the selected filters.
     </div>
@@ -69,6 +77,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
+import LineChart from './LineChart.vue'; // Importing the line chart component
 
 const route = useRoute();
 
@@ -77,9 +86,49 @@ const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
   selectedCampaigns: Array,
-  dateRange: Object
+  dateRange: Object,
+  metrics: Array // Adding metrics prop for chart data
 });
 
+// Chart data and state variables
+const chartData = ref({});
+const chartOptions = ref({});
+const chartDataReady = ref(false);
+
+// Differences and campaigns
+const differences = ref([]);
+const campaignsMap = ref({});
+
+// Color mappings for displaying changes
+const colorMapping = {
+  'Account': '#FF5733',            // Bright Red
+  'Associated Entity': '#33C3FF',  // Light Blue
+  'Audience Expansion': '#28A745', // Green
+  'Campaign Group': '#AF7AC5',     // Purple
+  'Cost Type': '#FFB533',          // Orange
+  'Creative Selection': '#FF69B4', // Pink
+  'Daily Budget': '#17A2B8',       // Cyan
+  'Format': '#FFD700',             // Gold/Yellow
+  'ID': '#FF33C9',                 // Magenta
+  'Locale': '#8B4513',             // Saddle Brown
+  'Name': '#32CD32',               // Lime Green
+  'Objective Type': '#000080',     // Navy Blue
+  'Offsite Delivery': '#808000',   // Olive Green
+  'Offsite Preferences': '#20B2AA',// Light Sea Green
+  'Optimization Target Type': '#800000', // Maroon
+  'Pacing Strategy': '#FF4500',    // Orange Red
+  'Run Schedule': '#4682B4',       // Steel Blue
+  'Serving Statuses': '#1E90FF',   // Dodger Blue
+  'Status': '#228B22',             // Forest Green
+  'Story Delivery': '#DC143C',     // Crimson Red
+  'Targeting Criteria': '#FF8C00', // Dark Orange
+  'Test': '#00CED1',               // Dark Turquoise
+  'Type': '#9932CC',               // Dark Orchid
+  'Unit Cost': '#DAA520',          // Goldenrod
+  'Version': '#FF6347'             // Tomato
+};
+
+// Key mappings for differences
 const keyMapping = {
   account: 'Account',
   associatedEntity: 'Associated Entity',
@@ -108,37 +157,7 @@ const keyMapping = {
   version: 'Version'
 };
 
-const colorMapping = {
-  //   'Account': 'red',
-  //   'Associated Entity': 'blue',
-  //   'Audience Expansion': 'green',
-  //   'Campaign Group': 'purple',
-  //   'Cost Type': 'orange',
-  //   'Creative Selection': 'pink',
-  //   'Daily Budget': 'cyan',
-  //   'Format': 'yellow',
-  //   'ID': 'magenta',
-  //   'Locale': 'brown',
-  //   'Name': 'lime',
-  //   'Objective Type': 'navy',
-  //   'Offsite Delivery': 'olive',
-  //   'Offsite Preferences': 'teal',
-  //   'Optimization Target Type': 'maroon',
-  //   'Pacing Strategy': 'gray',
-  //   'Run Schedule': 'black',
-  //   'Serving Statuses': 'darkblue',
-  //   'Status': 'darkgreen',
-  //   'Story Delivery': 'darkred',
-  //   'Targeting Criteria': 'darkorange',
-  //   'Test': 'darkcyan',
-  //   'Type': 'darkmagenta',
-  //   'Unit Cost': 'darkslateblue',
-  //   'Version': 'darkslategray'
-};
-
-const differences = ref([]);
-const campaignsMap = ref({});
-
+// Function to fetch all changes
 const fetchAllChanges = async () => {
   try {
     const response = await api.get('/get-all-changes', {
@@ -151,112 +170,132 @@ const fetchAllChanges = async () => {
       return change;
     });
   } catch (error) {
-    console.error('Error fetching all changes from database:', error);
+    console.error('Error fetching all changes from the database:', error);
   }
 };
 
-const fetchCurrentCampaigns = async () => {
-  try {
-    const response = await api.get('/get-current-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    const campaigns = response.data?.elements || [];
-    campaignsMap.value = campaigns.reduce((map, campaign) => {
-      map[campaign.id] = campaign.name;
-      return map;
-    }, {});
-    return campaigns;
-  } catch (error) {
-    console.error('Error fetching current campaigns from database:', error);
-    return [];
+// Computed property for filtered differences based on selected campaigns and date range
+const filteredDifferences = computed(() => {
+  if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
+    console.error("Date range is not properly defined", props.dateRange);
+    return differences.value;
   }
-};
 
-const fetchLinkedInCampaigns = async () => {
-  try {
-    const response = await api.get('/linkedin/ad-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    return response.data.elements || [];
-  } catch (error) {
-    console.error('Error fetching LinkedIn campaigns:', error);
-    return [];
-  }
-};
-
-const addNewChange = (newChange) => {
-  newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
-  differences.value.push(newChange);
-};
-
-const findDifferences = (obj1, obj2) => {
-  const diffs = {};
-  for (const key in obj1) {
-    if (key === 'changeAuditStamps') continue; // Exclude changeAuditStamps
-    if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
-      diffs[key] = true; // Only keep the key
-    }
-  }
-  return Object.keys(diffs).map(key => keyMapping[key] || key);
-};
-
-const checkForChanges = async () => {
-  const currentCampaigns = await fetchCurrentCampaigns();
-  const linkedInCampaigns = await fetchLinkedInCampaigns();
-
-  const newDifferences = [];
-  linkedInCampaigns.forEach((campaign2) => {
-    const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
-    if (campaign1) {
-      const changes = findDifferences(campaign1, campaign2);
-      if (changes.length > 0) {
-        const changesString = changes.map(change => {
-          const color = colorMapping[change] || 'black'; // Default to black if color not found
-          return `<span class="change-key" style="color:${color};">${change}</span>`;
-        }).join('<br>');
-        newDifferences.push({
-          campaign: campaign2.name,
-          date: new Date().toLocaleDateString(),
-          changes: changesString,
-          notes: campaign2.notes || [],
-          addingNote: false,
-          _id: campaign1._id // Ensure we have the correct MongoDB ID
-        });
-      }
-    } else {
-      addNewChange({
-        campaign: campaign2.name,
-        date: new Date().toLocaleDateString(),
-        changes: 'New campaign added',
-        notes: campaign2.notes || [],
-        addingNote: false,
-        _id: campaign2._id // Include _id if available
-      });
-    }
+  return differences.value.filter(diff => {
+    const diffDate = new Date(diff.date);
+    const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
+    const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
+    const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
+    return isWithinDateRange && isSelectedCampaign;
   });
+});
 
-  const uniqueDifferences = newDifferences.filter(newDiff =>
-    !differences.value.some(existingDiff =>
-      existingDiff.campaign === newDiff.campaign &&
-      existingDiff.date === newDiff.date &&
-      existingDiff.changes === newDiff.changes
-    )
-  );
+// Watch and initialize functions
+onMounted(async () => {
+  await fetchAllChanges();
+  getAnalyticsData();
+});
 
-  differences.value = [...uniqueDifferences, ...differences.value];
+watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
+  await fetchAllChanges();
+  getAnalyticsData(); // Update chart data if selected campaigns or date range change
+});
 
-  try {
-    await api.post('/save-campaigns', { campaigns: linkedInCampaigns }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    await api.post('/save-changes', { changes: uniqueDifferences }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-  } catch (error) {
-    console.error('Error saving campaigns and changes:', error);
+// Function to process metrics data and update the chart
+// fdsafaa
+const getAnalyticsData = () => {
+  if (props.metrics && props.metrics.length) {
+    // Aggregate metrics by date
+    const aggregatedData = props.metrics.reduce((acc, item) => {
+      const itemId = item.id;
+      const idParts = itemId.split('-');
+      if (idParts.length === 4) {
+        const dateKey = `${idParts[1]}/${idParts[2]}/${idParts[3]}`; // Date in MM/DD/YYYY format
+
+        // Initialize the date entry if not already present
+        if (!acc[dateKey]) {
+          acc[dateKey] = {
+            conversions: 0,
+            clicks: 0,
+            impressions: 0,
+            spend: 0 // Initialize spend to 0
+          };
+        }
+
+        // Logging spend to check if it's present
+        console.log(`🐒 Spend for item ${itemId}:`, item.spend);
+
+        // Ensure spend is a number, remove the '$' symbol if present
+        const spendValue = parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0; // Strip $ and parse
+
+        acc[dateKey].conversions += item.conversions || 0;
+        acc[dateKey].clicks += item.clicks || 0;
+        acc[dateKey].impressions += item.impressions || 0;
+        acc[dateKey].spend += spendValue; // Add the parsed spend value
+      }
+      return acc;
+    }, {});
+
+    // Prepare chart data
+    const labels = Object.keys(aggregatedData);
+    const externalWebsiteConversions = labels.map(date => aggregatedData[date].conversions);
+    const landingPageClicks = labels.map(date => aggregatedData[date].clicks);
+    const impressions = labels.map(date => aggregatedData[date].impressions);
+    const costInLocalCurrency = labels.map(date => aggregatedData[date].spend); // Ensure spend data is included
+
+    // Set up chart data and options
+    chartData.value = {
+      labels, // Use the aggregated dates for the x-axis
+      datasets: [
+        {
+          label: 'Conversions',
+          data: externalWebsiteConversions,
+          borderColor: 'red',
+          fill: false
+        },
+        {
+          label: 'Clicks',
+          data: landingPageClicks,
+          borderColor: 'blue',
+          fill: false
+        },
+        {
+          label: 'Impressions',
+          data: impressions,
+          borderColor: 'green',
+          fill: false
+        },
+        {
+          label: 'Spend',
+          data: costInLocalCurrency, // Use processed spend data
+          borderColor: 'purple',
+          fill: false
+        }
+      ]
+    };
+
+    chartOptions.value = {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Value'
+          }
+        }
+      }
+    };
+
+    chartDataReady.value = true;
   }
 };
-
+// Functions for adding/editing/deleting notes
 const enableAddNotePrompt = (id) => {
   const difference = differences.value.find(diff => diff._id === id);
   difference.addingNote = true;
@@ -273,7 +312,7 @@ const saveNewNotePrompt = async (changeId) => {
   if (!difference.newNote) return;
 
   try {
-    const response = await api.post('/add-note', {
+    await api.post('/add-note', {
       changeId,
       newNote: difference.newNote
     }, {
@@ -295,21 +334,13 @@ const enableEditMode = (changeId, noteId) => {
   note.newNote = note.note;
 };
 
-const isValidObjectId = (id) => {
-  return ObjectID.isValid(id);
-};
-
 const saveNotePrompt = async (changeId, noteId) => {
-  if (!isValidObjectId(changeId) || !isValidObjectId(noteId)) {
-    console.error('Invalid ObjectId:', { changeId, noteId });
-    return;
-  }
-
   const difference = differences.value.find(diff => diff._id === changeId);
   const note = difference.notes.find(note => note._id === noteId);
   if (!note.newNote) return;
+
   try {
-    const response = await api.post('/edit-note', {
+    await api.post('/edit-note', {
       changeId,
       noteId,
       updatedNote: note.newNote
@@ -352,31 +383,6 @@ const formatTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return date.toLocaleString();
 };
-
-const filteredDifferences = computed(() => {
-  if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
-    console.error("Date range is not properly defined", props.dateRange);
-    return differences.value;
-  }
-
-  return differences.value.filter(diff => {
-    const diffDate = new Date(diff.date);
-    const isWithinDateRange = diffDate >= new Date(props.dateRange.start) && diffDate <= new Date(props.dateRange.end);
-    const selectedCampaignNames = props.selectedCampaigns.map(id => campaignsMap.value[id]);
-    const isSelectedCampaign = props.selectedCampaigns.length === 0 || selectedCampaignNames.includes(diff.campaign);
-    return isWithinDateRange && isSelectedCampaign;
-  });
-});
-
-onMounted(async () => {
-  await fetchAllChanges();
-  await checkForChanges();
-});
-
-watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
-  await fetchAllChanges();
-  await checkForChanges();
-});
 </script>
 
 <style scoped>
