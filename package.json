@@ -11,7 +11,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^6.5.2",
+    "@fortawesome/fontawesome-free": "^6.6.0",
     "@vue-js-cron/light": "^4.0.4",
     "@vuepic/vue-datepicker": "^8.8.0",
     "ant-design-vue": "^4.2.3",

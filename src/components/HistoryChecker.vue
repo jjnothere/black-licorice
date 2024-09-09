@@ -198,16 +198,19 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
+  console.log("🐒 ~ dateLabel:", dateLabel); // Log to verify the date label
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
     return new Date(diff.date).toLocaleDateString() === new Date(dateLabel).toLocaleDateString();
   });
 
   if (matchingIndex !== -1) {
     const changeRow = document.getElementById(`changeRow-${matchingIndex}`);
+    console.log("🐒 Scrolling to:", changeRow); // Log the row element
     if (changeRow) {
       changeRow.scrollIntoView({ behavior: 'smooth' });
 
       // Log to verify that class is added
+      console.log("🐒 Adding 'flash-row' class to:", changeRow);
 
       // Add the flash-row class
       changeRow.classList.add('flash-row');
@@ -340,71 +343,90 @@ watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
 });
 
 // Function to process metrics data and update the chart
-// fdsafaa
 const getAnalyticsData = () => {
   if (props.metrics && props.metrics.length) {
-    // Aggregate metrics by date
     const aggregatedData = props.metrics.reduce((acc, item) => {
       const itemId = item.id;
       const idParts = itemId.split('-');
       if (idParts.length === 4) {
         const dateKey = `${idParts[1]}/${idParts[2]}/${idParts[3]}`; // Date in MM/DD/YYYY format
 
-        // Initialize the date entry if not already present
         if (!acc[dateKey]) {
           acc[dateKey] = {
             conversions: 0,
             clicks: 0,
             impressions: 0,
-            spend: 0 // Initialize spend to 0
+            spend: 0,
+            hasChanges: false // Initialize hasChanges to false
           };
         }
 
-        // Ensure spend is a number, remove the '$' symbol if present
-        const spendValue = parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0; // Strip $ and parse
-
+        const spendValue = parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
         acc[dateKey].conversions += item.conversions || 0;
         acc[dateKey].clicks += item.clicks || 0;
         acc[dateKey].impressions += item.impressions || 0;
-        acc[dateKey].spend += spendValue; // Add the parsed spend value
+        acc[dateKey].spend += spendValue;
+
+        // Check if the date has changes
+        if (filteredDifferences.value.some(diff => new Date(diff.date).toLocaleDateString() === dateKey)) {
+          acc[dateKey].hasChanges = true; // Mark if changes exist for this date
+        }
       }
       return acc;
     }, {});
 
-    // Prepare chart data
     const labels = Object.keys(aggregatedData);
     const externalWebsiteConversions = labels.map(date => aggregatedData[date].conversions);
     const landingPageClicks = labels.map(date => aggregatedData[date].clicks);
     const impressions = labels.map(date => aggregatedData[date].impressions);
-    const costInLocalCurrency = labels.map(date => aggregatedData[date].spend); // Ensure spend data is included
+    const costInLocalCurrency = labels.map(date => aggregatedData[date].spend);
+
+    // Define point styling for dates with changes
+    const pointBackgroundColors = labels.map(date => aggregatedData[date].hasChanges ? 'red' : 'black'); // Red points indicate changes
+    const pointBorderColors = labels.map(date => aggregatedData[date].hasChanges ? 'darkred' : 'black');
+
+    // Define point radius: larger points for those with changes
+    const pointRadius = labels.map(date => aggregatedData[date].hasChanges ? 4 : 3); // Bigger points (8) for changes, normal points (4) for others
 
     // Set up chart data and options
     chartData.value = {
-      labels, // Use the aggregated dates for the x-axis
+      labels,
       datasets: [
         {
           label: 'Conversions',
           data: externalWebsiteConversions,
           borderColor: 'red',
-          fill: false
+          fill: false,
+          pointBackgroundColor: pointBackgroundColors, // Highlight points with changes
+          pointBorderColor: pointBorderColors,
+          pointRadius: pointRadius, // Make red points bigger
         },
         {
           label: 'Clicks',
           data: landingPageClicks,
           borderColor: 'blue',
-          fill: false
+          fill: false,
+          pointBackgroundColor: pointBackgroundColors,
+          pointBorderColor: pointBorderColors,
+          pointRadius: pointRadius,
         },
         {
           label: 'Impressions',
           data: impressions,
           borderColor: 'green',
-          fill: false
+          fill: false,
+          pointBackgroundColor: pointBackgroundColors,
+          pointBorderColor: pointBorderColors,
+          pointRadius: pointRadius,
         },
         {
           label: 'Spend',
-          data: costInLocalCurrency, // Use processed spend data
+          data: costInLocalCurrency,
           borderColor: 'purple',
-          fill: false
+          fill: false,
+          pointBackgroundColor: pointBackgroundColors, // Highlight points with changes
+          pointBorderColor: pointBorderColors,
+          pointRadius: pointRadius, // Make red points bigger
         }
       ]
     };
