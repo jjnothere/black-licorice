@@ -159,8 +159,8 @@ const toggleGroupSelection = (group) => {
   }
 
   // Emit the updated selectedCampaigns and store them in local storage
+  emit('update:selectedCampaigns', selectedCampaigns.value); // Emit the changes
   localStorage.setItem('selectedCampaigns', JSON.stringify(selectedCampaigns.value));
-  emit('update:selectedCampaigns', selectedCampaigns.value);
 };
 
 // Delete group function

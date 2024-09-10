@@ -226,9 +226,16 @@ const scrollToChange = (dateLabel) => {
 
 
 
+const resetChartData = () => {
+  chartData.value = {};
+  chartDataReady.value = false;
+};
+
 onMounted(async () => {
-  await fetchAllChanges();
-  await checkForChanges();
+  resetChartData();         // Reset chart data before loading
+  await fetchAllChanges();  // Fetch changes
+  await checkForChanges();  // Check for changes and update differences
+  getAnalyticsData();       // Rebuild chart data with red dots
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
@@ -375,7 +382,8 @@ const getAnalyticsData = () => {
       return acc;
     }, {});
 
-    const labels = Object.keys(aggregatedData);
+    // Prepare chart data (reverse the labels for reverse x-axis)
+    const labels = Object.keys(aggregatedData).reverse(); // Reverse the order of the labels
     const externalWebsiteConversions = labels.map(date => aggregatedData[date].conversions);
     const landingPageClicks = labels.map(date => aggregatedData[date].clicks);
     const impressions = labels.map(date => aggregatedData[date].impressions);
@@ -446,6 +454,8 @@ const getAnalyticsData = () => {
             text: 'Value'
           }
         }
+      }, plugins: {
+        datalabels: false // Disable datalabels plugin for the line chart
       }
     };
 
