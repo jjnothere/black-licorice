@@ -233,7 +233,7 @@ const validateBudgetInput = (event) => {
 
 const saveBudget = async () => {
   try {
-    const response = await api.post('/save-budget', { budget: budget.value }, {
+    await api.post('/save-budget', { budget: budget.value }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
   } catch (error) {
