@@ -21,7 +21,7 @@ import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
-import Metrics from '@/components/Metrics.vue';
+import Metrics from '@/components/MetricsComponent.vue';
 
 const selectedCampaigns = ref([]);
 const metrics = ref([]);

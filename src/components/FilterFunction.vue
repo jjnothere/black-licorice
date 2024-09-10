@@ -104,8 +104,6 @@ onMounted(() => {
 });
 
 watch(selectedCampaigns, (newSelectedCampaigns) => {
-  console.log("🐒 ~ newSelectedCampaigns:", newSelectedCampaigns)
-  console.log("🐒 ~ selectedCampaigns:", selectedCampaigns)
   localStorage.setItem('selectedCampaigns', JSON.stringify(newSelectedCampaigns));
   emit('update:selectedCampaigns', newSelectedCampaigns);
 });

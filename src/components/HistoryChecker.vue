@@ -198,26 +198,22 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
-  console.log("🐒 ~ dateLabel:", dateLabel); // Log to verify the date label
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
     return new Date(diff.date).toLocaleDateString() === new Date(dateLabel).toLocaleDateString();
   });
 
   if (matchingIndex !== -1) {
     const changeRow = document.getElementById(`changeRow-${matchingIndex}`);
-    console.log("🐒 Scrolling to:", changeRow); // Log the row element
     if (changeRow) {
       changeRow.scrollIntoView({ behavior: 'smooth' });
 
       // Log to verify that class is added
-      console.log("🐒 Adding 'flash-row' class to:", changeRow);
 
       // Add the flash-row class
       changeRow.classList.add('flash-row');
 
       // Remove the flash-row class after the animation completes (1s * 3 repeats)
       setTimeout(() => {
-        console.log("🐒 Removing 'flash-row' class from:", changeRow);
         changeRow.classList.remove('flash-row');
       }, 3000); // Adjust timeout to match animation duration (3 repeats at 1s each)
     }

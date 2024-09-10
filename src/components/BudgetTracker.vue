@@ -78,7 +78,6 @@ const chartOptions = ref({
 });
 
 const updateChart = async () => {
-  console.log('WATTTTT')
   chartData.value = {
     labels: labels.value,
     datasets: [
