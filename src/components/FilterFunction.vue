@@ -22,7 +22,7 @@
             <p><strong>Campaign Groups</strong></p>
             <div v-for="group in campaignGroups" :key="group.id">
               <input type="checkbox" :checked="group.campaignIds.every(id => selectedCampaigns.includes(id))"
-                @change="toggleGroupSelection(group)" />
+                @click="toggleGroupSelection(group)" />
               <label>{{ group.name }}</label>
               <!-- Trash Icon Button with Hover Effect -->
               <button class="icon-button" @click="deleteGroup(group.id)">
@@ -104,6 +104,8 @@ onMounted(() => {
 });
 
 watch(selectedCampaigns, (newSelectedCampaigns) => {
+  console.log("🐒 ~ newSelectedCampaigns:", newSelectedCampaigns)
+  console.log("🐒 ~ selectedCampaigns:", selectedCampaigns)
   localStorage.setItem('selectedCampaigns', JSON.stringify(newSelectedCampaigns));
   emit('update:selectedCampaigns', newSelectedCampaigns);
 });
@@ -155,7 +157,7 @@ const toggleGroupSelection = (group) => {
     selectedCampaigns.value = selectedCampaigns.value.filter(id => !group.campaignIds.includes(id));
   } else {
     // If the group is not selected, add the group's campaigns to selectedCampaigns
-    selectedCampaigns.value.push(...group.campaignIds.filter(id => !selectedCampaigns.value.includes(id)));
+    selectedCampaigns.value = [...new Set([...selectedCampaigns.value, ...group.campaignIds])]; // Ensures no duplicates
   }
 
   // Emit the updated selectedCampaigns and store them in local storage
