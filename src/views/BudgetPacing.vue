@@ -1,21 +1,14 @@
-<!-- BudgetPacing.vue -->
 <template>
   <div class="content">
-    <BudgetTracker :metrics="metrics" />
+    <budget-tracker :metrics="metrics" :date-range="dateRange"></budget-tracker>
   </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
-import BudgetTracker from '@/components/BudgetTracker.vue'
+import BudgetTracker from '@/components/BudgetTracker.vue';
 
-const props = defineProps({
-  metrics: Array
-})
+defineProps({
+  metrics: Array,
+  dateRange: Object // Receive the dateRange as a prop
+});
 </script>
-
-<style scoped>
-.content {
-  width: 100%;
-}
-</style>

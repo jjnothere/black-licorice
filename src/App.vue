@@ -9,7 +9,9 @@
         <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
       </div>
       <div class="main-content">
+        <!-- Pass the dateRange to the Metrics component -->
         <Metrics v-if="!isProfilePage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <!-- Pass metrics and dateRange to the other child components via router-view -->
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
       </div>
     </div>
@@ -32,10 +34,12 @@ const dateRange = ref({
 
 const route = useRoute();
 
+// Update the selected campaigns from the filter component
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
 };
 
+// Update the metrics and date range from the Metrics component
 const updateMetrics = (newMetrics) => {
   metrics.value = newMetrics.metrics;
   dateRange.value = {
@@ -48,6 +52,7 @@ const showFilterFunction = computed(() => route.path !== '/');
 const isAuthRoute = computed(() => route.path === '/auth');
 const isProfilePage = computed(() => route.path === '/profile');
 
+// Watch for route changes and reset selected campaigns when on the home page
 watch(route, (newRoute) => {
   if (newRoute.path === '/') {
     selectedCampaigns.value = [];

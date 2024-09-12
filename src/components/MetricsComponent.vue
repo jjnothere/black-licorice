@@ -1,7 +1,7 @@
+<!-- MetricsComponent.vue -->
 <template>
   <div class="metrics">
     <h3 class="metrics-header">Metrics</h3>
-    <!-- Metrics.vue -->
     <div class="metrics-info">
       <div class="metrics-pods">
         <div class="metrics-label">Spend</div>
@@ -42,24 +42,36 @@ import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
 import { useAuth } from '@/composables/auth';
 
-const { isLoggedIn } = useAuth();
-
 const props = defineProps({
   selectedCampaigns: Array
 });
 
 const emit = defineEmits(['update:metrics', 'update-date-range']);
 const metrics = ref([]);
+const today = new Date();
+// First day of the current month
+const selectedStartDate = ref(new Date(today.getFullYear(), today.getMonth(), 1));
+// Last day of the current month
+const selectedEndDate = ref(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+
+// Emit the date range whenever it's updated
+watch([selectedStartDate, selectedEndDate], () => {
+  emit('update-date-range', {
+    start: selectedStartDate.value,
+    end: selectedEndDate.value
+  });
+});
+
+
+const { isLoggedIn } = useAuth();
+
+
 const spend = ref('0');
 const impressions = ref('0');
 const clicks = ref('0');
 const conversions = ref('0');
 const dateRange = ref('00/00/0000 - 00/00/0000');
-
-const today = new Date();
 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-const selectedStartDate = ref(startOfMonth);
-const selectedEndDate = ref(today);
 const lastValidStartDate = ref(startOfMonth);
 const lastValidEndDate = ref(today);
 
@@ -72,6 +84,8 @@ const formatDate = (date) => {
 };
 
 const fetchMetrics = async (startDate, endDate, campaigns) => {
+  console.log("🐒 ~ endDate:", endDate)
+  console.log("🐒 ~ startDate:", startDate)
   if (!isLoggedIn.value) {
     return;
   }
@@ -91,6 +105,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params,
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
+    console.log("🐒 ~ response:", JSON.stringify(response))
     let data = response.data.elements;
 
     // Filter data to ensure it falls within the specified date range
@@ -167,9 +182,15 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
     if (isLoggedIn.value) {
       fetchMetrics(newStartDate, newEndDate, newCampaigns);
     }
+
+    // Emit the new date range to the parent component
     emit('update-date-range', {
       start: newStartDate,
       end: newEndDate
+    });
+    emit('update-date-range', {
+      start: selectedStartDate.value,
+      end: selectedEndDate.value
     });
   }
 });
