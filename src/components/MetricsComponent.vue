@@ -84,8 +84,6 @@ const formatDate = (date) => {
 };
 
 const fetchMetrics = async (startDate, endDate, campaigns) => {
-  console.log("🐒 ~ endDate:", endDate)
-  console.log("🐒 ~ startDate:", startDate)
   if (!isLoggedIn.value) {
     return;
   }
@@ -105,7 +103,6 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params,
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    console.log("🐒 ~ response:", JSON.stringify(response))
     let data = response.data.elements;
 
     // Filter data to ensure it falls within the specified date range

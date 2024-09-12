@@ -42,14 +42,14 @@ const spendData = computed(() => {
   return data;
 });
 
-const budgetData = computed(() => {
-  const dailyBudget = budget.value / (labels.value.length || 1);
-  let cumulativeBudget = 0;
-  return labels.value.map(() => {
-    cumulativeBudget += dailyBudget;
-    return cumulativeBudget;
-  });
-});
+// const budgetData = computed(() => {
+//   const dailyBudget = budget.value / (labels.value.length || 1);
+//   let cumulativeBudget = 0;
+//   return labels.value.map(() => {
+//     cumulativeBudget += dailyBudget;
+//     return cumulativeBudget;
+//   });
+// });
 
 const chartData = ref({
   labels: [],
@@ -80,7 +80,6 @@ const chartOptions = ref({
 
 const updateChart = async () => {
   // Log the dateRange to verify it is passed correctly
-  console.log("🐒 ~ dateRange:", props.dateRange);
 
   // Check if dateRange is properly defined, if not, return early
   if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
@@ -118,8 +117,8 @@ const updateChart = async () => {
     const projectedDate = new Date(lastActualDate);
     projectedDate.setDate(projectedDate.getDate() + i); // Increment date by 1 for each projection day
 
-    // Format the date for the label
-    const formattedDate = `${projectedDate.getFullYear()}-${String(projectedDate.getMonth() + 1).padStart(2, '0')}-${String(projectedDate.getDate()).padStart(2, '0')}`;
+    // Format the date for the label in M/D/YYYY format (no leading zeros)
+    const formattedDate = `${projectedDate.getMonth() + 1}/${projectedDate.getDate()}/${projectedDate.getFullYear()}`;
     projectedLabels.push(formattedDate);
 
     // Add projected spend
@@ -129,7 +128,7 @@ const updateChart = async () => {
 
   // Combine actual and projected data
   const allLabels = [...actualLabels, ...projectedLabels]; // Combine actual labels with projected labels
-  const allSpendData = [...actualSpendData]; // Keep actual spend data as is
+  // const allSpendData = [...actualSpendData]; // Keep actual spend data as is
 
   // Create the projected spend as a separate dataset starting from the next day
   const projectedSpendDataset = new Array(actualSpendData.length).fill(null).concat(projectedSpendData);

@@ -33,7 +33,6 @@ const renderChart = () => {
           if (elements.length) {
             const index = elements[0].index; // Get the index of the clicked point
             const label = chartInstance.data.labels[index]; // Get the label (date) of the clicked point
-            console.log("Point clicked, label:", label); // Log the clicked point's date
             emit('point-clicked', label); // Emit the point-clicked event with the label
           }
         }
