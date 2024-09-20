@@ -2,8 +2,19 @@
   <div class="budget-tracker">
     <h4>Details</h4>
     <div class="budget-input">
-      <label for="budget">Budget: $</label>
-      <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" @change="saveBudget" />
+      <label for="budget">
+        <!-- Check if a specific group budget exists -->
+        <template v-if="groupBudget && groupBudget !== 0">
+          <!-- Displaying the budget statically if it exists -->
+          {{ groupName ? `${groupName} Budget: $${formattedBudget}` : `Budget: $${formattedBudget}` }}
+        </template>
+        <template v-else>
+          <!-- Allowing input for a default budget if no specific group budget is set -->
+          Budget: $
+          <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" @change="saveBudget"
+            placeholder="Enter Budget" />
+        </template>
+      </label>
     </div>
     <div class="charts-container">
       <div class="line-chart-container">
@@ -24,12 +35,99 @@ import api from '@/api';
 
 const props = defineProps({
   metrics: Array,
-  dateRange: Object // Add dateRange prop here
+  dateRange: Object,
+  groupName: String,
+  groupBudget: Number
 });
 
-const budget = ref(0); // User-defined budget
+const budget = ref(0);
 const formattedBudget = ref('0.00');
-const campaignNames = ref({}); // Store campaign names
+const selectedGroupName = ref('');
+const campaignNames = ref({}); // Define campaignNames before using it
+
+// Fetch the default budget from the server
+const fetchDefaultBudget = async () => {
+  try {
+    const response = await api.get('/get-budget', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (response.data && response.data.budget) {
+      console.log("Fetched Default Budget: ", response.data.budget);
+      return response.data.budget;
+    } else {
+      console.log("No Default Budget Set for User.");
+      return 0;
+    }
+  } catch (error) {
+    console.error('Error fetching default budget:', error);
+    return 0;
+  }
+};
+
+// Watcher to handle budget updates
+watch(() => props.groupBudget, async (newBudget) => {
+  if (newBudget !== undefined && newBudget !== null) {
+    console.log(`New Group Budget: ${newBudget}`);
+    budget.value = newBudget;
+    formattedBudget.value = newBudget.toFixed(2);
+  } else {
+    console.log('No Group Budget Provided, Fetching Default Budget...');
+    const defaultBudget = await fetchDefaultBudget();
+    budget.value = defaultBudget;
+    formattedBudget.value = defaultBudget.toFixed(2);
+  }
+}, { immediate: true });
+
+onMounted(async () => {
+  if (!props.groupBudget) {
+    console.log('Component Mounted Without Group Budget, Fetching Default Budget...');
+    const defaultBudget = await fetchDefaultBudget();
+    budget.value = defaultBudget;
+    formattedBudget.value = defaultBudget.toFixed(2);
+  }
+});
+// Validate and update budget input
+const validateBudgetInput = (event) => {
+  let value = event.target.value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
+  const decimalIndex = value.indexOf('.');
+
+  if (decimalIndex !== -1) {
+    value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
+  }
+
+  if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
+    value = value.slice(0, decimalIndex + 3); // Limit to two decimal places
+  }
+
+  formattedBudget.value = value;
+  budget.value = parseFloat(value) || 0;
+};
+
+// Watch for changes in the selected group name
+watch(() => props.groupName, (newName) => {
+  if (newName) {
+    console.log(`Selected Group Name: ${newName}`);
+    selectedGroupName.value = newName;
+  }
+});
+
+
+// Fetch campaign names from the server
+const fetchCampaignNames = async () => {
+  try {
+    const response = await api.get('/linkedin/ad-campaigns', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    // Extract campaign ID and name from the response
+    const campaigns = response.data.elements;
+    campaigns.forEach(campaign => {
+      campaignNames.value[campaign.id] = campaign.name;
+    });
+    updatePieChart(); // Ensure the pie chart is updated with the new campaign names
+  } catch (error) {
+    console.error('Error fetching campaign names:', error);
+  }
+};
 
 const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
 const spendData = computed(() => {
@@ -178,22 +276,6 @@ onMounted(() => {
   updatePieChart();
 });
 
-// Fetch campaign names from the server
-const fetchCampaignNames = async () => {
-  try {
-    const response = await api.get('/linkedin/ad-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    // Extract campaign ID and name from the response
-    const campaigns = response.data.elements;
-    campaigns.forEach(campaign => {
-      campaignNames.value[campaign.id] = campaign.name;
-    });
-    updatePieChart(); // Ensure the pie chart is updated with the new campaign names
-  } catch (error) {
-    console.error('Error fetching campaign names:', error);
-  }
-};
 
 // Fetch the budget from the server
 const fetchBudget = async () => {
@@ -286,19 +368,19 @@ const updatePieChart = async () => {
 
 watch(() => props.metrics, updatePieChart);
 
-const validateBudgetInput = (event) => {
-  let value = event.target.value;
-  value = value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
-  const decimalIndex = value.indexOf('.');
-  if (decimalIndex !== -1) {
-    value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
-  }
-  if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
-    value = value.slice(0, decimalIndex + 3); // Limit to 2 decimal places
-  }
-  formattedBudget.value = value;
-  budget.value = parseFloat(value) || 0;
-};
+// const validateBudgetInput = (event) => {
+//   let value = event.target.value;
+//   value = value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
+//   const decimalIndex = value.indexOf('.');
+//   if (decimalIndex !== -1) {
+//     value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
+//   }
+//   if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
+//     value = value.slice(0, decimalIndex + 3); // Limit to 2 decimal places
+//   }
+//   formattedBudget.value = value;
+//   budget.value = parseFloat(value) || 0;
+// };
 
 const saveBudget = async () => {
   try {

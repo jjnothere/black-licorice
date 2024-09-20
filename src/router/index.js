@@ -21,6 +21,10 @@ const routes = [
     path: '/budget-tracker',
     name: 'BudgetTracker',
     component: BudgetTracker,
+    props: (route) => ({
+      groupName: route.query.groupName,
+      groupBudget: route.query.groupBudget
+    }),
     meta: { requiresAuth: true }
   },
   {

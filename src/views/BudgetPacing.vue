@@ -1,14 +1,26 @@
 <template>
   <div class="content">
-    <budget-tracker :metrics="metrics" :date-range="dateRange"></budget-tracker>
+    <budget-tracker :metrics="metrics" :date-range="dateRange" :groupName="groupName" :groupBudget="groupBudget">
+    </budget-tracker>
   </div>
 </template>
 
 <script setup>
-import BudgetTracker from '@/components/BudgetTracker.vue';
+import { watch } from 'vue';
+import BudgetTracker from '../components/BudgetTracker.vue'; // Import the component
 
-defineProps({
+const props = defineProps({
+  groupName: String,
+  groupBudget: Number,
   metrics: Array,
-  dateRange: Object // Receive the dateRange as a prop
+  dateRange: Object
+});
+
+// Example usage of props
+watch(() => props.groupName, (newVal) => {
+  console.log('groupName updated:', newVal);
+});
+watch(() => props.groupBudget, (newVal) => {
+  console.log('groupBudget updated:', newVal);
 });
 </script>

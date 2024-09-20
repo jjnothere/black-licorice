@@ -6,13 +6,14 @@
     </div>
     <div v-else class="layout">
       <div v-if="showFilterFunction && !isProfilePage" class="filter-function">
-        <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" />
+        <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
         <!-- Pass the dateRange to the Metrics component -->
         <Metrics v-if="!isProfilePage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-        <!-- Pass metrics and dateRange to the other child components via router-view -->
-        <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" />
+        <!-- Pass metrics, dateRange, groupName, and groupBudget to child components via router-view -->
+        <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
+          :groupName="groupName" :groupBudget="groupBudget" />
       </div>
     </div>
   </div>
@@ -32,11 +33,21 @@ const dateRange = ref({
   end: new Date()
 });
 
+// New group-related data
+const groupName = ref('');
+const groupBudget = ref(0);
+
 const route = useRoute();
 
 // Update the selected campaigns from the filter component
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
+};
+
+// Update the budget and group name from the FilterFunction component
+const updateBudgetData = ({ name, budget }) => {
+  groupName.value = name;
+  groupBudget.value = budget;
 };
 
 // Update the metrics and date range from the Metrics component

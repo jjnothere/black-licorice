@@ -17,14 +17,24 @@
             </div>
           </div>
 
-          <!-- Campaign Groups filter with checkboxes and Trash icon -->
+          <!-- Campaign Groups filter with radio buttons and None option -->
           <div class="filter-group">
             <p><strong>Campaign Groups</strong></p>
+            <!-- Default "None" option that clears all selections -->
+            <div>
+              <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections" />
+              <label for="none">None</label>
+            </div>
+
+            <!-- Campaign groups with radio buttons -->
             <div v-for="group in campaignGroups" :key="group.id">
-              <input type="checkbox" :checked="group.campaignIds.every(id => selectedCampaigns.includes(id))"
-                @click="toggleGroupSelection(group)" />
+              <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
               <label>{{ group.name }}</label>
-              <!-- Trash Icon Button with Hover Effect -->
+              <span v-if="group.budget"> (Budget: ${{ group.budget }}) </span>
+              <!-- Edit and Delete Icons -->
+              <button class="icon-button" @click="openEditGroupModal(group)">
+                <i class="fas fa-edit"></i>
+              </button>
               <button class="icon-button" @click="deleteGroup(group.id)">
                 <i class="fas fa-trash"></i>
               </button>
@@ -37,10 +47,16 @@
           </button>
 
           <!-- Modal for adding group -->
+          <!-- Modal for adding group -->
           <div v-if="isGroupModalOpen" class="modal">
             <div class="modal-content">
               <h3>Create New Group</h3>
               <input v-model="newGroupName" placeholder="Group Name" />
+
+              <!-- Budget input that allows only numeric input -->
+              <input type="text" id="new-group-budget" v-model="formattedNewGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Budget (Optional)" />
+
               <div v-for="campaign in campaigns" :key="campaign.id">
                 <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
                 <label>{{ campaign.name }}</label>
@@ -50,6 +66,23 @@
             </div>
           </div>
 
+          <div v-if="isEditGroupModalOpen" class="modal">
+            <div class="modal-content">
+              <h3>Edit Group</h3>
+              <input v-model="editGroupName" placeholder="Group Name" />
+
+              <!-- Budget input for editing group with validation -->
+              <input type="text" id="edit-group-budget" v-model="formattedEditGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Budget (Optional)" />
+
+              <div v-for="campaign in campaigns" :key="campaign.id">
+                <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
+                <label>{{ campaign.name }}</label>
+              </div>
+              <button @click="saveEditedGroup">Save Changes</button>
+              <button @click="closeEditGroupModal">Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -60,15 +93,28 @@
 import { ref, onMounted, watch } from 'vue';
 import api from '@/api';
 
-const emit = defineEmits(['update:selectedCampaigns']);
+const emit = defineEmits(['update:selectedCampaigns', 'update:budget', 'update:budgetData']);
 
 const campaigns = ref([]);
 const selectedCampaigns = ref([]);
 const campaignGroups = ref([]);
 const newGroupName = ref('');
+const newGroupBudget = ref(0);
 const newGroupCampaigns = ref([]);
 const isGroupModalOpen = ref(false);
+const selectedGroup = ref('none');
+const selectedGroupName = ref('');
+const selectedGroupBudget = ref('');
 
+// State for editing group
+const isEditGroupModalOpen = ref(false);
+const editGroupId = ref(null);
+const editGroupName = ref('');
+const editGroupBudget = ref(0); // Budget for the group being edited
+const formattedEditGroupBudget = ref('0.00'); // Formatted budget for display
+const editGroupCampaigns = ref([]);
+
+// Fetch campaigns and groups
 const fetchCampaigns = async () => {
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
@@ -94,6 +140,7 @@ const fetchCampaignGroups = async () => {
   }
 };
 
+// When component is mounted, fetch campaigns and groups
 onMounted(() => {
   fetchCampaigns();
   fetchCampaignGroups();
@@ -108,29 +155,45 @@ watch(selectedCampaigns, (newSelectedCampaigns) => {
   emit('update:selectedCampaigns', newSelectedCampaigns);
 });
 
-// Group Modal Functions
-const openGroupModal = () => {
-  isGroupModalOpen.value = true;
+// Budget formatted variables for new and edited groups
+const formattedNewGroupBudget = ref('0.00');
+
+// Function to validate numeric input for budget
+const validateGroupBudgetInput = (event) => {
+  let value = event.target.value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
+  const decimalIndex = value.indexOf('.');
+
+  if (decimalIndex !== -1) {
+    value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
+  }
+
+  if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
+    value = value.slice(0, decimalIndex + 3); // Limit to two decimal places
+  }
+
+  // Update the formatted budget for both new and edit group budgets
+  if (event.target.id === 'new-group-budget') {
+    formattedNewGroupBudget.value = value;
+  } else if (event.target.id === 'edit-group-budget') {
+    formattedEditGroupBudget.value = value;
+    editGroupBudget.value = parseFloat(value) || 0;
+  }
 };
 
-const closeGroupModal = () => {
-  isGroupModalOpen.value = false;
-  newGroupName.value = '';
-  newGroupCampaigns.value = [];
-};
-
+// Create group with budget
 const createGroup = async () => {
   if (newGroupName.value && newGroupCampaigns.value.length > 0) {
     const group = {
       id: Date.now(),
       name: newGroupName.value,
-      campaignIds: newGroupCampaigns.value
+      campaignIds: newGroupCampaigns.value,
+      budget: parseFloat(formattedNewGroupBudget.value) || null // Convert to number
     };
 
     // Save group to frontend state
     campaignGroups.value.push(group);
 
-    // Save group to MongoDB
+    // Save group to backend (e.g., MongoDB)
     try {
       await api.post('/save-campaign-groups', { group }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -146,29 +209,87 @@ const createGroup = async () => {
   }
 };
 
-// Toggle group selection logic for checkboxes
-const toggleGroupSelection = (group) => {
-  const isSelected = group.campaignIds.every(id => selectedCampaigns.value.includes(id));
+// Open modal to edit group, loading the current budget and other data
+const openEditGroupModal = (group) => {
+  editGroupId.value = group.id;
+  editGroupName.value = group.name;
+  editGroupBudget.value = group.budget || 0; // Load existing budget
+  formattedEditGroupBudget.value = group.budget ? group.budget.toFixed(2) : '0.00'; // Format the budget
+  editGroupCampaigns.value = group.campaignIds || [];
+  isEditGroupModalOpen.value = true;
+};
 
-  if (isSelected) {
-    // If the group is already selected, remove the group's campaigns from selectedCampaigns
-    selectedCampaigns.value = selectedCampaigns.value.filter(id => !group.campaignIds.includes(id));
-  } else {
-    // If the group is not selected, add the group's campaigns to selectedCampaigns
-    selectedCampaigns.value = [...new Set([...selectedCampaigns.value, ...group.campaignIds])]; // Ensures no duplicates
+// Save changes to the edited group, including the budget
+const saveEditedGroup = async () => {
+  const group = {
+    id: editGroupId.value,
+    name: editGroupName.value,
+    campaignIds: editGroupCampaigns.value,
+    budget: parseFloat(formattedEditGroupBudget.value) || null // Save the updated budget
+  };
+
+  // Update group in frontend state
+  const index = campaignGroups.value.findIndex(g => g.id === group.id);
+  if (index !== -1) {
+    campaignGroups.value[index] = group;
   }
 
-  // Emit the updated selectedCampaigns and store them in local storage
-  emit('update:selectedCampaigns', selectedCampaigns.value); // Emit the changes
-  localStorage.setItem('selectedCampaigns', JSON.stringify(selectedCampaigns.value));
+  // Emit the updated budget and selected campaigns after saving
+  emit('update:budgetData', { name: group.name, budget: group.budget });
+  emit('update:selectedCampaigns', group.campaignIds);
+
+  // Save updated group to backend (e.g., MongoDB)
+  try {
+    await api.post('/update-campaign-group', { group }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    console.log('Group updated in MongoDB');
+  } catch (error) {
+    console.error('Error updating group:', error);
+  }
+
+  closeEditGroupModal();
+};
+
+// Close the edit modal
+const closeEditGroupModal = () => {
+  isEditGroupModalOpen.value = false;
+};
+
+const selectGroup = (group) => {
+  selectedCampaigns.value = group.campaignIds;
+  selectedGroupName.value = group.name; // Fix: Declare and assign selectedGroupName
+  selectedGroupBudget.value = group.budget;
+  console.log("Selected Group:", group.name, "Budget:", group.budget); // Debugging statement
+  emit('update:budgetData', { name: group.name, budget: group.budget });
+};
+
+const clearAllSelections = () => {
+  selectedCampaigns.value = [];
+  selectedGroup.value = 'none';
+  selectedGroupName.value = ''; // Clear the group name
+  selectedGroupBudget.value = 0; // Clear the budget
+  emit('update:selectedCampaigns', null);
+  emit('update:budgetData', { name: null, budget: null });
+};
+
+// Open and close modal functions
+const openGroupModal = () => {
+  isGroupModalOpen.value = true;
+};
+
+const closeGroupModal = () => {
+  isGroupModalOpen.value = false;
+  newGroupName.value = '';
+  newGroupBudget.value = 0;
+  newGroupCampaigns.value = [];
 };
 
 // Delete group function
 const deleteGroup = async (groupId) => {
-  // Remove group from frontend state
   campaignGroups.value = campaignGroups.value.filter(group => group.id !== groupId);
 
-  // Remove group from MongoDB
+  // Remove group from backend (e.g., MongoDB)
   try {
     await api.post('/delete-campaign-group', { groupId }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -181,6 +302,7 @@ const deleteGroup = async (groupId) => {
 </script>
 
 <style scoped>
+/* Add styles for the modal and edit button */
 .layout {
   display: flex;
 }
@@ -238,7 +360,6 @@ const deleteGroup = async (groupId) => {
   display: flex;
   flex-direction: column;
 }
-
 
 .icon-button {
   background: none;
