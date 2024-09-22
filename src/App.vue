@@ -6,6 +6,7 @@
     </div>
     <div v-else class="layout">
       <div v-if="showFilterFunction && !isProfilePage" class="filter-function">
+        <!-- Pass the necessary event handlers to FilterFunction -->
         <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
@@ -39,7 +40,7 @@ const groupBudget = ref(0);
 
 const route = useRoute();
 
-// Update the selected campaigns from the filter component
+// Update the selected campaigns from the FilterFunction component
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
 };

@@ -47,7 +47,6 @@
           </button>
 
           <!-- Modal for adding group -->
-          <!-- Modal for adding group -->
           <div v-if="isGroupModalOpen" class="modal">
             <div class="modal-content">
               <h3>Create New Group</h3>
@@ -66,6 +65,7 @@
             </div>
           </div>
 
+          <!-- Modal for editing group -->
           <div v-if="isEditGroupModalOpen" class="modal">
             <div class="modal-content">
               <h3>Edit Group</h3>
@@ -238,6 +238,9 @@ const saveEditedGroup = async () => {
   emit('update:budgetData', { name: group.name, budget: group.budget });
   emit('update:selectedCampaigns', group.campaignIds);
 
+  // Automatically select the updated group
+  selectGroup(group);
+
   // Save updated group to backend (e.g., MongoDB)
   try {
     await api.post('/update-campaign-group', { group }, {
@@ -256,11 +259,14 @@ const closeEditGroupModal = () => {
   isEditGroupModalOpen.value = false;
 };
 
+// Select a group and update campaigns and budget
 const selectGroup = (group) => {
   selectedCampaigns.value = group.campaignIds;
-  selectedGroupName.value = group.name; // Fix: Declare and assign selectedGroupName
+  selectedGroup.value = group.id;
+  selectedGroupName.value = group.name;
   selectedGroupBudget.value = group.budget;
-  console.log("Selected Group:", group.name, "Budget:", group.budget); // Debugging statement
+
+  // Emit updated budget data
   emit('update:budgetData', { name: group.name, budget: group.budget });
 };
 

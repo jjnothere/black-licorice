@@ -6,7 +6,8 @@
         <!-- Check if a specific group budget exists -->
         <template v-if="groupBudget && groupBudget !== 0">
           <!-- Displaying the budget statically if it exists -->
-          {{ groupName ? `${groupName} Budget: $${formattedBudget}` : `Budget: $${formattedBudget}` }}
+          <p class="campaign-group-budget">{{ groupName ? `${groupName} Budget: $${formattedBudget}` : `Budget:
+            $${formattedBudget}` }}</p>
         </template>
         <template v-else>
           <!-- Allowing input for a default budget if no specific group budget is set -->
@@ -446,5 +447,9 @@ th {
 
 td {
   background-color: #fff;
+}
+
+.campaign-group-budget {
+  margin: 5.5px 0;
 }
 </style>
