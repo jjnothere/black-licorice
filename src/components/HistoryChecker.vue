@@ -9,6 +9,7 @@
 
     <!-- Line chart section -->
     <div v-if="chartDataReady">
+      <p class="chart-info">Click to add or remove chart metrics</p>
       <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
     </div>
 
@@ -674,5 +675,9 @@ td {
 
 .flash-row {
   animation: flash 1s ease-in-out 3;
+}
+
+.chart-info {
+  text-align: center;
 }
 </style>

@@ -22,7 +22,7 @@
             <p><strong>Campaign Groups</strong></p>
             <!-- Default "None" option that clears all selections -->
             <div>
-              <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections" />
+              <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
               <label for="none">None</label>
             </div>
 
@@ -271,11 +271,12 @@ const selectGroup = (group) => {
 };
 
 const clearAllSelections = () => {
+  console.log("clearAllSelections")
   selectedCampaigns.value = [];
   selectedGroup.value = 'none';
   selectedGroupName.value = ''; // Clear the group name
   selectedGroupBudget.value = 0; // Clear the budget
-  emit('update:selectedCampaigns', null);
+  emit('update:selectedCampaigns', []);
   emit('update:budgetData', { name: null, budget: null });
 };
 
