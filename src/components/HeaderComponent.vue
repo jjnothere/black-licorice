@@ -4,14 +4,16 @@
       <h1>{{ adAccountName }}</h1>
       <nav class="nav-bar">
         <div class="nav-links">
-          <router-link to="/" class="nav-link" active-class="active-link">Home</router-link>
-          <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
+          <!-- <router-link to="/" class="nav-link" active-class="active-link">Home</router-link> -->
           <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
+          <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
         </div>
+        <!-- Moved this div outside of nav-links and styled it differently -->
         <div class="nav-user-actions">
-          <router-link to="/profile" class="nav-link" active-class="active-link">Profile</router-link>
-          <div v-if="isLoggedIn" class="nav-link logout-link" @click="logout">Logout</div>
-          <router-link v-else to="/auth" class="nav-link auth-link">Login / Signup</router-link>
+          <router-link to="/profile" class="user-link">Profile</router-link>
+          <span class="separator">|</span>
+          <div v-if="isLoggedIn" class="user-link logout-link" @click="logout">Logout</div>
+          <router-link v-else to="/auth" class="user-link">Login / Signup</router-link>
         </div>
       </nav>
     </header>
@@ -61,6 +63,7 @@ watchEffect(() => {
   border: 1px solid #ccc;
   padding: 20px;
   border-radius: 8px;
+  position: relative;
 }
 
 .nav-bar {
@@ -76,8 +79,14 @@ watchEffect(() => {
 }
 
 .nav-user-actions {
+  position: absolute;
+  top: 20px;
+  /* Align to the top right */
+  right: 20px;
   display: flex;
-  gap: 10px;
+  /* Use flexbox to align links in a row */
+  align-items: center;
+  /* Align text vertically */
 }
 
 .nav-link {
@@ -94,8 +103,25 @@ watchEffect(() => {
   background-color: #e0e0e0;
 }
 
-.auth-link {
-  margin-left: auto;
+.user-link {
+  text-decoration: none;
+  font-weight: bold;
+  color: black;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.user-link:hover {
+  text-decoration: underline;
+  color: green;
+}
+
+.separator {
+  margin: 0 10px;
+  font-size: 0.9em;
+  color: #888;
+  font-weight: bold;
+  /* Light gray color for the separator */
 }
 
 .logout-link {
