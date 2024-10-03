@@ -1,7 +1,7 @@
 <template>
   <div class="header">
     <header>
-      <h1>{{ adAccountName }}</h1>
+      <h1 class="header-account-name">{{ adAccountName }}</h1>
       <nav class="nav-bar">
         <div class="nav-links">
           <!-- <router-link to="/" class="nav-link" active-class="active-link">Home</router-link> -->
@@ -61,9 +61,15 @@ watchEffect(() => {
   flex-direction: column;
   background-color: white;
   border: 1px solid #ccc;
-  padding: 20px;
+  padding: 5px 20px;
   border-radius: 8px;
   position: relative;
+}
+
+.header-account-name {
+  margin: 0;
+  font-size: 1.5em;
+  color: #333;
 }
 
 .nav-bar {
@@ -80,13 +86,10 @@ watchEffect(() => {
 
 .nav-user-actions {
   position: absolute;
-  top: 20px;
+  top: 10px;
   /* Align to the top right */
   right: 20px;
   display: flex;
-  /* Use flexbox to align links in a row */
-  align-items: center;
-  /* Align text vertically */
 }
 
 .nav-link {

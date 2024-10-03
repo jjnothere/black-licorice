@@ -3,7 +3,7 @@
     <div class="filter-function">
       <div class="filter-header">
         <strong>
-          <h3>Filters:</h3>
+          <h3 class="filters-header">Filters:</h3>
         </strong>
       </div>
       <div class="filter-content">
@@ -382,5 +382,9 @@ const deleteGroup = async (groupId) => {
   color: #fff;
   background-color: #007bff;
   border-radius: 4px;
+}
+
+.filters-header {
+  margin: 0;
 }
 </style>

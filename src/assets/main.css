@@ -26,6 +26,10 @@
 .nav-link:hover {
   background-color: #e0e0e0;
 }
+
+.custom-datepicker {
+  padding: 5px;
+}
 /* #app {
   max-width: 1280px;
   margin: 0 auto;

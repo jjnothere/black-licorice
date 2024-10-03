@@ -202,12 +202,12 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   align-items: center;
   background-color: white;
   border: 1px solid #ccc;
-  padding: 20px;
+  padding: 5px 20px;
   border-radius: 8px;
 }
 
 .metrics-header {
-  margin: 5px 0;
+  margin: 0;
   font-size: 1.5em;
   color: #333;
 }
@@ -229,9 +229,7 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 
 .metrics-info {
   display: flex;
-  justify-content: space-around;
   width: 100%;
-  margin-bottom: 20px;
 }
 
 .metrics-pods {
@@ -241,8 +239,6 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  /* Increase padding for better spacing */
   border: 1px solid #eee;
   border-radius: 8px;
   background-color: #f9f9f9;
@@ -262,32 +258,11 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 .metrics-numbers {
   font-size: 1.2em;
   color: #000;
-  margin-top: 5px;
   /* Add margin for better spacing between label and number */
-}
-
-.metrics-details {
-  margin-top: 20px;
-  width: 100%;
 }
 
 .metrics-details table {
   width: 100%;
   border-collapse: collapse;
-}
-
-.metrics-details th,
-.metrics-details td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  text-align: left;
-}
-
-.metrics-details th {
-  background-color: #f2f2f2;
-}
-
-.metrics-details td {
-  background-color: #fff;
 }
 </style>

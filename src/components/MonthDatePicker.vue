@@ -33,6 +33,6 @@ onMounted(() => {
 
 <style scoped>
 .month-date-picker {
-    margin-bottom: 20px;
+    margin-bottom: 5px;
 }
 </style>

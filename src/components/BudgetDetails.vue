@@ -276,7 +276,7 @@ const saveBudget = async () => {
     align-items: center;
     background-color: white;
     border: 1px solid #ccc;
-    padding: 20px;
+    padding: 5px 20px;
     border-radius: 8px;
 }
 
@@ -286,7 +286,6 @@ const saveBudget = async () => {
     /* Center the whole row */
     align-items: center;
     width: 100%;
-    margin-top: 10px;
     position: relative;
     /* To position the datepicker on the right */
 }
@@ -317,7 +316,6 @@ const saveBudget = async () => {
 .datepicker-wrapper {
     position: relative;
     width: 100%;
-    margin-bottom: 10px;
 }
 
 .calendar-icon {
@@ -335,8 +333,6 @@ const saveBudget = async () => {
 }
 
 .metrics-numbers {
-    font-size: 1.2em;
     color: #000;
-    margin-top: 5px;
 }
 </style>
