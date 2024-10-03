@@ -25,12 +25,10 @@
 
             <!-- Date Range Section on the right -->
             <div class="metrics-date">
-                <div class="metrics-label">Date Range</div>
+                <div class="metrics-label">Select Month</div>
                 <div class="datepicker-wrapper">
-                    <MonthDatePicker @update-date-range="updateDateRange" />
-                    <i class="fas fa-calendar-alt calendar-icon"></i>
+                    <MonthDatePicker class="monthpicker" @update-date-range="updateDateRange" />
                 </div>
-                <div class="metrics-numbers">{{ dateRange }}</div>
             </div>
         </div>
     </div>
@@ -311,6 +309,7 @@ const saveBudget = async () => {
     right: 0;
     /* Align to the right side of the container */
     text-align: right;
+    padding-top: 25px;
 }
 
 .datepicker-wrapper {

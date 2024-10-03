@@ -1,6 +1,5 @@
 <template>
   <div class="budget-tracker">
-    <h4>Details</h4>
     <div class="charts-container">
       <div class="line-chart-container">
         <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>

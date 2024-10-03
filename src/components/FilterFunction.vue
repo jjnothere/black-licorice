@@ -49,38 +49,38 @@
           <!-- Modal for adding group -->
           <div v-if="isGroupModalOpen" class="modal">
             <div class="modal-content">
-              <h3>Create New Group</h3>
-              <input v-model="newGroupName" placeholder="Group Name" />
+              <h3 class="model-heading">Create New Group</h3>
+              <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
 
               <!-- Budget input that allows only numeric input -->
-              <input type="text" id="new-group-budget" v-model="formattedNewGroupBudget"
-                @input="validateGroupBudgetInput" placeholder="Budget (Optional)" />
+              <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
 
-              <div v-for="campaign in campaigns" :key="campaign.id">
+              <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
                 <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
                 <label>{{ campaign.name }}</label>
               </div>
-              <button @click="createGroup">Create Group</button>
-              <button @click="closeGroupModal">Cancel</button>
+              <button class="modal-button" @click="createGroup">Create Group</button>
+              <button class="modal-button" @click="closeGroupModal">Cancel</button>
             </div>
           </div>
 
           <!-- Modal for editing group -->
           <div v-if="isEditGroupModalOpen" class="modal">
             <div class="modal-content">
-              <h3>Edit Group</h3>
-              <input v-model="editGroupName" placeholder="Group Name" />
+              <h3 class="model-heading">Edit Group</h3>
+              <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
 
               <!-- Budget input for editing group with validation -->
-              <input type="text" id="edit-group-budget" v-model="formattedEditGroupBudget"
-                @input="validateGroupBudgetInput" placeholder="Budget (Optional)" />
+              <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
 
-              <div v-for="campaign in campaigns" :key="campaign.id">
+              <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
                 <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
                 <label>{{ campaign.name }}</label>
               </div>
-              <button @click="saveEditedGroup">Save Changes</button>
-              <button @click="closeEditGroupModal">Cancel</button>
+              <button class="modal-button" @click="saveEditedGroup">Save Changes</button>
+              <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
             </div>
           </div>
         </div>
@@ -111,7 +111,7 @@ const isEditGroupModalOpen = ref(false);
 const editGroupId = ref(null);
 const editGroupName = ref('');
 const editGroupBudget = ref(0); // Budget for the group being edited
-const formattedEditGroupBudget = ref('0.00'); // Formatted budget for display
+const formattedEditGroupBudget = ref(''); // Formatted budget for display
 const editGroupCampaigns = ref([]);
 
 // Fetch campaigns and groups
@@ -156,7 +156,7 @@ watch(selectedCampaigns, (newSelectedCampaigns) => {
 });
 
 // Budget formatted variables for new and edited groups
-const formattedNewGroupBudget = ref('0.00');
+const formattedNewGroupBudget = ref('');
 
 // Function to validate numeric input for budget
 const validateGroupBudgetInput = (event) => {
@@ -214,7 +214,7 @@ const openEditGroupModal = (group) => {
   editGroupId.value = group.id;
   editGroupName.value = group.name;
   editGroupBudget.value = group.budget || 0; // Load existing budget
-  formattedEditGroupBudget.value = group.budget ? group.budget.toFixed(2) : '0.00'; // Format the budget
+  formattedEditGroupBudget.value = group.budget ? group.budget.toFixed(2) : ''; // Format the budget
   editGroupCampaigns.value = group.campaignIds || [];
   isEditGroupModalOpen.value = true;
 };
@@ -362,11 +362,15 @@ const deleteGroup = async (groupId) => {
   background-color: white;
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 1000px;
+  overflow-y: auto;
 }
 
 .modal-content {
   display: flex;
   flex-direction: column;
+  padding: 20px;
 }
 
 .icon-button {
@@ -386,5 +390,38 @@ const deleteGroup = async (groupId) => {
 
 .filters-header {
   margin: 0;
+}
+
+.model-heading {
+  margin: 0;
+  padding-bottom: 5px;
+}
+
+.modle-item {
+  margin-bottom: 10px;
+  font-size: 1.2em;
+}
+
+.modal-button {
+  padding: 10px 20px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  color: black;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-bottom: 5px;
+  max-width: 50%;
+}
+
+.modal-button:hover {
+  background-color: #e0e0e0;
+}
+
+.modal-text-input {
+  width: 50%;
+  max-width: 50%;
 }
 </style>
