@@ -1,6 +1,7 @@
 <template>
   <div class="content">
-    <budget-tracker :metrics="metrics" :date-range="dateRange" :groupName="groupName" :groupBudget="groupBudget">
+    <budget-tracker :metrics="metrics" :date-range="dateRange" :groupName="groupName" :groupBudget="groupBudget"
+      @budget-updated="handleBudgetUpdated">
     </budget-tracker>
   </div>
 </template>
@@ -23,4 +24,9 @@ watch(() => props.groupName, (newVal) => {
 watch(() => props.groupBudget, (newVal) => {
   console.log('groupBudget updated:', newVal);
 });
+
+const handleBudgetUpdated = (newBudget) => {
+  console.log('Budget updated in BudgetPacing:', newBudget);
+  // Logic to update the charts with the new budget
+};
 </script>

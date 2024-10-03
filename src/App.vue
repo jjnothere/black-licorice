@@ -10,8 +10,11 @@
         <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
-        <!-- Pass the dateRange to the Metrics component -->
-        <Metrics v-if="!isProfilePage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <!-- Conditionally render MetricsComponent on history page -->
+        <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <!-- Conditionally render BudgetDetails on budget-tracker page -->
+        <BudgetDetails v-if="isBudgetTrackerPage" :selectedCampaigns="selectedCampaigns" :groupName="groupName"
+          :groupBudget="groupBudget" @update:metrics="updateMetrics" />
         <!-- Pass metrics, dateRange, groupName, and groupBudget to child components via router-view -->
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
           :groupName="groupName" :groupBudget="groupBudget" />
@@ -26,6 +29,7 @@ import { useRoute } from 'vue-router';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
 import Metrics from '@/components/MetricsComponent.vue';
+import BudgetDetails from '@/components/BudgetDetails.vue';
 
 const selectedCampaigns = ref([]);
 const metrics = ref([]);
@@ -63,6 +67,8 @@ const updateMetrics = (newMetrics) => {
 const showFilterFunction = computed(() => route.path !== '/');
 const isAuthRoute = computed(() => route.path === '/auth');
 const isProfilePage = computed(() => route.path === '/profile');
+const isHistoryPage = computed(() => route.path === '/history');
+const isBudgetTrackerPage = computed(() => route.path === '/budget-tracker');
 
 // Watch for route changes and reset selected campaigns when on the home page
 watch(route, (newRoute) => {

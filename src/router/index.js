@@ -23,7 +23,7 @@ const routes = [
     component: BudgetTracker,
     props: (route) => ({
       groupName: route.query.groupName,
-      groupBudget: route.query.groupBudget
+      groupBudget: parseFloat(route.query.groupBudget) || 0
     }),
     meta: { requiresAuth: true }
   },

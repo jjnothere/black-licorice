@@ -312,6 +312,7 @@ const deleteGroup = async (groupId) => {
 /* Add styles for the modal and edit button */
 .layout {
   display: flex;
+  max-width: 300px;
 }
 
 .filter-function {

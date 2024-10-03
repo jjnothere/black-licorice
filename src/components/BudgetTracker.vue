@@ -1,22 +1,6 @@
 <template>
   <div class="budget-tracker">
     <h4>Details</h4>
-    <div class="budget-input">
-      <label for="budget">
-        <!-- Check if a specific group budget exists -->
-        <template v-if="groupBudget && groupBudget !== 0">
-          <!-- Displaying the budget statically if it exists -->
-          <p class="campaign-group-budget">{{ groupName ? `${groupName} Budget: $${formattedBudget}` : `Budget:
-            $${formattedBudget}` }}</p>
-        </template>
-        <template v-else>
-          <!-- Allowing input for a default budget if no specific group budget is set -->
-          Budget: $
-          <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput" @change="saveBudget"
-            placeholder="Enter Budget" />
-        </template>
-      </label>
-    </div>
     <div class="charts-container">
       <div class="line-chart-container">
         <line-chart :chart-data="chartData" :options="chartOptions"></line-chart>
@@ -87,22 +71,6 @@ onMounted(async () => {
     formattedBudget.value = defaultBudget.toFixed(2);
   }
 });
-// Validate and update budget input
-const validateBudgetInput = (event) => {
-  let value = event.target.value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
-  const decimalIndex = value.indexOf('.');
-
-  if (decimalIndex !== -1) {
-    value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
-  }
-
-  if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
-    value = value.slice(0, decimalIndex + 3); // Limit to two decimal places
-  }
-
-  formattedBudget.value = value;
-  budget.value = parseFloat(value) || 0;
-};
 
 // Watch for changes in the selected group name
 watch(() => props.groupName, (newName) => {
@@ -111,7 +79,6 @@ watch(() => props.groupName, (newName) => {
     selectedGroupName.value = newName;
   }
 });
-
 
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
@@ -140,15 +107,6 @@ const spendData = computed(() => {
   });
   return data;
 });
-
-// const budgetData = computed(() => {
-//   const dailyBudget = budget.value / (labels.value.length || 1);
-//   let cumulativeBudget = 0;
-//   return labels.value.map(() => {
-//     cumulativeBudget += dailyBudget;
-//     return cumulativeBudget;
-//   });
-// });
 
 const chartData = ref({
   labels: [],
@@ -277,7 +235,6 @@ onMounted(() => {
   updatePieChart();
 });
 
-
 // Fetch the budget from the server
 const fetchBudget = async () => {
   try {
@@ -369,29 +326,15 @@ const updatePieChart = async () => {
 
 watch(() => props.metrics, updatePieChart);
 
-// const validateBudgetInput = (event) => {
-//   let value = event.target.value;
-//   value = value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
-//   const decimalIndex = value.indexOf('.');
-//   if (decimalIndex !== -1) {
-//     value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
+// const saveBudget = async () => {
+//   try {
+//     await api.post('/save-budget', { budget: budget.value }, {
+//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+//     });
+//   } catch (error) {
+//     console.error('Error saving budget:', error);
 //   }
-//   if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
-//     value = value.slice(0, decimalIndex + 3); // Limit to 2 decimal places
-//   }
-//   formattedBudget.value = value;
-//   budget.value = parseFloat(value) || 0;
 // };
-
-const saveBudget = async () => {
-  try {
-    await api.post('/save-budget', { budget: budget.value }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-  } catch (error) {
-    console.error('Error saving budget:', error);
-  }
-};
 </script>
 
 <style scoped>
@@ -403,16 +346,6 @@ const saveBudget = async () => {
   border: 1px solid #ccc;
   padding: 20px;
   border-radius: 8px;
-}
-
-.budget-input {
-  margin-bottom: 20px;
-}
-
-.budget-input input {
-  margin-left: 5px;
-  width: 100px;
-  padding: 5px;
 }
 
 .charts-container {
