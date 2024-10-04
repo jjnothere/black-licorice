@@ -10,7 +10,9 @@
     <!-- Line chart section -->
     <div v-if="chartDataReady">
       <p class="chart-info">Click to add or remove chart metrics</p>
-      <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
+      <div class="line-chart-container">
+        <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
+      </div>
     </div>
 
     <!-- Table of differences -->
@@ -438,6 +440,7 @@ const getAnalyticsData = () => {
 
     chartOptions.value = {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: {
           title: {
@@ -449,7 +452,7 @@ const getAnalyticsData = () => {
           title: {
             display: true,
             text: 'Value'
-          }
+          },
         }
       }, plugins: {
         datalabels: false // Disable datalabels plugin for the line chart
@@ -679,5 +682,18 @@ td {
 
 .chart-info {
   text-align: center;
+}
+
+.line-chart-container {
+  width: 100%;
+  /* Keep the chart full-width */
+  max-height: 900px;
+}
+
+canvas {
+  min-height: 300px !important;
+  /* Enforces a minimum height of 300px */
+  height: auto !important;
+  /* Allows the height to adjust if it needs to grow beyond 300px */
 }
 </style>
