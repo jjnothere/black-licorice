@@ -1,3 +1,4 @@
+<!-- BudgetDetails.vue -->
 <template>
     <div class="metrics">
         <!-- Container to align budget and date range in a single row -->
@@ -260,6 +261,7 @@ const saveBudget = async () => {
         await api.post('/save-budget', { budget: budget.value }, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
+        console.log('Budget saved:', budget.value);
         emit('budget-updated', budget.value); // Emit budget-updated event
     } catch (error) {
         console.error('Error saving budget:', error);

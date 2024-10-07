@@ -1,3 +1,4 @@
+<!-- BudgetTracker.vue -->
 <template>
   <div class="budget-tracker">
     <div class="charts-container">
@@ -64,7 +65,6 @@ watch(() => props.groupBudget, async (newBudget) => {
 
 onMounted(async () => {
   if (!props.groupBudget) {
-    console.log('Component Mounted Without Group Budget, Fetching Default Budget...');
     const defaultBudget = await fetchDefaultBudget();
     budget.value = defaultBudget;
     formattedBudget.value = defaultBudget.toFixed(2);

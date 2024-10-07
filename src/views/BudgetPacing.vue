@@ -1,3 +1,4 @@
+<!-- BudgetPacing.vue -->
 <template>
   <div class="content">
     <budget-tracker :metrics="metrics" :date-range="dateRange" :groupName="groupName" :groupBudget="groupBudget"
