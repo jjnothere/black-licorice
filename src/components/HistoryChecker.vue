@@ -5,7 +5,35 @@
       <h3>Change History Log Journal</h3>
     </router-link>
     <br />
-    <!-- <button v-if="!isHomePage" @click="checkForChanges">Check for Changes</button> -->
+
+    <!-- Metric selection dropdowns -->
+    <div class="metric-selection">
+      <label for="metric1">Select Metric 1:</label>
+      <select id="metric1" v-model="selectedMetric1">
+        <option value="conversions">Conversions</option>
+        <option value="clicks">Clicks</option>
+        <option value="impressions">Impressions</option>
+        <option value="spend">Spend</option>
+      </select>
+
+      <label for="metric2">Select Metric 2:</label>
+      <select id="metric2" v-model="selectedMetric2">
+        <option value="none">None</option>
+        <option value="conversions">Conversions</option>
+        <option value="clicks">Clicks</option>
+        <option value="impressions">Impressions</option>
+        <option value="spend">Spend</option>
+      </select>
+
+      <!-- Time interval selection dropdown -->
+      <label for="timeInterval">Select Time Interval:</label>
+      <select id="timeInterval" v-model="selectedTimeInterval">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+      </select>
+    </div>
 
     <!-- Line chart section -->
     <div v-if="chartDataReady">
@@ -81,10 +109,9 @@ import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
+import { aggregateDataByInterval } from '@/utils/dataAggregator';
 
 const route = useRoute();
-
-// const isHomePage = computed(() => route.path === '/');
 const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
@@ -97,6 +124,31 @@ const props = defineProps({
 const chartData = ref({});
 const chartOptions = ref({});
 const chartDataReady = ref(false);
+
+// Reactive variables for selected metrics and time interval
+const selectedMetric1 = ref('clicks');
+const selectedMetric2 = ref('none');
+const selectedTimeInterval = ref('daily');
+
+// Time interval reactive state
+const aggregatedChartData = ref([]);
+
+// Function to aggregate data by the selected time interval
+const aggregateData = () => {
+  aggregatedChartData.value = aggregateDataByInterval(props.metrics, selectedTimeInterval.value);
+};
+
+// Watch for changes in the selected time interval and re-aggregate the data
+watch(selectedTimeInterval, () => {
+  aggregateData();
+});
+
+
+
+// Initial aggregation on component mount
+onMounted(() => {
+  aggregateData();
+});
 
 const fetchCurrentCampaigns = async () => {
   try {
@@ -223,8 +275,6 @@ const scrollToChange = (dateLabel) => {
   }
 };
 
-
-
 const resetChartData = () => {
   chartData.value = {};
   chartDataReady.value = false;
@@ -237,9 +287,10 @@ onMounted(async () => {
   getAnalyticsData();       // Rebuild chart data with red dots
 });
 
-watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
+watch([() => props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
   await fetchAllChanges();
   await checkForChanges();
+  getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
 });
 
 // Differences and campaigns
@@ -383,10 +434,8 @@ const getAnalyticsData = () => {
 
     // Prepare chart data (reverse the labels for reverse x-axis)
     const labels = Object.keys(aggregatedData).reverse(); // Reverse the order of the labels
-    const externalWebsiteConversions = labels.map(date => aggregatedData[date].conversions);
-    const landingPageClicks = labels.map(date => aggregatedData[date].clicks);
-    const impressions = labels.map(date => aggregatedData[date].impressions);
-    const costInLocalCurrency = labels.map(date => aggregatedData[date].spend);
+    const metric1Data = labels.map(date => aggregatedData[date][selectedMetric1.value]);
+    const metric2Data = selectedMetric2.value !== 'none' ? labels.map(date => aggregatedData[date][selectedMetric2.value]) : [];
 
     // Define point styling for dates with changes
     const pointBackgroundColors = labels.map(date => aggregatedData[date].hasChanges ? 'red' : 'black'); // Red points indicate changes
@@ -400,41 +449,23 @@ const getAnalyticsData = () => {
       labels,
       datasets: [
         {
-          label: 'Conversions',
-          data: externalWebsiteConversions,
-          borderColor: 'red',
+          label: selectedMetric1.value.charAt(0).toUpperCase() + selectedMetric1.value.slice(1),
+          data: metric1Data,
+          borderColor: 'blue',
           fill: false,
           pointBackgroundColor: pointBackgroundColors, // Highlight points with changes
           pointBorderColor: pointBorderColors,
           pointRadius: pointRadius, // Make red points bigger
         },
-        {
-          label: 'Clicks',
-          data: landingPageClicks,
-          borderColor: 'blue',
-          fill: false,
-          pointBackgroundColor: pointBackgroundColors,
-          pointBorderColor: pointBorderColors,
-          pointRadius: pointRadius,
-        },
-        {
-          label: 'Impressions',
-          data: impressions,
+        ...(selectedMetric2.value !== 'none' ? [{
+          label: selectedMetric2.value.charAt(0).toUpperCase() + selectedMetric2.value.slice(1),
+          data: metric2Data,
           borderColor: 'green',
           fill: false,
           pointBackgroundColor: pointBackgroundColors,
           pointBorderColor: pointBorderColors,
           pointRadius: pointRadius,
-        },
-        {
-          label: 'Spend',
-          data: costInLocalCurrency,
-          borderColor: 'purple',
-          fill: false,
-          pointBackgroundColor: pointBackgroundColors, // Highlight points with changes
-          pointBorderColor: pointBorderColors,
-          pointRadius: pointRadius, // Make red points bigger
-        }
+        }] : [])
       ]
     };
 
@@ -443,6 +474,7 @@ const getAnalyticsData = () => {
       maintainAspectRatio: false,
       scales: {
         x: {
+          type: 'category',
           title: {
             display: true,
             text: 'Date'
@@ -452,9 +484,10 @@ const getAnalyticsData = () => {
           title: {
             display: true,
             text: 'Value'
-          },
+          }
         }
-      }, plugins: {
+      },
+      plugins: {
         datalabels: false // Disable datalabels plugin for the line chart
       }
     };
@@ -530,6 +563,7 @@ const cancelEditMode = (changeId, noteId) => {
   note.newNote = note.note;
 };
 
+// Function to delete a note
 const deleteNotePrompt = async (changeId, noteId) => {
   try {
     await api.post('/delete-note', {
@@ -546,6 +580,7 @@ const deleteNotePrompt = async (changeId, noteId) => {
   }
 };
 
+// Function to format timestamp
 const formatTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return date.toLocaleString();
