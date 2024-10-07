@@ -109,7 +109,6 @@ import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
-import { aggregateDataByInterval } from '@/utils/dataAggregator';
 
 const route = useRoute();
 const isHistoryPage = computed(() => route.path === '/history');
@@ -130,25 +129,6 @@ const selectedMetric1 = ref('clicks');
 const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
 
-// Time interval reactive state
-const aggregatedChartData = ref([]);
-
-// Function to aggregate data by the selected time interval
-const aggregateData = () => {
-  aggregatedChartData.value = aggregateDataByInterval(props.metrics, selectedTimeInterval.value);
-};
-
-// Watch for changes in the selected time interval and re-aggregate the data
-watch(selectedTimeInterval, () => {
-  aggregateData();
-});
-
-
-
-// Initial aggregation on component mount
-onMounted(() => {
-  aggregateData();
-});
 
 const fetchCurrentCampaigns = async () => {
   try {
