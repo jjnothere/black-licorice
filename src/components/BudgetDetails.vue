@@ -30,7 +30,7 @@
 
 
 <script setup>
-import { ref, onMounted, watch, defineEmits } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import api from '@/api';
 import MonthDatePicker from '@/components/MonthDatePicker.vue';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
