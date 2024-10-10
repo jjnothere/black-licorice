@@ -379,52 +379,98 @@ watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
   getAnalyticsData(); // Update chart data if selected campaigns or date range change
 });
 
-// Function to process metrics data and update the chart
+
+const getAggregatedData = (data, interval) => {
+  const aggregatedData = {};
+
+  const getWeekStart = (date) => {
+    const dayOfWeek = date.getDay();
+    const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust when day is Sunday
+    return new Date(date.setDate(diff));
+  };
+
+  const getMonthStart = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  };
+
+  const getQuarterStart = (date) => {
+    const quarter = Math.floor(date.getMonth() / 3);
+    return new Date(date.getFullYear(), quarter * 3, 1);
+  };
+
+  data.forEach((item) => {
+    const dateParts = item.id.split('-');
+    if (dateParts.length === 4) {
+      const originalDate = new Date(`${dateParts[3]}-${dateParts[1]}-${dateParts[2]}`);
+      let keyDate;
+
+      switch (interval) {
+        case 'weekly':
+          keyDate = getWeekStart(new Date(originalDate));
+          break;
+        case 'monthly':
+          keyDate = getMonthStart(new Date(originalDate));
+          break;
+        case 'quarterly':
+          keyDate = getQuarterStart(new Date(originalDate));
+          break;
+        case 'daily':
+        default:
+          keyDate = originalDate;
+          break;
+      }
+
+      const key = keyDate.toISOString().split('T')[0]; // Use YYYY-MM-DD format
+
+      if (!aggregatedData[key]) {
+        aggregatedData[key] = {
+          conversions: 0,
+          clicks: 0,
+          impressions: 0,
+          spend: 0,
+          hasChanges: false
+        };
+      }
+
+      aggregatedData[key].conversions += item.conversions || 0;
+      aggregatedData[key].clicks += item.clicks || 0;
+      aggregatedData[key].impressions += item.impressions || 0;
+      aggregatedData[key].spend += parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
+
+      if (filteredDifferences.value.some(diff => new Date(diff.date).toLocaleDateString() === keyDate.toLocaleDateString())) {
+        aggregatedData[key].hasChanges = true;
+      }
+    }
+  });
+
+  return aggregatedData;
+};
+
+const formatDateLabel = (dateString) => {
+  const date = new Date(dateString);
+  const month = date.getMonth() + 1; // No leading zero for the month
+  const day = date.getDate(); // No leading zero for the day
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`; // Format as "M/D/YYYY"
+};
+
 const getAnalyticsData = () => {
   if (props.metrics && props.metrics.length) {
-    const aggregatedData = props.metrics.reduce((acc, item) => {
-      const itemId = item.id;
-      const idParts = itemId.split('-');
-      if (idParts.length === 4) {
-        const dateKey = `${idParts[1]}/${idParts[2]}/${idParts[3]}`; // Date in MM/DD/YYYY format
+    const aggregatedData = getAggregatedData(props.metrics, selectedTimeInterval.value);
 
-        if (!acc[dateKey]) {
-          acc[dateKey] = {
-            conversions: 0,
-            clicks: 0,
-            impressions: 0,
-            spend: 0,
-            hasChanges: false // Initialize hasChanges to false
-          };
-        }
+    const labels = Object.keys(aggregatedData)
+      .reverse()
+      .map(date => formatDateLabel(date)); // Format the date as "MM/DD/YYYY"
 
-        const spendValue = parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
-        acc[dateKey].conversions += item.conversions || 0;
-        acc[dateKey].clicks += item.clicks || 0;
-        acc[dateKey].impressions += item.impressions || 0;
-        acc[dateKey].spend += spendValue;
+    const metric1Data = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric1.value]);
+    const metric2Data = selectedMetric2.value !== 'none'
+      ? labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric2.value])
+      : [];
 
-        // Check if the date has changes
-        if (filteredDifferences.value.some(diff => new Date(diff.date).toLocaleDateString() === dateKey)) {
-          acc[dateKey].hasChanges = true; // Mark if changes exist for this date
-        }
-      }
-      return acc;
-    }, {});
+    const pointBackgroundColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'red' : 'black');
+    const pointBorderColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'darkred' : 'black');
+    const pointRadius = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 4 : 3);
 
-    // Prepare chart data (reverse the labels for reverse x-axis)
-    const labels = Object.keys(aggregatedData).reverse(); // Reverse the order of the labels
-    const metric1Data = labels.map(date => aggregatedData[date][selectedMetric1.value]);
-    const metric2Data = selectedMetric2.value !== 'none' ? labels.map(date => aggregatedData[date][selectedMetric2.value]) : [];
-
-    // Define point styling for dates with changes
-    const pointBackgroundColors = labels.map(date => aggregatedData[date].hasChanges ? 'red' : 'black'); // Red points indicate changes
-    const pointBorderColors = labels.map(date => aggregatedData[date].hasChanges ? 'darkred' : 'black');
-
-    // Define point radius: larger points for those with changes
-    const pointRadius = labels.map(date => aggregatedData[date].hasChanges ? 4 : 3); // Bigger points (8) for changes, normal points (4) for others
-
-    // Set up chart data and options
     chartData.value = {
       labels,
       datasets: [
@@ -433,9 +479,9 @@ const getAnalyticsData = () => {
           data: metric1Data,
           borderColor: 'blue',
           fill: false,
-          pointBackgroundColor: pointBackgroundColors, // Highlight points with changes
+          pointBackgroundColor: pointBackgroundColors,
           pointBorderColor: pointBorderColors,
-          pointRadius: pointRadius, // Make red points bigger
+          pointRadius: pointRadius,
         },
         ...(selectedMetric2.value !== 'none' ? [{
           label: selectedMetric2.value.charAt(0).toUpperCase() + selectedMetric2.value.slice(1),
@@ -468,7 +514,7 @@ const getAnalyticsData = () => {
         }
       },
       plugins: {
-        datalabels: false // Disable datalabels plugin for the line chart
+        datalabels: false
       }
     };
 
