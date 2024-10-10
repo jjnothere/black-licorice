@@ -13,7 +13,9 @@
             <p><strong>Campaigns</strong></p>
             <div v-for="campaign in campaigns" :key="campaign.id">
               <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
-              <label>{{ campaign.name }}</label>
+              <Tooltip :text="campaign.name">
+                <label class="campaign-label">{{ campaign.name }}</label>
+              </Tooltip>
             </div>
           </div>
 
@@ -92,6 +94,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import api from '@/api';
+import Tooltip from './TooltipComponent.vue';
 
 const emit = defineEmits(['update:selectedCampaigns', 'update:budget', 'update:budgetData']);
 
@@ -312,7 +315,7 @@ const deleteGroup = async (groupId) => {
 /* Add styles for the modal and edit button */
 .layout {
   display: flex;
-  max-width: 300px;
+  max-width: 250px;
 }
 
 .filter-function {
@@ -346,6 +349,19 @@ const deleteGroup = async (groupId) => {
   cursor: pointer;
   padding: 5px;
   color: #007bff;
+}
+
+/* Align checkboxes and radio buttons with text */
+input[type="checkbox"] {
+  vertical-align: middle;
+  margin-top: -1px;
+  /* Adjust this value if needed to better align */
+}
+
+input[type="radio"] {
+  vertical-align: middle;
+  margin-top: -4px;
+  /* Adjust this value if needed to better align */
 }
 
 .add-group-button:hover {
@@ -423,5 +439,48 @@ const deleteGroup = async (groupId) => {
 .modal-text-input {
   width: 50%;
   max-width: 50%;
+}
+
+/* FilterFunction.vue */
+.campaign-label {
+  display: inline-block;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  position: relative;
+}
+
+/* Tooltip styling */
+.campaign-label[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  top: 100%;
+  /* Position below the label */
+  left: 0;
+  transform: translateY(5px);
+  /* Add some spacing from the label */
+  z-index: 10;
+  font-size: 0.8em;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Tooltip arrow styling */
+.campaign-label[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  border-style: solid;
+  border-width: 5px 5px 0;
+  border-color: #333 transparent transparent transparent;
+  top: calc(100% + 5px);
+  /* Position the arrow below the label */
+  left: 10px;
+  z-index: 10;
 }
 </style>

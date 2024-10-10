@@ -1,43 +1,41 @@
 <!-- HistoryChecker.vue -->
 <template>
   <div class="history-checker">
-    <router-link v-if="!isHistoryPage" to="/history" class="nav-link">
-      <h3>Change History Log Journal</h3>
-    </router-link>
-    <br />
-
     <!-- Metric selection dropdowns -->
     <div class="metric-selection">
-      <label for="metric1">Select Metric 1:</label>
-      <select id="metric1" v-model="selectedMetric1">
-        <option value="conversions">Conversions</option>
-        <option value="clicks">Clicks</option>
-        <option value="impressions">Impressions</option>
-        <option value="spend">Spend</option>
-      </select>
+      <div class="metric-dropdown">
+        <span class="color-indicator blue"></span>
+        <select id="metric1" v-model="selectedMetric1">
+          <option value="conversions">Conversions</option>
+          <option value="clicks">Clicks</option>
+          <option value="impressions">Impressions</option>
+          <option value="spend">Spend</option>
+        </select>
+      </div>
+      <div class="metric-dropdown">
+        <span class="color-indicator red"></span>
+        <select id="metric2" v-model="selectedMetric2">
+          <option value="none">None</option>
+          <option value="conversions">Conversions</option>
+          <option value="clicks">Clicks</option>
+          <option value="impressions">Impressions</option>
+          <option value="spend">Spend</option>
+        </select>
+      </div>
 
-      <label for="metric2">Select Metric 2:</label>
-      <select id="metric2" v-model="selectedMetric2">
-        <option value="none">None</option>
-        <option value="conversions">Conversions</option>
-        <option value="clicks">Clicks</option>
-        <option value="impressions">Impressions</option>
-        <option value="spend">Spend</option>
-      </select>
-
-      <!-- Time interval selection dropdown -->
-      <label for="timeInterval">Select Time Interval:</label>
-      <select id="timeInterval" v-model="selectedTimeInterval">
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="quarterly">Quarterly</option>
-      </select>
+      <!-- Direct dropdown for time interval selection -->
+      <div class="time-interval-dropdown">
+        <select v-model="selectedTimeInterval">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+        </select>
+      </div>
     </div>
 
     <!-- Line chart section -->
     <div v-if="chartDataReady">
-      <p class="chart-info">Click to add or remove chart metrics</p>
       <div class="line-chart-container">
         <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
       </div>
@@ -128,7 +126,6 @@ const chartDataReady = ref(false);
 const selectedMetric1 = ref('clicks');
 const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
-
 
 const fetchCurrentCampaigns = async () => {
   try {
@@ -633,8 +630,53 @@ const formatTimestamp = (timestamp) => {
   padding: 20px;
   background-color: white;
   border: 1px solid #ccc;
-  padding: 20px;
   border-radius: 8px;
+}
+
+/* Align metric-selection container to the right */
+.metric-selection {
+  display: flex;
+  justify-content: flex-end;
+  /* Align content to the right */
+  margin-bottom: 15px;
+}
+
+/* Dropdowns container */
+.dropdowns-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Position the color indicator inside the dropdown area */
+.metric-dropdown {
+  position: relative;
+  margin-right: 5px;
+}
+
+.color-indicator {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.color-indicator.blue {
+  background-color: blue;
+}
+
+.color-indicator.red {
+  background-color: #008000;
+}
+
+select {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  appearance: none;
 }
 
 button {
