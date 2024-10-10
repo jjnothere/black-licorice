@@ -1,15 +1,15 @@
 <!-- BudgetPacing.vue -->
 <template>
   <div class="content">
-    <budget-tracker :metrics="metrics" :date-range="dateRange" :groupName="groupName" :groupBudget="groupBudget"
-      @budget-updated="handleBudgetUpdated">
-    </budget-tracker>
+    <budget-details :groupName="groupName" :groupBudget="groupBudget" @budget-updated="handleBudgetUpdated" />
+    <budget-tracker :metrics="metrics" :dateRange="dateRange" :groupName="groupName" :groupBudget="updatedBudget" />
   </div>
 </template>
 
 <script setup>
-import { watch } from 'vue';
-import BudgetTracker from '../components/BudgetTracker.vue'; // Import the component
+import { ref } from 'vue';
+import BudgetTracker from '../components/BudgetTracker.vue';
+import BudgetDetails from '../components/BudgetDetails.vue';
 
 const props = defineProps({
   groupName: String,
@@ -18,16 +18,10 @@ const props = defineProps({
   dateRange: Object
 });
 
-// Example usage of props
-watch(() => props.groupName, (newVal) => {
-  console.log('groupName updated:', newVal);
-});
-watch(() => props.groupBudget, (newVal) => {
-  console.log('groupBudget updated:', newVal);
-});
+const updatedBudget = ref(props.groupBudget || 0);
 
 const handleBudgetUpdated = (newBudget) => {
-  console.log('Budget updated in BudgetPacing:', newBudget);
-  // Logic to update the charts with the new budget
+  updatedBudget.value = newBudget;
+  console.log('Updated budget in BudgetPacing:', newBudget);
 };
 </script>

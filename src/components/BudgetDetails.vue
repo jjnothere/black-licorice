@@ -1,21 +1,16 @@
 <!-- BudgetDetails.vue -->
 <template>
     <div class="metrics">
-        <!-- Container to align budget and date range in a single row -->
         <div class="metrics-row">
-            <!-- Center Budget Details Section -->
             <div class="budget-details">
                 <h3 class="metrics-header">Budget Details</h3>
                 <div class="budget-input">
                     <label for="budget">
-                        <!-- Check if a specific group budget exists -->
                         <template v-if="groupBudget && groupBudget !== 0">
-                            <!-- Displaying the budget statically if it exists -->
                             <p class="campaign-group-budget">{{ groupName ? `${groupName} Budget: $${formattedBudget}` :
                                 `Budget: $${formattedBudget}` }}</p>
                         </template>
                         <template v-else>
-                            <!-- Allowing input for a default budget if no specific group budget is set -->
                             Budget: $
                             <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput"
                                 @change="saveBudget" placeholder="Enter Budget" />
@@ -23,8 +18,6 @@
                     </label>
                 </div>
             </div>
-
-            <!-- Date Range Section on the right -->
             <div class="metrics-date">
                 <div class="metrics-label">Select Month</div>
                 <div class="datepicker-wrapper">
@@ -35,8 +28,9 @@
     </div>
 </template>
 
+
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, defineEmits } from 'vue';
 import api from '@/api';
 import MonthDatePicker from '@/components/MonthDatePicker.vue';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
@@ -47,7 +41,6 @@ const props = defineProps({
     groupName: String,
     groupBudget: Number
 });
-
 const emit = defineEmits(['update:metrics', 'update-date-range', 'budget-updated']);
 const metrics = ref([]);
 const selectedStartDate = ref(new Date());
@@ -257,11 +250,13 @@ const validateBudgetInput = (event) => {
 };
 
 const saveBudget = async () => {
+    const newBudget = parseFloat(formattedBudget.value) || 0;
     try {
         await api.post('/save-budget', { budget: budget.value }, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         console.log('Budget saved:', budget.value);
+        emit('budget-updated', newBudget); // Emit the updated budget value
         emit('budget-updated', budget.value); // Emit budget-updated event
     } catch (error) {
         console.error('Error saving budget:', error);
