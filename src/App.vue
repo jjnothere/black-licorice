@@ -7,18 +7,15 @@
     </div>
     <div v-else class="layout">
       <div v-if="showFilterFunction && !isProfilePage" class="filter-function">
-        <!-- Pass the necessary event handlers to FilterFunction -->
         <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
-        <!-- Conditionally render MetricsComponent on history page -->
         <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-        <!-- Conditionally render BudgetDetails on budget-tracker page -->
+        <!-- Use BudgetDetails for budget updates -->
         <BudgetDetails v-if="isBudgetTrackerPage" :selectedCampaigns="selectedCampaigns" :groupName="groupName"
-          :groupBudget="groupBudget" @update:metrics="updateMetrics" />
-        <!-- Pass metrics, dateRange, groupName, and groupBudget to child components via router-view -->
+          :groupBudget="groupBudget" @budget-updated="handleBudgetUpdated" @update:metrics="updateMetrics" />
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
-          :groupName="groupName" :groupBudget="groupBudget" />
+          :groupName="groupName" :budget="budget" />
       </div>
     </div>
   </div>
@@ -39,24 +36,21 @@ const dateRange = ref({
   end: new Date()
 });
 
-// New group-related data
 const groupName = ref('');
 const groupBudget = ref(0);
+const budget = ref(0);
 
 const route = useRoute();
 
-// Update the selected campaigns from the FilterFunction component
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
 };
 
-// Update the budget and group name from the FilterFunction component
 const updateBudgetData = ({ name, budget }) => {
   groupName.value = name;
   groupBudget.value = budget;
 };
 
-// Update the metrics and date range from the Metrics component
 const updateMetrics = (newMetrics) => {
   metrics.value = newMetrics.metrics;
   dateRange.value = {
@@ -65,13 +59,18 @@ const updateMetrics = (newMetrics) => {
   };
 };
 
+// Handle budget update and propagate the change to child components
+const handleBudgetUpdated = (newBudget) => {
+  budget.value = newBudget;
+  console.log('Updated budget in App.vue:', newBudget);
+};
+
 const showFilterFunction = computed(() => route.path !== '/');
 const isAuthRoute = computed(() => route.path === '/auth');
 const isProfilePage = computed(() => route.path === '/profile');
 const isHistoryPage = computed(() => route.path === '/history');
 const isBudgetTrackerPage = computed(() => route.path === '/budget-tracker');
 
-// Watch for route changes and reset selected campaigns when on the home page
 watch(route, (newRoute) => {
   if (newRoute.path === '/') {
     selectedCampaigns.value = [];

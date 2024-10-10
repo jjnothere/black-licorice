@@ -22,10 +22,11 @@ const props = defineProps({
   metrics: Array,
   dateRange: Object,
   groupName: String,
-  groupBudget: Number
+  groupBudget: Number,
+  budget: Number, // Use the budget prop here
 });
 
-const budget = ref(0);
+const budgetRef = ref(0);
 const formattedBudget = ref('0.00');
 const selectedGroupName = ref('');
 const campaignNames = ref({}); // Define campaignNames before using it
@@ -53,12 +54,12 @@ const fetchDefaultBudget = async () => {
 watch(() => props.groupBudget, async (newBudget) => {
   if (newBudget !== undefined && newBudget !== null) {
     console.log(`New Group Budget: ${newBudget}`);
-    budget.value = newBudget;
+    budgetRef.value = newBudget;
     formattedBudget.value = newBudget.toFixed(2);
   } else {
     console.log('No Group Budget Provided, Fetching Default Budget...');
     const defaultBudget = await fetchDefaultBudget();
-    budget.value = defaultBudget;
+    budgetRef.value = defaultBudget;
     formattedBudget.value = defaultBudget.toFixed(2);
   }
 }, { immediate: true });
@@ -66,7 +67,7 @@ watch(() => props.groupBudget, async (newBudget) => {
 onMounted(async () => {
   if (!props.groupBudget) {
     const defaultBudget = await fetchDefaultBudget();
-    budget.value = defaultBudget;
+    budgetRef.value = defaultBudget;
     formattedBudget.value = defaultBudget.toFixed(2);
   }
 });
@@ -190,7 +191,7 @@ const updateChart = async () => {
   const projectedSpendDataset = new Array(actualSpendData.length).fill(null).concat(projectedSpendData);
 
   // Calculate cumulative budget data for the chart
-  const dailyBudget = budget.value / allLabels.length;
+  const dailyBudget = budgetRef.value / allLabels.length;
   const budgetLine = allLabels.map((_, index) => (index + 1) * dailyBudget);
 
   // Update chartData to include actual, projected, and budget data
@@ -223,7 +224,7 @@ const updateChart = async () => {
   await nextTick();
 };
 
-watch(budget, updateChart);
+watch(budgetRef, updateChart);
 watch(() => props.metrics, updateChart);
 watch(() => props.dateRange, updateChart); // Watch the date range for changes
 
@@ -240,8 +241,8 @@ const fetchBudget = async () => {
     const response = await api.get('/get-budget', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    budget.value = response.data.budget;
-    formattedBudget.value = budget.value.toFixed(2);
+    budgetRef.value = response.data.budget;
+    formattedBudget.value = budgetRef.value.toFixed(2);
   } catch (error) {
     console.error('Error fetching budget:', error);
   }

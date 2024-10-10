@@ -250,13 +250,11 @@ const validateBudgetInput = (event) => {
 };
 
 const saveBudget = async () => {
-    const newBudget = parseFloat(formattedBudget.value) || 0;
     try {
         await api.post('/save-budget', { budget: budget.value }, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         console.log('Budget saved:', budget.value);
-        emit('budget-updated', newBudget); // Emit the updated budget value
         emit('budget-updated', budget.value); // Emit budget-updated event
     } catch (error) {
         console.error('Error saving budget:', error);
