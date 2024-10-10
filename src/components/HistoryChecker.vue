@@ -233,25 +233,35 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
+  console.log('Original Date Label:', dateLabel); // Debugging log
+
+  // Adjust the dateLabel by adding one day
+  const adjustedDate = new Date(dateLabel);
+  adjustedDate.setDate(adjustedDate.getDate());
+  const adjustedLabelDate = adjustedDate.toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
+
+  console.log('Adjusted Date Label:', adjustedLabelDate);
+
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
-    return new Date(diff.date).toLocaleDateString() === new Date(dateLabel).toLocaleDateString();
+    const diffDate = new Date(diff.date).toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
+
+    console.log(`Comparing: ${diffDate} with ${adjustedLabelDate}`);
+    return diffDate === adjustedLabelDate;
   });
 
   if (matchingIndex !== -1) {
     const changeRow = document.getElementById(`changeRow-${matchingIndex}`);
     if (changeRow) {
       changeRow.scrollIntoView({ behavior: 'smooth' });
-
-      // Log to verify that class is added
-
-      // Add the flash-row class
       changeRow.classList.add('flash-row');
-
-      // Remove the flash-row class after the animation completes (1s * 3 repeats)
       setTimeout(() => {
         changeRow.classList.remove('flash-row');
-      }, 3000); // Adjust timeout to match animation duration (3 repeats at 1s each)
+      }, 3000);
+    } else {
+      console.error(`Element changeRow-${matchingIndex} not found`);
     }
+  } else {
+    console.error('No matching index found for adjusted date:', adjustedLabelDate);
   }
 };
 
@@ -460,7 +470,11 @@ const getAnalyticsData = () => {
 
     const labels = Object.keys(aggregatedData)
       .reverse()
-      .map(date => formatDateLabel(date)); // Format the date as "MM/DD/YYYY"
+      .map(date => {
+        const adjustedDate = new Date(date);
+        adjustedDate.setDate(adjustedDate.getDate() + 1); // Shift date forward by one day
+        return formatDateLabel(adjustedDate.toISOString().split('T')[0]);
+      });
 
     const metric1Data = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric1.value]);
     const metric2Data = selectedMetric2.value !== 'none'
@@ -521,6 +535,7 @@ const getAnalyticsData = () => {
     chartDataReady.value = true;
   }
 };
+
 // Functions for adding/editing/deleting notes
 const enableAddNotePrompt = (id) => {
   const difference = differences.value.find(diff => diff._id === id);
