@@ -314,3 +314,4 @@ const keyMapping = {
   unitCost: 'Unit Cost',
   version: 'Version'
 }
+export { countryCodes, SeniorityCodes, colorMapping, keyMapping }
