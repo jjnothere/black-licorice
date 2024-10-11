@@ -342,10 +342,39 @@ watch(() => props.metrics, updatePieChart);
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: white;
-  border: 1px solid #ccc;
   padding: 20px;
-  border-radius: 8px;
+  position: relative;
+  padding: 15px;
+  background-color: #F9F9F8;
+  border-radius: 20px;
+  color: #1C1B21;
+}
+
+.budget-tracker::before,
+.budget-tracker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.budget-tracker::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.budget-tracker::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
 }
 
 .charts-container {
@@ -360,29 +389,5 @@ watch(() => props.metrics, updatePieChart);
 
 .pie-chart-container {
   flex: 30%;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-td {
-  background-color: #fff;
-}
-
-.campaign-group-budget {
-  margin: 5.5px 0;
 }
 </style>

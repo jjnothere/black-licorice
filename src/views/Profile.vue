@@ -80,11 +80,39 @@ onMounted(() => {
 .profile {
   display: flex;
   flex-direction: column;
-  background-color: white;
-  border: 1px solid #ccc;
   padding: 20px;
-  border-radius: 8px;
+  position: relative;
+  background-color: #F9F9F8;
+  border-radius: 20px;
 }
+
+.profile::before,
+.profile::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.profile::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.profile::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
+}
+
 
 .profile-info {
   margin-bottom: 20px;
@@ -124,7 +152,7 @@ form input {
 
 button {
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: #61bca8ff;
   color: white;
   border: none;
   border-radius: 4px;

@@ -1,6 +1,6 @@
 <!-- App.vue -->
 <template>
-  <div>
+  <div class="full-content">
     <HeaderComponent v-if="!isAuthRoute" />
     <div v-if="isAuthRoute" class="auth-layout">
       <router-view></router-view>

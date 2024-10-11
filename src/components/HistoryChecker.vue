@@ -571,10 +571,37 @@ const formatTimestamp = (timestamp) => {
 
 <style scoped>
 .history-checker {
-  padding: 20px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  position: relative;
+  padding: 15px;
+  background-color: #F9F9F8;
+  border-radius: 20px;
+}
+
+.history-checker::before,
+.history-checker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.history-checker::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.history-checker::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
 }
 
 /* Align metric-selection container to the right */
@@ -625,7 +652,7 @@ select {
 
 button {
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: #61bca8ff;
   color: white;
   border: none;
   border-radius: 4px;
@@ -633,14 +660,38 @@ button {
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #61bca8ff;
 }
 
 table {
   margin-top: 10px;
   width: 100%;
-  border-collapse: collapse;
-  border-radius: 8px;
+  border-collapse: separate;
+  /* Change from collapse to separate */
+  border-spacing: 0;
+  /* Ensure there's no gap between cells */
+  border-radius: 20px;
+  /* Apply border radius */
+  overflow: hidden;
+  /* Hide overflow for rounded corners */
+  color: #1C1B21;
+}
+
+/* Apply border-radius to the table header and first/last rows */
+th:first-child {
+  border-top-left-radius: 20px;
+}
+
+th:last-child {
+  border-top-right-radius: 20px;
+}
+
+tr:last-child td:first-child {
+  border-bottom-left-radius: 20px;
+}
+
+tr:last-child td:last-child {
+  border-bottom-right-radius: 20px;
 }
 
 th,
@@ -674,12 +725,12 @@ td {
   border: none;
   cursor: pointer;
   padding: 5px;
-  color: #007bff;
+  color: #61bca8ff;
 }
 
 .icon-button:hover {
   color: #fff;
-  background-color: #007bff;
+  background-color: #61bca8ff;
 }
 
 .note-input {

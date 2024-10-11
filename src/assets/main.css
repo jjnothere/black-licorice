@@ -1,4 +1,64 @@
 @import './base.css';
+
+.full-content {
+  font-family: Georgia;
+  color: #1c1b21;
+}
+
+/* Custom appearance for checkboxes */
+input[type='checkbox'] {
+  accent-color: #61bca8ff; /* For the checked state in modern browsers */
+  border: 2px solid #61bca8ff; /* Green border when unchecked */
+  width: 14px;
+  height: 14px;
+}
+
+/* Ensure the border color remains consistent when not checked */
+input[type='checkbox']:not(:checked) {
+  border-color: #61bca8ff;
+}
+
+/* Style for checked state */
+input[type='checkbox']:checked {
+  background-color: #61bca8ff;
+  border-color: #61bca8ff;
+}
+
+/* Custom radio button styling */
+input[type='radio'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #61bca8ff; /* Outer circle color */
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  background-color: #fff;
+}
+
+/* Styling for checked state */
+input[type='radio']:checked::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #61bca8ff; /* Inner dot color */
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Hover and focus styles for better accessibility */
+input[type='radio']:hover {
+  border-color: #61bca8ff;
+}
+
+input[type='radio']:focus {
+  outline: 2px solid #61bca8ff;
+}
 .old-value {
   background-color: #ffb8b8;
 }

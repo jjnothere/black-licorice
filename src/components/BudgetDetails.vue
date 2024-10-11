@@ -1,9 +1,9 @@
 <!-- BudgetDetails.vue -->
 <template>
-    <div class="metrics">
-        <div class="metrics-row">
+    <div class="budget">
+        <div class="budget-row">
             <div class="budget-details">
-                <h3 class="metrics-header">Budget Details</h3>
+                <h3 class="budget-header">Budget Details</h3>
                 <div class="budget-input">
                     <label for="budget">
                         <template v-if="groupBudget && groupBudget !== 0">
@@ -18,8 +18,8 @@
                     </label>
                 </div>
             </div>
-            <div class="metrics-date">
-                <div class="metrics-label">Select Month</div>
+            <div class="budget-date">
+                <div class="budget-label">Select Month</div>
                 <div class="datepicker-wrapper">
                     <MonthDatePicker class="monthpicker" @update-date-range="updateDateRange" />
                 </div>
@@ -263,7 +263,7 @@ const saveBudget = async () => {
 </script>
 
 <style scoped>
-.metrics {
+.budget {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -273,7 +273,41 @@ const saveBudget = async () => {
     border-radius: 8px;
 }
 
-.metrics-row {
+.budget {
+    position: relative;
+    padding: 15px;
+    background-color: #F9F9F8;
+    border-radius: 20px;
+}
+
+.budget::before,
+.budget::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 20px;
+    pointer-events: none;
+}
+
+.budget::before {
+    border: 3px solid #BEBDBF;
+    /* Inner border color */
+    top: 5px;
+    /* Gap between the borders */
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+}
+
+.budget::after {
+    border: 3px solid #1C1B21;
+    /* Outer border color */
+}
+
+.budget-row {
     display: flex;
     justify-content: center;
     /* Center the whole row */
@@ -287,7 +321,7 @@ const saveBudget = async () => {
     text-align: center;
 }
 
-.metrics-header {
+.budget-header {
     margin: 5px 0;
     font-size: 1.5em;
     color: #333;
@@ -299,7 +333,7 @@ const saveBudget = async () => {
 }
 
 /* Keep the date range section aligned to the right */
-.metrics-date {
+.budget-date {
     position: absolute;
     right: 0;
     /* Align to the right side of the container */
@@ -321,12 +355,12 @@ const saveBudget = async () => {
     pointer-events: none;
 }
 
-.metrics-label {
+.budget-label {
     font-weight: bold;
-    color: #666;
+    color: #1C1B21;
 }
 
-.metrics-numbers {
-    color: #000;
+.budget-numbers {
+    color: #1C1B21;
 }
 </style>

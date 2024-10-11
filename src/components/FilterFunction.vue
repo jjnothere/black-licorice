@@ -5,12 +5,13 @@
         <strong>
           <h3 class="filters-header">Filters:</h3>
         </strong>
+        <div class="rounded-line"></div>
       </div>
       <div class="filter-content">
         <div class="filters">
           <!-- Campaigns filter -->
           <div class="filter-group">
-            <p><strong>Campaigns</strong></p>
+            <p class="filter-heading"><strong>Campaigns</strong></p>
             <div v-for="campaign in campaigns" :key="campaign.id">
               <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
               <Tooltip :text="campaign.name">
@@ -21,7 +22,7 @@
 
           <!-- Campaign Groups filter with radio buttons and None option -->
           <div class="filter-group">
-            <p><strong>Campaign Groups</strong></p>
+            <p class="filter-heading"><strong>Campaign Groups</strong></p>
             <!-- Default "None" option that clears all selections -->
             <div>
               <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
@@ -319,14 +320,55 @@ const deleteGroup = async (groupId) => {
 }
 
 .filter-function {
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 8px;
+  position: relative;
+  padding: 15px;
+  background-color: #F9F9F8;
+  border-radius: 20px;
 }
 
+.filter-function::before,
+.filter-function::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.filter-function::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.filter-function::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
+}
+
+/* CSS for the rounded line */
 .filter-header {
-  border-bottom: 1px solid orange;
-  margin-bottom: 10px;
+  position: relative;
+  padding-bottom: 10px;
+  /* Add some padding for spacing */
+}
+
+.rounded-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background-color: #F3D287;
+  border-radius: 20px;
+  /* Make the line edges rounded */
 }
 
 .filter-content {
@@ -348,7 +390,7 @@ const deleteGroup = async (groupId) => {
   border: none;
   cursor: pointer;
   padding: 5px;
-  color: #007bff;
+  color: #61bca8ff;
 }
 
 /* Align checkboxes and radio buttons with text */
@@ -365,23 +407,59 @@ input[type="radio"] {
 }
 
 .add-group-button:hover {
-  background-color: #007bff;
+  background-color: #61bca8ff;
   color: #fff;
   border-radius: 4px;
 }
 
 .modal {
+  z-index: 10;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: white;
+  background-color: #F9F9F8;
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   width: 90%;
   max-width: 1000px;
   overflow-y: auto;
+  border-radius: 20px;
+
 }
+
+.modal::before,
+.modal::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.modal::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.modal::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
+}
+
+
+
+
+
+
 
 .modal-content {
   display: flex;
@@ -394,18 +472,19 @@ input[type="radio"] {
   border: none;
   cursor: pointer;
   padding: 5px;
-  color: #007bff;
+  color: #61bca8ff;
   margin-left: 2px;
 }
 
 .icon-button:hover {
   color: #fff;
-  background-color: #007bff;
+  background-color: #61bca8ff;
   border-radius: 4px;
 }
 
 .filters-header {
   margin: 0;
+  font-size: 25px;
 }
 
 .model-heading {
@@ -482,5 +561,11 @@ input[type="radio"] {
   /* Position the arrow below the label */
   left: 10px;
   z-index: 10;
+}
+
+.filter-heading {
+  font-size: 20px;
+  text-transform: uppercase;
+  margin: 5px 0;
 }
 </style>

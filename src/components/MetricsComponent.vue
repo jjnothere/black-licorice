@@ -200,16 +200,44 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 5px 20px;
   border-radius: 8px;
+  position: relative;
+  padding: 15px;
+  background-color: #F9F9F8;
+  border-radius: 20px;
+}
+
+.metrics::before,
+.metrics::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.metrics::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.metrics::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
 }
 
 .metrics-header {
   margin: 0;
   font-size: 1.5em;
-  color: #333;
+  color: #1C1B21;
 }
 
 .datepicker-wrapper {
@@ -223,7 +251,7 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #888;
+  color: #61bca8ff;
   pointer-events: none;
 }
 
@@ -239,9 +267,9 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background-color: #f9f9f9;
+  border: 1px solid #61bca8ff;
+  border-radius: 20px;
+  background-color: #fff;
   margin: 5px;
 }
 
@@ -252,12 +280,12 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 
 .metrics-label {
   font-weight: bold;
-  color: #666;
+  color: #1C1B21;
 }
 
 .metrics-numbers {
   font-size: 1.2em;
-  color: #000;
+  color: #1C1B21;
   /* Add margin for better spacing between label and number */
 }
 

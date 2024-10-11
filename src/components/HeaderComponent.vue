@@ -59,17 +59,49 @@ watchEffect(() => {
 .header {
   display: flex;
   flex-direction: column;
-  background-color: white;
-  border: 1px solid #ccc;
   padding: 5px 20px;
   border-radius: 8px;
   position: relative;
+  padding: 15px;
+  background-color: #F9F9F8;
+  border-radius: 20px;
 }
+
+.header::before,
+.header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.header::before {
+  border: 3px solid #BEBDBF;
+  /* Inner border color */
+  top: 5px;
+  /* Gap between the borders */
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+}
+
+.header::after {
+  border: 3px solid #1C1B21;
+  /* Outer border color */
+}
+
+
+
+
 
 .header-account-name {
   margin: 0;
   font-size: 1.5em;
-  color: #333;
+  color: #1C1B21;
 }
 
 .nav-bar {
@@ -86,7 +118,7 @@ watchEffect(() => {
 
 .nav-user-actions {
   position: absolute;
-  top: 10px;
+  top: 15px;
   /* Align to the top right */
   right: 20px;
   display: flex;
@@ -94,12 +126,13 @@ watchEffect(() => {
 
 .nav-link {
   padding: 10px 20px;
-  border: 1px solid #eee;
+  border: 2px solid BEBDBF;
   border-radius: 5px;
   text-decoration: none;
   font-weight: bold;
-  color: black;
+  color: #1C1B21;
   background-color: #f9f9f9;
+  border-radius: 20px;
 }
 
 .nav-link:hover {
@@ -109,14 +142,14 @@ watchEffect(() => {
 .user-link {
   text-decoration: none;
   font-weight: bold;
-  color: black;
+  color: #1C1B21;
   font-size: 0.9em;
   cursor: pointer;
 }
 
 .user-link:hover {
   text-decoration: underline;
-  color: green;
+  color: #61bca8ff;
 }
 
 .separator {
@@ -132,6 +165,7 @@ watchEffect(() => {
 }
 
 .active-link {
-  border: 2px solid green;
+  border: 2px solid #61bca8ff;
+  border-radius: 20px;
 }
 </style>

@@ -61,8 +61,8 @@ const handleSubmit = async () => {
 
   try {
     const url = isLogin.value ? '/login' : '/signup';
-    const data = isLogin.value 
-      ? { email: email.value, password: password.value } 
+    const data = isLogin.value
+      ? { email: email.value, password: password.value }
       : { email: email.value, password: password.value, rePassword: rePassword.value, accountId: accountId.value }; // Include accountId in signup
 
     const response = await api.post(url, data);
@@ -108,13 +108,14 @@ form input {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-sizing: border-box; /* Ensures the input stays within the form-container */
+  box-sizing: border-box;
+  /* Ensures the input stays within the form-container */
 }
 
 button {
   width: 100%;
   padding: 10px;
-  background-color: #007bff;
+  background-color: #61bca8ff;
   color: white;
   border: none;
   border-radius: 4px;
@@ -128,7 +129,7 @@ button:hover {
 p {
   text-align: center;
   cursor: pointer;
-  color: #007bff;
+  color: #61bca8ff;
   margin-top: 10px;
 }
 
@@ -149,7 +150,9 @@ p:hover {
 }
 
 .error-container {
-  height: 1.2em; /* Fixed height for the error message container */
-  margin-top: 5px; /* Space between input and error message */
+  height: 1.2em;
+  /* Fixed height for the error message container */
+  margin-top: 5px;
+  /* Space between input and error message */
 }
 </style>
