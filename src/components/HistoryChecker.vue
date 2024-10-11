@@ -4,16 +4,15 @@
     <!-- Metric selection dropdowns -->
     <div class="metric-selection">
       <div class="metric-dropdown">
-        <span class="color-indicator blue"></span>
         <select id="metric1" v-model="selectedMetric1">
           <option value="conversions">Conversions</option>
           <option value="clicks">Clicks</option>
           <option value="impressions">Impressions</option>
           <option value="spend">Spend</option>
         </select>
+        <span class="caret blue-caret">&#9662;</span> <!-- Caret styled with blue color -->
       </div>
       <div class="metric-dropdown">
-        <span class="color-indicator red"></span>
         <select id="metric2" v-model="selectedMetric2">
           <option value="none">None</option>
           <option value="conversions">Conversions</option>
@@ -21,6 +20,7 @@
           <option value="impressions">Impressions</option>
           <option value="spend">Spend</option>
         </select>
+        <span class="caret green-caret">&#9662;</span> <!-- Caret styled with green color -->
       </div>
 
       <!-- Direct dropdown for time interval selection -->
@@ -31,6 +31,7 @@
           <option value="monthly">Monthly</option>
           <option value="quarterly">Quarterly</option>
         </select>
+        <span class="caret">&#9662;</span> <!-- Default colored caret -->
       </div>
     </div>
 
@@ -103,13 +104,14 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+// import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
+import { colorMapping, keyMapping } from '@/constants/constants';
 
-const route = useRoute();
-const isHistoryPage = computed(() => route.path === '/history');
+// const route = useRoute();
+// const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
   selectedCampaigns: Array,
@@ -283,64 +285,6 @@ watch([() => props.selectedCampaigns, () => props.dateRange, selectedMetric1, se
 // Differences and campaigns
 const differences = ref([]);
 const campaignsMap = ref({});
-
-// Color mappings for displaying changes
-const colorMapping = {
-  'Account': '#FF5733',            // Bright Red
-  'Associated Entity': '#33C3FF',  // Light Blue
-  'Audience Expansion': '#28A745', // Green
-  'Campaign Group': '#AF7AC5',     // Purple
-  'Cost Type': '#FFB533',          // Orange
-  'Creative Selection': '#FF69B4', // Pink
-  'Daily Budget': '#17A2B8',       // Cyan
-  'Format': '#FFD700',             // Gold/Yellow
-  'ID': '#FF33C9',                 // Magenta
-  'Locale': '#8B4513',             // Saddle Brown
-  'Name': '#32CD32',               // Lime Green
-  'Objective Type': '#000080',     // Navy Blue
-  'Offsite Delivery': '#808000',   // Olive Green
-  'Offsite Preferences': '#20B2AA',// Light Sea Green
-  'Optimization Target Type': '#800000', // Maroon
-  'Pacing Strategy': '#FF4500',    // Orange Red
-  'Run Schedule': '#4682B4',       // Steel Blue
-  'Serving Statuses': '#1E90FF',   // Dodger Blue
-  'Status': '#228B22',             // Forest Green
-  'Story Delivery': '#DC143C',     // Crimson Red
-  'Targeting Criteria': '#FF8C00', // Dark Orange
-  'Test': '#00CED1',               // Dark Turquoise
-  'Type': '#9932CC',               // Dark Orchid
-  'Unit Cost': '#DAA520',          // Goldenrod
-  'Version': '#FF6347'             // Tomato
-};
-
-// Key mappings for differences
-const keyMapping = {
-  account: 'Account',
-  associatedEntity: 'Associated Entity',
-  audienceExpansionEnabled: 'Audience Expansion',
-  campaignGroup: 'Campaign Group',
-  costType: 'Cost Type',
-  creativeSelection: 'Creative Selection',
-  dailyBudget: 'Daily Budget',
-  format: 'Format',
-  id: 'ID',
-  locale: 'Locale',
-  name: 'Name',
-  objectiveType: 'Objective Type',
-  offsiteDeliveryEnabled: 'Offsite Delivery',
-  offsitePreferences: 'Offsite Preferences',
-  optimizationTargetType: 'Optimization Target Type',
-  pacingStrategy: 'Pacing Strategy',
-  runSchedule: 'Run Schedule',
-  servingStatuses: 'Serving Statuses',
-  status: 'Status',
-  storyDeliveryEnabled: 'Story Delivery',
-  targetingCriteria: 'Targeting Criteria',
-  test: 'Test',
-  type: 'Campaign Type',
-  unitCost: 'Unit Cost',
-  version: 'Version'
-};
 
 // Function to fetch all changes
 const fetchAllChanges = async () => {
@@ -656,7 +600,7 @@ const formatTimestamp = (timestamp) => {
 
 .color-indicator {
   position: absolute;
-  right: 5px;
+  right: 17px;
   top: 50%;
   transform: translateY(-50%);
   width: 10px;
@@ -813,5 +757,38 @@ canvas {
   /* Enforces a minimum height of 300px */
   height: auto !important;
   /* Allows the height to adjust if it needs to grow beyond 300px */
+}
+
+.metric-dropdown,
+.time-interval-dropdown {
+  position: relative;
+}
+
+.caret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* Prevent the caret from blocking dropdown interactions */
+  font-size: 20px;
+  /* Increase size of the caret */
+}
+
+/* Color the carets based on their previous indicator colors */
+.blue-caret {
+  color: blue;
+}
+
+.green-caret {
+  color: #008000;
+  /* Green */
+}
+
+/* Make sure the select element does not overlap the caret */
+select {
+  padding-right: 30px;
+  /* Make space for the larger caret */
+  padding-left: 10px;
 }
 </style>
