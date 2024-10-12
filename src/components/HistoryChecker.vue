@@ -130,6 +130,8 @@ const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
 
 const fetchCurrentCampaigns = async () => {
+
+
   try {
     const response = await api.get('/get-current-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -147,9 +149,14 @@ const fetchCurrentCampaigns = async () => {
 };
 
 const fetchLinkedInCampaigns = async () => {
+
+
+  // Example for adding token in the headers of an axios request
+  const token = localStorage.getItem('token');
+
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
     return response.data.elements || [];
   } catch (error) {

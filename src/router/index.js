@@ -1,12 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/Home.vue'
 import BudgetTracker from '@/views/BudgetPacing.vue'
-import HistoryChecker from '@/components/HistoryChecker.vue'
+import History from '@/views/History.vue'
 import Auth from '@/views/Auth.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/Profile.vue'
-import { useAuth } from '@/composables/auth'
-import api from '@/api'
+import { useAuth, isTokenExpired } from '@/composables/auth'
 
 const { isLoggedIn, setAuth } = useAuth()
 
@@ -21,28 +20,21 @@ const routes = [
     path: '/budget-tracker',
     name: 'BudgetTracker',
     component: BudgetTracker,
-    props: (route) => ({
-      groupName: route.query.groupName,
-      groupBudget: parseFloat(route.query.groupBudget) || 0
-    }),
     meta: { requiresAuth: true }
   },
   {
     path: '/history',
     name: 'History',
-    component: HistoryChecker,
-    props: (route) => ({
-      selectedCampaigns: route.query.selectedCampaigns
-        ? route.query.selectedCampaigns.split(',')
-        : [],
-      dateRange: route.query.dateRange ? JSON.parse(route.query.dateRange) : {}
-    }),
+    component: History, // Ensure the correct component is here
     meta: { requiresAuth: true }
   },
   {
     path: '/auth',
     component: AuthLayout,
-    children: [{ path: '', name: 'Auth', component: Auth }]
+    children: [
+      { path: '', name: 'Auth', component: Auth },
+      { path: 'linkedin', name: 'LinkedInAuth', component: Auth }
+    ]
   },
   {
     path: '/profile',
@@ -59,39 +51,31 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
-  const isTokenExpired = (token) => {
-    try {
-      const { exp } = JSON.parse(atob(token.split('.')[1]))
-      return Date.now() >= exp * 1000
-    } catch {
-      return true
+  console.log('Token from localStorage:', token) // Check if token is being retrieved correctly
+
+  // Temporarily comment out the auth redirect for debugging
+  if (token && !isLoggedIn.value) {
+    // Set auth state if token is valid
+    if (!isTokenExpired(token)) {
+      setAuth(true)
+      console.log('Token is valid, proceeding to next route')
+      return next()
+    } else {
+      console.log('Token is expired, redirecting to auth')
+      localStorage.removeItem('token')
+      setAuth(false)
+      // Comment this line out temporarily
+      // return next('/auth');
     }
   }
 
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!token || isTokenExpired(token)) {
-      setAuth(false)
-      next('/auth')
-    } else {
-      if (!isLoggedIn.value) {
-        try {
-          await api.get('/api/user-profile', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          setAuth(true)
-          next()
-        } catch (error) {
-          localStorage.removeItem('token')
-          setAuth(false)
-          next('/auth')
-        }
-      } else {
-        next()
-      }
-    }
-  } else {
-    next()
+  if (!token && to.meta.requiresAuth) {
+    console.log('No token found, staying on the page for debugging')
+    // Comment this line out temporarily
+    // return next('/auth');
   }
+
+  next()
 })
 
 export default router

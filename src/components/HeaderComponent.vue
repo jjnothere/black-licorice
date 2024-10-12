@@ -37,10 +37,15 @@ const logout = () => {
 };
 
 const fetchAdAccountName = async () => {
+  console.log("🐒 ~ fetchAdAccountName")
+  // Example for adding token in the headers of an axios request
+  const token = localStorage.getItem('token');
+  console.log("🐒 ~ token:", token)
   try {
     const response = await api.get('/ad-account-name', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
+    console.log("🐒 ~ response:", response)
     adAccountName.value = response.data.name;
   } catch (error) {
     console.error('Error fetching ad account name:', error);

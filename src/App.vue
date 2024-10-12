@@ -2,6 +2,8 @@
 <template>
   <div class="full-content">
     <HeaderComponent v-if="!isAuthRoute" />
+    <!-- <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" :groupName="groupName"
+      :budget="budget" /> -->
     <div v-if="isAuthRoute" class="auth-layout">
       <router-view></router-view>
     </div>
@@ -11,7 +13,6 @@
       </div>
       <div class="main-content">
         <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
-        <!-- Use BudgetDetails for budget updates -->
         <BudgetDetails v-if="isBudgetTrackerPage" :selectedCampaigns="selectedCampaigns" :groupName="groupName"
           :groupBudget="groupBudget" @budget-updated="handleBudgetUpdated" @update:metrics="updateMetrics" />
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
