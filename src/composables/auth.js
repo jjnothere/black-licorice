@@ -1,5 +1,4 @@
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '@/api'
 
 const isLoggedIn = ref(false)
@@ -9,12 +8,11 @@ const user = reactive({
 })
 
 export function useAuth() {
-  const router = useRouter()
   const setAuth = (isAuthenticated) => {
     isLoggedIn.value = isAuthenticated
   }
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = async (router) => {
     const token = localStorage.getItem('token')
     if (token) {
       try {
