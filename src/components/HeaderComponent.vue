@@ -4,15 +4,14 @@
       <h1 class="header-account-name">{{ adAccountName }}</h1>
       <nav class="nav-bar">
         <div class="nav-links">
-          <!-- <router-link to="/" class="nav-link" active-class="active-link">Home</router-link> -->
           <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
           <router-link to="/budget-tracker" class="nav-link" active-class="active-link">Budget Tracker</router-link>
         </div>
-        <!-- Moved this div outside of nav-links and styled it differently -->
         <div class="nav-user-actions">
           <router-link to="/profile" class="user-link">Profile</router-link>
           <span class="separator">|</span>
-          <div v-if="isLoggedIn" class="user-link logout-link" @click="logout">Logout</div>
+          <!-- Updated v-if to use isLoggedInComputed -->
+          <div v-if="isLoggedInComputed" class="user-link logout-link" @click="logout">Logout</div>
           <router-link v-else to="/auth" class="user-link">Login / Signup</router-link>
         </div>
       </nav>
@@ -21,31 +20,32 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue';
+import { ref, watchEffect, computed } from 'vue'; // Added 'computed' import
 import { useRouter } from 'vue-router';
 import api from '@/api';
 import { useAuth } from '@/composables/auth';
 
 const adAccountName = ref('Account Name');
-const { isLoggedIn, setAuth, checkAuthStatus } = useAuth();
+const { isLoggedIn, setAuth, checkAuthStatus, user } = useAuth(); // Get the user object
 const router = useRouter();
 
+// Create a computed property for isLoggedIn to make it reactive
+const isLoggedInComputed = computed(() => isLoggedIn.value); // Computed property for isLoggedIn
+
 const logout = () => {
-  localStorage.removeItem('token');
-  setAuth(false);
-  router.push('/auth');
+  localStorage.removeItem('token'); // Clear the token
+  setAuth(false); // Update authentication status
+  user.email = ''; // Reset the user data
+  user.accountId = '';
+  router.push('/auth'); // Redirect to auth page
 };
 
 const fetchAdAccountName = async () => {
-  console.log("🐒 ~ fetchAdAccountName")
-  // Example for adding token in the headers of an axios request
   const token = localStorage.getItem('token');
-  console.log("🐒 ~ token:", token)
   try {
     const response = await api.get('/ad-account-name', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log("🐒 ~ response:", response)
     adAccountName.value = response.data.name;
   } catch (error) {
     console.error('Error fetching ad account name:', error);
@@ -61,6 +61,7 @@ watchEffect(() => {
 </script>
 
 <style scoped>
+/* Your existing styles remain the same */
 .header {
   display: flex;
   flex-direction: column;
@@ -86,9 +87,7 @@ watchEffect(() => {
 
 .header::before {
   border: 3px solid #BEBDBF;
-  /* Inner border color */
   top: 5px;
-  /* Gap between the borders */
   left: 5px;
   right: 5px;
   bottom: 5px;
@@ -96,12 +95,7 @@ watchEffect(() => {
 
 .header::after {
   border: 3px solid #1C1B21;
-  /* Outer border color */
 }
-
-
-
-
 
 .header-account-name {
   margin: 0;
@@ -124,7 +118,6 @@ watchEffect(() => {
 .nav-user-actions {
   position: absolute;
   top: 15px;
-  /* Align to the top right */
   right: 20px;
   display: flex;
 }
@@ -162,7 +155,6 @@ watchEffect(() => {
   font-size: 0.9em;
   color: #888;
   font-weight: bold;
-  /* Light gray color for the separator */
 }
 
 .logout-link {

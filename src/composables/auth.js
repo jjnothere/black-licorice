@@ -33,17 +33,19 @@ export function useAuth() {
   }
 
   // Check authentication status and get user profile if token exists
-  const checkAuthStatus = async (router) => {
+  const checkAuthStatus = async () => {
     const token = localStorage.getItem('token')
+    console.log('Token:', token) // Debugging: Check if token is retrieved
+
     if (token && !isTokenExpired(token)) {
       try {
         const response = await api.get('/api/user-profile', {
           headers: { Authorization: `Bearer ${token}` }
         })
         isLoggedIn.value = true
+        console.log('User is logged in') // Debugging: Confirm logged-in status
         user.email = response.data.email
         user.accountId = response.data.accountId
-        router.push('/history')
       } catch {
         localStorage.removeItem('token')
         isLoggedIn.value = false
@@ -52,6 +54,7 @@ export function useAuth() {
       }
     } else {
       isLoggedIn.value = false
+      console.log('User is not logged in') // Debugging: Confirm logged-out status
       user.email = ''
       user.accountId = ''
     }
