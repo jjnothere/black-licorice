@@ -98,10 +98,9 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       const campaignList = campaigns.map(id => `urn%3Ali%3AsponsoredCampaign%3A${id}`).join(',');
       params.campaigns = `List(${campaignList})`;
     }
-
     const response = await api.get('/linkedin', {
-      params,
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      params, // Contains the start, end, and campaigns
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } // Token in headers
     });
     let data = response.data.elements;
 
