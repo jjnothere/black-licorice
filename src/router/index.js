@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/Home.vue'
 import BudgetTracker from '@/views/BudgetPacing.vue'
-import HistoryChecker from '@/components/HistoryChecker.vue'
+import History from '@/views/History.vue'
 import Auth from '@/views/Auth.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/Profile.vue'
@@ -20,22 +20,12 @@ const routes = [
     path: '/budget-tracker',
     name: 'BudgetTracker',
     component: BudgetTracker,
-    props: (route) => ({
-      groupName: route.query.groupName,
-      groupBudget: parseFloat(route.query.groupBudget) || 0
-    }),
     meta: { requiresAuth: true }
   },
   {
     path: '/history',
     name: 'History',
-    component: HistoryChecker,
-    props: (route) => ({
-      selectedCampaigns: route.query.selectedCampaigns
-        ? route.query.selectedCampaigns.split(',')
-        : [],
-      dateRange: route.query.dateRange ? JSON.parse(route.query.dateRange) : {}
-    }),
+    component: History, // Ensure the correct component is here
     meta: { requiresAuth: true }
   },
   {
