@@ -38,10 +38,8 @@ const fetchDefaultBudget = async () => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     if (response.data && response.data.budget) {
-      console.log("Fetched Default Budget: ", response.data.budget);
       return response.data.budget;
     } else {
-      console.log("No Default Budget Set for User.");
       return 0;
     }
   } catch (error) {
@@ -53,11 +51,9 @@ const fetchDefaultBudget = async () => {
 // Watcher to handle budget updates
 watch(() => props.groupBudget, async (newBudget) => {
   if (newBudget !== undefined && newBudget !== null) {
-    console.log(`New Group Budget: ${newBudget}`);
     budgetRef.value = newBudget;
     formattedBudget.value = newBudget.toFixed(2);
   } else {
-    console.log('No Group Budget Provided, Fetching Default Budget...');
     const defaultBudget = await fetchDefaultBudget();
     budgetRef.value = defaultBudget;
     formattedBudget.value = defaultBudget.toFixed(2);
@@ -75,7 +71,6 @@ onMounted(async () => {
 // Watch for changes in the selected group name
 watch(() => props.groupName, (newName) => {
   if (newName) {
-    console.log(`Selected Group Name: ${newName}`);
     selectedGroupName.value = newName;
   }
 });
@@ -155,7 +150,6 @@ const updateChart = async () => {
   const daysLeftForProjection = Math.round((endDate - lastActualDate) / (1000 * 3600 * 24)); // Convert milliseconds to days
 
   if (daysLeftForProjection <= 0) {
-    console.log("No projection needed, end date is before the last actual date.");
     return;
   }
 

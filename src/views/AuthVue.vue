@@ -18,7 +18,6 @@ const router = useRouter();
 const { setAuth, checkAuthStatus } = useAuth();
 
 const loginWithLinkedIn = async () => {
-  console.log("🐒 ~ loginWithLinkedIn:");
   try {
     // Redirect the user to LinkedIn login via the backend
     window.location.href = 'http://localhost:8000/auth/linkedin'; // This initiates LinkedIn OAuth
@@ -29,17 +28,14 @@ const loginWithLinkedIn = async () => {
 };
 onMounted(() => {
   // Log full URL to ensure we're on the right page
-  console.log("Full URL:", window.location.href);
 
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token'); // Extract token from URL
 
-  console.log("Extracted token:", token);  // Ensure token is being extracted
 
   if (token) {
     // Store the token in localStorage
     localStorage.setItem('token', token);
-    console.log("Stored token in localStorage:", localStorage.getItem('token')); // Log to confirm storage
 
     // Mark the user as authenticated
     setAuth(true);
@@ -47,7 +43,6 @@ onMounted(() => {
     // Optionally redirect to another route
     router.push('/history'); // Adjust the route if necessary
   } else {
-    console.log('No token found, checking auth status');
     checkAuthStatus(router);  // Fallback if no token is found
   }
 });

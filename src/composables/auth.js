@@ -35,7 +35,6 @@ export function useAuth() {
   // Check authentication status and get user profile if token exists
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('token')
-    console.log('Token:', token) // Debugging: Check if token is retrieved
 
     if (token && !isTokenExpired(token)) {
       try {
@@ -43,7 +42,6 @@ export function useAuth() {
           headers: { Authorization: `Bearer ${token}` }
         })
         isLoggedIn.value = true
-        console.log('User is logged in') // Debugging: Confirm logged-in status
         user.email = response.data.email
         user.accountId = response.data.accountId
       } catch {
@@ -54,7 +52,6 @@ export function useAuth() {
       }
     } else {
       isLoggedIn.value = false
-      console.log('User is not logged in') // Debugging: Confirm logged-out status
       user.email = ''
       user.accountId = ''
     }

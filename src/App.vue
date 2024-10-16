@@ -63,7 +63,6 @@ const updateMetrics = (newMetrics) => {
 // Handle budget update and propagate the change to child components
 const handleBudgetUpdated = (newBudget) => {
   budget.value = newBudget;
-  console.log('Updated budget in App.vue:', newBudget);
 };
 
 const showFilterFunction = computed(() => route.path !== '/');

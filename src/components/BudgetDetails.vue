@@ -194,10 +194,8 @@ const fetchDefaultBudget = async () => {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.data && response.data.budget) {
-            console.log("Fetched Default Budget: ", response.data.budget);
             return response.data.budget;
         } else {
-            console.log("No Default Budget Set for User.");
             return 0;
         }
     } catch (error) {
@@ -209,12 +207,10 @@ const fetchDefaultBudget = async () => {
 // Watcher to handle budget updates
 watch(() => props.groupBudget, async (newBudget) => {
     if (newBudget !== undefined && newBudget !== null) {
-        console.log(`New Group Budget: ${newBudget}`);
         budget.value = newBudget;
         formattedBudget.value = newBudget.toFixed(2);
         emit('budget-updated', budget.value); // Emit budget-updated event
     } else {
-        console.log('No Group Budget Provided, Fetching Default Budget...');
         const defaultBudget = await fetchDefaultBudget();
         budget.value = defaultBudget;
         formattedBudget.value = defaultBudget.toFixed(2);
@@ -224,7 +220,6 @@ watch(() => props.groupBudget, async (newBudget) => {
 
 onMounted(async () => {
     if (!props.groupBudget) {
-        console.log('Component Mounted Without Group Budget, Fetching Default Budget...');
         const defaultBudget = await fetchDefaultBudget();
         budget.value = defaultBudget;
         formattedBudget.value = defaultBudget.toFixed(2);
@@ -254,7 +249,6 @@ const saveBudget = async () => {
         await api.post('/save-budget', { budget: budget.value }, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        console.log('Budget saved:', budget.value);
         emit('budget-updated', budget.value); // Emit budget-updated event
     } catch (error) {
         console.error('Error saving budget:', error);

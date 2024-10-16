@@ -243,19 +243,16 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
-  console.log('Original Date Label:', dateLabel); // Debugging log
 
   // Adjust the dateLabel by adding one day
   const adjustedDate = new Date(dateLabel);
   adjustedDate.setDate(adjustedDate.getDate());
   const adjustedLabelDate = adjustedDate.toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
-  console.log('Adjusted Date Label:', adjustedLabelDate);
 
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
     const diffDate = new Date(diff.date).toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
-    console.log(`Comparing: ${diffDate} with ${adjustedLabelDate}`);
     return diffDate === adjustedLabelDate;
   });
 

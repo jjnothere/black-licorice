@@ -123,7 +123,6 @@ const { isLoggedIn, checkAuthStatus } = useAuth(); // Get the user object
 
 // Fetch campaigns and groups
 const fetchCampaigns = async () => {
-  console.log("fetchCampaignsfetchCampaignsfetchCampaigns")
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -214,7 +213,6 @@ const createGroup = async () => {
       await api.post('/save-campaign-groups', { group }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      console.log('Group saved to MongoDB');
     } catch (error) {
       console.error('Error saving group:', error);
     }
@@ -262,7 +260,6 @@ const saveEditedGroup = async () => {
     await api.post('/update-campaign-group', { group }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    console.log('Group updated in MongoDB');
   } catch (error) {
     console.error('Error updating group:', error);
   }
@@ -287,7 +284,6 @@ const selectGroup = (group) => {
 };
 
 const clearAllSelections = () => {
-  console.log("clearAllSelections")
   selectedCampaigns.value = [];
   selectedGroup.value = 'none';
   selectedGroupName.value = ''; // Clear the group name
@@ -317,7 +313,6 @@ const deleteGroup = async (groupId) => {
     await api.post('/delete-campaign-group', { groupId }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    console.log('Group deleted from MongoDB');
   } catch (error) {
     console.error('Error deleting group:', error);
   }

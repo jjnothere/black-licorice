@@ -51,17 +51,14 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
-  console.log('Token from localStorage:', token) // Check if token is being retrieved correctly
 
   // Temporarily comment out the auth redirect for debugging
   if (token && !isLoggedIn.value) {
     // Set auth state if token is valid
     if (!isTokenExpired(token)) {
       setAuth(true)
-      console.log('Token is valid, proceeding to next route')
       return next()
     } else {
-      console.log('Token is expired, redirecting to auth')
       localStorage.removeItem('token')
       setAuth(false)
       // Comment this line out temporarily
@@ -70,7 +67,6 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (!token && to.meta.requiresAuth) {
-    console.log('No token found, staying on the page for debugging')
     // Comment this line out temporarily
     // return next('/auth');
   }
