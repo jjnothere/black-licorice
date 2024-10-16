@@ -93,9 +93,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, watchEffect } from 'vue';
 import api from '@/api';
 import Tooltip from './TooltipComponent.vue';
+import { useAuth } from '@/composables/auth';
 
 const emit = defineEmits(['update:selectedCampaigns', 'update:budget', 'update:budgetData']);
 
@@ -118,8 +119,11 @@ const editGroupBudget = ref(0); // Budget for the group being edited
 const formattedEditGroupBudget = ref(''); // Formatted budget for display
 const editGroupCampaigns = ref([]);
 
+const { isLoggedIn, checkAuthStatus } = useAuth(); // Get the user object
+
 // Fetch campaigns and groups
 const fetchCampaigns = async () => {
+  console.log("fetchCampaignsfetchCampaignsfetchCampaigns")
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -144,14 +148,22 @@ const fetchCampaignGroups = async () => {
   }
 };
 
+watchEffect(() => {
+  checkAuthStatus();
+  if (isLoggedIn.value) {
+    fetchCampaigns();
+    fetchCampaignGroups();
+  }
+});
+
 // When component is mounted, fetch campaigns and groups
 onMounted(() => {
-  fetchCampaigns();
-  fetchCampaignGroups();
-  const storedSelectedCampaigns = localStorage.getItem('selectedCampaigns');
-  if (storedSelectedCampaigns) {
-    selectedCampaigns.value = JSON.parse(storedSelectedCampaigns);
-  }
+  // fetchCampaigns();
+  // fetchCampaignGroups();
+  // const storedSelectedCampaigns = localStorage.getItem('selectedCampaigns');
+  // if (storedSelectedCampaigns) {
+  //   selectedCampaigns.value = JSON.parse(storedSelectedCampaigns);
+  // }
 });
 
 watch(selectedCampaigns, (newSelectedCampaigns) => {

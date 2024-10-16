@@ -103,12 +103,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, watchEffect } from 'vue';
 // import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
 import { colorMapping, keyMapping } from '@/constants/constants';
+import { useAuth } from '@/composables/auth';
+
+const { isLoggedIn, checkAuthStatus } = useAuth(); // Get the user object
 
 // const route = useRoute();
 // const isHistoryPage = computed(() => route.path === '/history');
@@ -130,8 +133,6 @@ const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
 
 const fetchCurrentCampaigns = async () => {
-
-
   try {
     const response = await api.get('/get-current-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -164,6 +165,9 @@ const fetchLinkedInCampaigns = async () => {
     return [];
   }
 };
+
+
+
 
 const addNewChange = (newChange) => {
   newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
@@ -278,8 +282,8 @@ const resetChartData = () => {
 
 onMounted(async () => {
   resetChartData();         // Reset chart data before loading
-  await fetchAllChanges();  // Fetch changes
-  await checkForChanges();  // Check for changes and update differences
+  // await fetchAllChanges();  // Fetch changes
+  // await checkForChanges();  // Check for changes and update differences
   getAnalyticsData();       // Rebuild chart data with red dots
 });
 
@@ -326,10 +330,18 @@ const filteredDifferences = computed(() => {
   });
 });
 
+watchEffect(async () => {
+  checkAuthStatus();
+  if (isLoggedIn.value) {
+    await fetchAllChanges();
+    await getAnalyticsData();
+  }
+});
+
 // Watch and initialize functions
 onMounted(async () => {
-  await fetchAllChanges();
-  getAnalyticsData();
+  // await fetchAllChanges();
+  // getAnalyticsData();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
