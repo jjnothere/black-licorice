@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/Home.vue'
 import BudgetTracker from '@/views/BudgetPacing.vue'
-import History from '@/views/History.vue'
+import History from '@/components/HistoryChecker.vue'
 import Auth from '@/views/AuthVue.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/Profile.vue'
