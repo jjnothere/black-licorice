@@ -32,12 +32,19 @@ const router = useRouter();
 // Create a computed property for isLoggedIn to make it reactive
 const isLoggedInComputed = computed(() => isLoggedIn.value); // Computed property for isLoggedIn
 
-const logout = () => {
-  localStorage.removeItem('token'); // Clear the token
-  setAuth(false); // Update authentication status
-  user.email = ''; // Reset the user data
-  user.accountId = '';
-  router.push('/auth'); // Redirect to auth page
+const logout = async () => {
+  try {
+    await api.post('/logout', {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    localStorage.removeItem('token'); // Clear the token
+    setAuth(false); // Update authentication status
+    user.email = ''; // Reset the user data
+    user.accountId = '';
+    router.push('/auth'); // Redirect to auth page
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
 };
 
 const fetchAdAccountName = async () => {
