@@ -1,6 +1,7 @@
+<!-- HistoryPage.vue -->
 <template>
   <div class="content">
-    <HistoryChecker /> <!-- Use the HistoryChecker component -->
+    <HistoryChecker :dateRange="dateRange" />
   </div>
 </template>
 
@@ -9,6 +10,10 @@ import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/auth';
 import HistoryChecker from '@/components/HistoryChecker.vue'; // Import the HistoryChecker component
+
+defineProps({
+  dateRange: Object
+});
 
 const router = useRouter();
 const { setAuth, checkAuthStatus } = useAuth();

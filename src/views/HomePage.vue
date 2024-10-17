@@ -26,7 +26,7 @@ import api from '@/api';
 import HistoryChecker from '@/components/HistoryChecker.vue';
 
 export default {
-  name: 'Home',
+  name: 'HomePage',
   props: {
     metrics: Array,
     selectedCampaigns: Array,

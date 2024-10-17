@@ -103,15 +103,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, watchEffect } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 // import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
 import { colorMapping, keyMapping } from '@/constants/constants';
-import { useAuth } from '@/composables/auth';
-
-const { isLoggedIn, checkAuthStatus } = useAuth(); // Get the user object
 
 // const route = useRoute();
 // const isHistoryPage = computed(() => route.path === '/history');
@@ -165,9 +162,6 @@ const fetchLinkedInCampaigns = async () => {
     return [];
   }
 };
-
-
-
 
 const addNewChange = (newChange) => {
   newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
@@ -243,16 +237,19 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
+  console.log('Original Date Label:', dateLabel); // Debugging log
 
   // Adjust the dateLabel by adding one day
   const adjustedDate = new Date(dateLabel);
   adjustedDate.setDate(adjustedDate.getDate());
   const adjustedLabelDate = adjustedDate.toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
+  console.log('Adjusted Date Label:', adjustedLabelDate);
 
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
     const diffDate = new Date(diff.date).toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
+    console.log(`Comparing: ${diffDate} with ${adjustedLabelDate}`);
     return diffDate === adjustedLabelDate;
   });
 
@@ -278,9 +275,10 @@ const resetChartData = () => {
 };
 
 onMounted(async () => {
+  console.log(chartData.value, chartOptions.value);  // Check the content here
   resetChartData();         // Reset chart data before loading
-  // await fetchAllChanges();  // Fetch changes
-  // await checkForChanges();  // Check for changes and update differences
+  await fetchAllChanges();  // Fetch changes
+  await checkForChanges();  // Check for changes and update differences
   getAnalyticsData();       // Rebuild chart data with red dots
 });
 
@@ -327,18 +325,10 @@ const filteredDifferences = computed(() => {
   });
 });
 
-watchEffect(async () => {
-  checkAuthStatus();
-  if (isLoggedIn.value) {
-    await fetchAllChanges();
-    await getAnalyticsData();
-  }
-});
-
 // Watch and initialize functions
 onMounted(async () => {
-  // await fetchAllChanges();
-  // getAnalyticsData();
+  await fetchAllChanges();
+  getAnalyticsData();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {

@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/Home.vue'
+import HomeView from '@/views/HomePage.vue'
 import BudgetTracker from '@/views/BudgetPacing.vue'
-import History from '@/components/HistoryChecker.vue'
+import History from '@/views/HistoryPage.vue'
 import Auth from '@/views/AuthVue.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
-import Profile from '@/views/Profile.vue'
+import Profile from '@/views/ProfilePage.vue'
 import { useAuth, isTokenExpired } from '@/composables/auth'
 
 const { isLoggedIn, setAuth } = useAuth()
@@ -25,8 +25,12 @@ const routes = [
   {
     path: '/history',
     name: 'History',
-    component: History, // Ensure the correct component is here
-    meta: { requiresAuth: true }
+    component: History,
+    meta: { requiresAuth: true },
+    props: (route) => ({
+      startDate: route.query.start || '',
+      endDate: route.query.end || ''
+    })
   },
   {
     path: '/auth',
@@ -62,13 +66,13 @@ router.beforeEach(async (to, from, next) => {
       localStorage.removeItem('token')
       setAuth(false)
       // Comment this line out temporarily
-      // return next('/auth');
+      return next('/auth')
     }
   }
 
   if (!token && to.meta.requiresAuth) {
     // Comment this line out temporarily
-    // return next('/auth');
+    // return next('/auth')
   }
 
   next()
