@@ -9,7 +9,7 @@
       <p><strong>Ad Accounts:</strong></p>
       <ul>
         <li v-for="account in adAccounts" :key="account.id">
-          Id: {{ account.id.split(':').pop() }} | Name: {{ account.name }}
+          Id: {{ account.id }} | Name: {{ account.name }}
         </li>
       </ul>
     </div>

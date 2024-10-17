@@ -82,7 +82,7 @@ const selectAdAccount = (account) => {
   showDropdown.value = false; // Hide the dropdown
 
   // Extract the numeric ID from the URN
-  const accountId = account.id.split(':').pop();
+  const accountId = account.id;
   emit('update:selectedAdAccount', accountId);
 
   console.log("Selected Ad Account ID:", accountId);
