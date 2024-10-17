@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watchEffect, defineEmits, watch } from 'vue';
+import { ref, computed, watchEffect, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api';
 import { useAuth } from '@/composables/auth';
