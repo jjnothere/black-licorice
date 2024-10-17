@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, watchEffect } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import api from '@/api';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
