@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, watchEffect } from 'vue';
 import api from '@/api';
 import Datepicker from 'vue3-datepicker';
 import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
@@ -62,9 +62,7 @@ watch([selectedStartDate, selectedEndDate], () => {
   });
 });
 
-
 const { isLoggedIn } = useAuth();
-
 
 const spend = ref('0');
 const impressions = ref('0');
@@ -188,6 +186,13 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
       start: selectedStartDate.value,
       end: selectedEndDate.value
     });
+  }
+});
+
+// Watch for changes in isLoggedIn and fetch metrics if the user logs in
+watch(isLoggedIn, (newIsLoggedIn) => {
+  if (newIsLoggedIn) {
+    fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
   }
 });
 </script>
