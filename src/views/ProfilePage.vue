@@ -2,69 +2,69 @@
   <div class="profile">
     <h2>Profile</h2>
     <div class="profile-info">
-      <p><strong>Email:</strong> {{ user.email }}</p>
-      <p><strong>Ad Account ID:</strong> {{ user.accountId }}</p>
+      <p><strong>First Name:</strong> {{ user.firstName }}</p>
+      <p><strong>Last Name:</strong> {{ user.lastName }}</p>
     </div>
-    <!--<form @submit.prevent="updateAccountId">
-      <div class="form-group">
-        <label for="account-id">Ad Account ID:</label>
-        <input type="text" id="account-id" v-model="accountId" maxlength="9" required @input="validateAccountId" />
-        <div class="error-container">
-          <p v-if="accountIdError" class="error-message">{{ accountIdError }}</p>
-        </div>
-      </div>
-      <button type="submit">Update Account ID</button>
-    </form>-->
+    <div class="ad-accounts">
+      <p><strong>Ad Accounts:</strong></p>
+      <ul>
+        <li v-for="account in adAccounts" :key="account.id">
+          Id: {{ account.id.split(':').pop() }} | Name: {{ account.name }}
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '@/api';
-import { useAuth } from '@/composables/auth'; // Assuming you have a useAuth composable
+import { useAuth } from '@/composables/auth';
 
 const { isLoggedIn, user, checkAuthStatus } = useAuth();
-const accountId = ref('');
-const accountIdError = ref('');
+const adAccounts = ref([]); // Store ad account IDs and names
 
+// Fetch User Profile and Ad Account Names
 const fetchUserProfile = async () => {
   try {
     const response = await api.get('/user-profile', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
-    user.email = response.data.email;
-    user.accountId = response.data.accountId;
+
+    // Update user profile details
+    user.firstName = response.data.firstName;
+    user.lastName = response.data.lastName;
+
+    // Fetch ad account names based on ad account IDs
+    const accountsWithNames = await fetchAdAccountNames(response.data.adAccounts);
+    adAccounts.value = accountsWithNames;
+
   } catch (error) {
     console.error('Error fetching user profile:', error);
   }
 };
 
-const validateAccountId = () => {
-  if (!/^\d{9}$/.test(accountId.value)) {
-    accountIdError.value = 'Ad Account ID must be a 9-digit number';
-  } else {
-    accountIdError.value = '';
-  }
-};
-
-const updateAccountId = async () => {
-  validateAccountId();
-  if (accountIdError.value) {
-    alert('Please fix the errors before submitting.');
-    return;
-  }
-
+// Fetch Ad Account Names
+const fetchAdAccountNames = async (adAccounts) => {
+  const token = localStorage.getItem('token');
   try {
-    // Make an API call to update the account ID in the user's profile
-    await api.post('/update-account-id', { accountId: accountId.value }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    const response = await api.get('/ad-account-name', {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    user.accountId = accountId.value; // Update the reactive user object
-    alert('Account ID updated successfully');
-    accountId.value = ''; // Clear the input field after successful submission
+
+    // Assuming response.data.adAccounts contains all the account data
+    const accountNames = response.data.adAccounts.map(account => ({
+      id: account.id,
+      name: account.name || 'Unknown Account',
+    }));
+
+    return accountNames;
   } catch (error) {
-    console.error('Error updating account ID:', error);
-    alert('Failed to update account ID');
+    console.error('Error fetching ad account names:', error);
+    return adAccounts.map(account => ({
+      id: account.id,
+      name: 'Unknown Account',
+    }));
   }
 };
 
@@ -75,91 +75,3 @@ onMounted(() => {
   }
 });
 </script>
-
-<style scoped>
-.profile {
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  position: relative;
-  background-color: #F9F9F8;
-  border-radius: 20px;
-}
-
-.profile::before,
-.profile::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 20px;
-  pointer-events: none;
-}
-
-.profile::before {
-  border: 3px solid #BEBDBF;
-  /* Inner border color */
-  top: 5px;
-  /* Gap between the borders */
-  left: 5px;
-  right: 5px;
-  bottom: 5px;
-}
-
-.profile::after {
-  border: 3px solid #1C1B21;
-  /* Outer border color */
-}
-
-
-.profile-info {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.form-group {
-  width: 100%;
-}
-
-form label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-form input {
-  width: 250px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.error-container {
-  height: 1.2em;
-  /* Fixed height for the error message container */
-  margin-top: 5px;
-  /* Space between input and error message */
-}
-
-.error-message {
-  color: red;
-  font-size: 0.9em;
-  margin: 0;
-  /* Remove default margin */
-}
-
-button {
-  padding: 10px 20px;
-  background-color: #61bca8ff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-</style>

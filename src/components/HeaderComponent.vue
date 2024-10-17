@@ -1,7 +1,12 @@
 <template>
   <div class="header">
     <header>
-      <h1 class="header-account-name">{{ adAccountName }}</h1>
+      <!-- Dropdown for ad account selection -->
+      <select v-model="selectedAdAccount" @change="onAdAccountChange">
+        <option v-for="account in adAccounts" :key="account.id" :value="account">
+          {{ account.name }} ({{ account.id.split(':').pop() }})
+        </option>
+      </select>
       <nav class="nav-bar">
         <div class="nav-links">
           <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
@@ -10,7 +15,6 @@
         <div class="nav-user-actions">
           <router-link to="/profile" class="user-link">Profile</router-link>
           <span class="separator">|</span>
-          <!-- Updated v-if to use isLoggedInComputed -->
           <div v-if="isLoggedInComputed" class="user-link logout-link" @click="logout">Logout</div>
           <router-link v-else to="/auth" class="user-link">Login / Signup</router-link>
         </div>
@@ -20,22 +24,24 @@
 </template>
 
 <script setup>
-import { ref, watchEffect, computed } from 'vue'; // Added 'computed' import
+import { ref, computed, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api';
 import { useAuth } from '@/composables/auth';
 
-const adAccountName = ref('Account Name');
-const { isLoggedIn, setAuth, checkAuthStatus, user } = useAuth(); // Get the user object
+const adAccounts = ref([]); // Store ad account IDs and names
+const selectedAdAccount = ref(null); // Store selected ad account
+const { isLoggedIn, setAuth, checkAuthStatus, user } = useAuth();
 const router = useRouter();
 
-// Create a computed property for isLoggedIn to make it reactive
-const isLoggedInComputed = computed(() => isLoggedIn.value); // Computed property for isLoggedIn
+// Create a computed property for isLoggedIn
+const isLoggedInComputed = computed(() => isLoggedIn.value);
 
+// Logout function
 const logout = async () => {
   try {
     await api.post('/logout', {}, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     localStorage.removeItem('token'); // Clear the token
     setAuth(false); // Update authentication status
@@ -47,22 +53,31 @@ const logout = async () => {
   }
 };
 
-const fetchAdAccountName = async () => {
+// Fetch Ad Account Names
+const fetchAdAccountNames = async () => {
   const token = localStorage.getItem('token');
   try {
     const response = await api.get('/ad-account-name', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    adAccountName.value = response.data.name;
+    adAccounts.value = response.data.adAccounts;
+    selectedAdAccount.value = adAccounts.value[0]; // Set the default selection
+    console.log("🐒 ~ response.data.adAccounts:", response.data.adAccounts);
   } catch (error) {
-    console.error('Error fetching ad account name:', error);
+    console.error('Error fetching ad account names:', error);
   }
+};
+
+// Handle ad account change
+const onAdAccountChange = () => {
+  console.log("Selected Ad Account:", selectedAdAccount.value);
+  // You can store this in localStorage or update the user settings accordingly
 };
 
 watchEffect(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
-    fetchAdAccountName();
+    fetchAdAccountNames();
   }
 });
 </script>
