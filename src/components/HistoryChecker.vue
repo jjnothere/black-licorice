@@ -104,14 +104,10 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-// import { useRoute } from 'vue-router';
 import ObjectID from 'bson-objectid';
 import api from '@/api';
 import LineChart from './LineChart.vue'; // Importing the line chart component
 import { colorMapping, keyMapping } from '@/constants/constants';
-
-// const route = useRoute();
-// const isHistoryPage = computed(() => route.path === '/history');
 
 const props = defineProps({
   selectedCampaigns: Array,
@@ -129,9 +125,12 @@ const selectedMetric1 = ref('clicks');
 const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
 
+// Differences and campaigns
+const differences = ref([]);
+const campaignsMap = ref({});
+
+// Fetch campaigns and groups
 const fetchCurrentCampaigns = async () => {
-
-
   try {
     const response = await api.get('/get-current-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -149,13 +148,9 @@ const fetchCurrentCampaigns = async () => {
 };
 
 const fetchLinkedInCampaigns = async () => {
-
-
-  // Example for adding token in the headers of an axios request
   const token = localStorage.getItem('token');
-
   try {
-    const response = await api.get('/linkedin/ad-campaigns', {
+    const response = await api.get('/linkedin/adcampaigns', {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.data.elements || [];
@@ -276,27 +271,41 @@ const resetChartData = () => {
   chartDataReady.value = false;
 };
 
+const waitForToken = async () => {
+  return new Promise((resolve) => {
+    const checkToken = () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        resolve(token);
+      } else {
+        setTimeout(checkToken, 100); // Check again after a short delay
+      }
+    };
+    checkToken();
+  });
+};
+
 onMounted(async () => {
-  resetChartData();         // Reset chart data before loading
-  await fetchAllChanges();  // Fetch changes
-  await checkForChanges();  // Check for changes and update differences
-  getAnalyticsData();       // Rebuild chart data with red dots
+  await waitForToken(); // Wait until the token is available
+  resetChartData();
+  await fetchAllChanges();
+  await checkForChanges();
+  getAnalyticsData();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
-  resetChartData(); // Always reset chart data first
-  try {
-    await fetchAllChanges();
-    await checkForChanges();
-    getAnalyticsData(); // Rebuild chart data
-  } catch (error) {
-    console.error("Error updating chart data:", error); // Log errors for troubleshooting
-  }
-  chartDataReady.value = true; // Flip only after successfully fetching data
+  await waitForToken(); // Ensure token is available before making requests
+  await fetchAllChanges();
+  await checkForChanges();
+  getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
 });
-// Differences and campaigns
-const differences = ref([]);
-const campaignsMap = ref({});
+
+// Watch for changes in dateRange and update chart data
+watch(() => props.dateRange, async () => {
+  await waitForToken(); // Ensure token is available before making requests
+  await fetchAllChanges();
+  getAnalyticsData();
+}, { deep: true });
 
 // Function to fetch all changes
 const fetchAllChanges = async () => {
@@ -333,15 +342,16 @@ const filteredDifferences = computed(() => {
 
 // Watch and initialize functions
 onMounted(async () => {
+  await waitForToken(); // Ensure token is available before making requests
   await fetchAllChanges();
   getAnalyticsData();
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
+  await waitForToken(); // Ensure token is available before making requests
   await fetchAllChanges();
   getAnalyticsData(); // Update chart data if selected campaigns or date range change
 });
-
 
 const getAggregatedData = (data, interval) => {
   const aggregatedData = {};
@@ -418,75 +428,77 @@ const formatDateLabel = (dateString) => {
 };
 
 const getAnalyticsData = () => {
-  if (props.metrics && props.metrics.length) {
-    const aggregatedData = getAggregatedData(props.metrics, selectedTimeInterval.value);
+  if (!props.metrics || props.metrics.length === 0) {
+    return;
+  }
 
-    const labels = Object.keys(aggregatedData)
-      .reverse()
-      .map(date => {
-        const adjustedDate = new Date(date);
-        adjustedDate.setDate(adjustedDate.getDate() + 1); // Shift date forward by one day
-        return formatDateLabel(adjustedDate.toISOString().split('T')[0]);
-      });
+  const aggregatedData = getAggregatedData(props.metrics, selectedTimeInterval.value);
 
-    const metric1Data = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric1.value]);
-    const metric2Data = selectedMetric2.value !== 'none'
-      ? labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric2.value])
-      : [];
+  const labels = Object.keys(aggregatedData)
+    .reverse()
+    .map(date => {
+      const adjustedDate = new Date(date);
+      adjustedDate.setDate(adjustedDate.getDate() + 1); // Shift date forward by one day
+      return formatDateLabel(adjustedDate.toISOString().split('T')[0]);
+    });
 
-    const pointBackgroundColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'red' : 'black');
-    const pointBorderColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'darkred' : 'black');
-    const pointRadius = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 4 : 3);
+  const metric1Data = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric1.value]);
+  const metric2Data = selectedMetric2.value !== 'none'
+    ? labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric2.value])
+    : [];
 
-    chartData.value = {
-      labels,
-      datasets: [
-        {
-          label: selectedMetric1.value.charAt(0).toUpperCase() + selectedMetric1.value.slice(1),
-          data: metric1Data,
-          borderColor: 'blue',
-          fill: false,
-          pointBackgroundColor: pointBackgroundColors,
-          pointBorderColor: pointBorderColors,
-          pointRadius: pointRadius,
-        },
-        ...(selectedMetric2.value !== 'none' ? [{
-          label: selectedMetric2.value.charAt(0).toUpperCase() + selectedMetric2.value.slice(1),
-          data: metric2Data,
-          borderColor: 'green',
-          fill: false,
-          pointBackgroundColor: pointBackgroundColors,
-          pointBorderColor: pointBorderColors,
-          pointRadius: pointRadius,
-        }] : [])
-      ]
-    };
+  const pointBackgroundColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'red' : 'black');
+  const pointBorderColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'darkred' : 'black');
+  const pointRadius = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 4 : 3);
 
-    chartOptions.value = {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          type: 'category',
-          title: {
-            display: true,
-            text: 'Date'
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Value'
-          }
+  chartData.value = {
+    labels,
+    datasets: [
+      {
+        label: selectedMetric1.value.charAt(0).toUpperCase() + selectedMetric1.value.slice(1),
+        data: metric1Data,
+        borderColor: 'blue',
+        fill: false,
+        pointBackgroundColor: pointBackgroundColors,
+        pointBorderColor: pointBorderColors,
+        pointRadius: pointRadius,
+      },
+      ...(selectedMetric2.value !== 'none' ? [{
+        label: selectedMetric2.value.charAt(0).toUpperCase() + selectedMetric2.value.slice(1),
+        data: metric2Data,
+        borderColor: 'green',
+        fill: false,
+        pointBackgroundColor: pointBackgroundColors,
+        pointBorderColor: pointBorderColors,
+        pointRadius: pointRadius,
+      }] : [])
+    ]
+  };
+
+  chartOptions.value = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        type: 'category',
+        title: {
+          display: true,
+          text: 'Date'
         }
       },
-      plugins: {
-        datalabels: false
+      y: {
+        title: {
+          display: true,
+          text: 'Value'
+        }
       }
-    };
+    },
+    plugins: {
+      datalabels: false
+    }
+  };
 
-    chartDataReady.value = true;
-  }
+  chartDataReady.value = true;
 };
 
 // Functions for adding/editing/deleting notes
