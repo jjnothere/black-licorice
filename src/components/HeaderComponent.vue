@@ -1,12 +1,21 @@
 <template>
   <div class="header">
     <header>
+      <!-- Display selected ad account name in large font size -->
+      <h1 class="selected-ad-account" @click="toggleDropdown">
+        {{ selectedAdAccount?.name || 'Select Ad Account' }}
+        <span class="caret">&#9662;</span> <!-- Caret for dropdown -->
+      </h1>
+
       <!-- Dropdown for ad account selection -->
-      <select v-model="selectedAdAccount" @change="onAdAccountChange">
-        <option v-for="account in adAccounts" :key="account.id" :value="account">
-          {{ account.name }} ({{ account.id.split(':').pop() }})
-        </option>
-      </select>
+      <div v-if="showDropdown" class="dropdown">
+        <ul>
+          <li v-for="account in adAccounts" :key="account.id" @click="selectAdAccount(account)">
+            {{ account.name }}
+          </li>
+        </ul>
+      </div>
+
       <nav class="nav-bar">
         <div class="nav-links">
           <router-link to="/history" class="nav-link" active-class="active-link">History</router-link>
@@ -24,36 +33,34 @@
 </template>
 
 <script setup>
-import { ref, computed, watchEffect } from 'vue';
+import { ref, computed, watchEffect, defineEmits, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api';
 import { useAuth } from '@/composables/auth';
 
-const adAccounts = ref([]); // Store ad account IDs and names
-const selectedAdAccount = ref(null); // Store selected ad account
+const adAccounts = ref([]);
+const selectedAdAccount = ref(null);
+const showDropdown = ref(false);
 const { isLoggedIn, setAuth, checkAuthStatus, user } = useAuth();
 const router = useRouter();
 
-// Create a computed property for isLoggedIn
 const isLoggedInComputed = computed(() => isLoggedIn.value);
 
-// Logout function
 const logout = async () => {
   try {
     await api.post('/logout', {}, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
-    localStorage.removeItem('token'); // Clear the token
-    setAuth(false); // Update authentication status
-    user.email = ''; // Reset the user data
+    localStorage.removeItem('token');
+    setAuth(false);
+    user.email = '';
     user.accountId = '';
-    router.push('/auth'); // Redirect to auth page
+    router.push('/auth');
   } catch (error) {
     console.error('Error during logout:', error);
   }
 };
 
-// Fetch Ad Account Names
 const fetchAdAccountNames = async () => {
   const token = localStorage.getItem('token');
   try {
@@ -61,22 +68,57 @@ const fetchAdAccountNames = async () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     adAccounts.value = response.data.adAccounts;
-    selectedAdAccount.value = adAccounts.value[0]; // Set the default selection
-    console.log("🐒 ~ response.data.adAccounts:", response.data.adAccounts);
+    selectedAdAccount.value = adAccounts.value[0];
+    emit('update:selectedAdAccount', selectedAdAccount.value.id); // Emit initial value
   } catch (error) {
     console.error('Error fetching ad account names:', error);
   }
 };
 
-// Handle ad account change
-const onAdAccountChange = () => {
-  console.log("Selected Ad Account:", selectedAdAccount.value);
-  // You can store this in localStorage or update the user settings accordingly
+const emit = defineEmits(['update:selectedAdAccount']);
+
+const selectAdAccount = (account) => {
+  selectedAdAccount.value = account;
+  showDropdown.value = false; // Hide the dropdown
+
+  // Extract the numeric ID from the URN
+  const accountId = account.id.split(':').pop();
+  emit('update:selectedAdAccount', accountId);
+
+  console.log("Selected Ad Account ID:", accountId);
 };
+const handleClickOutside = (event) => {
+  const dropdownElement = document.querySelector('.dropdown');
+  if (dropdownElement && !dropdownElement.contains(event.target)) {
+    showDropdown.value = false;
+  }
+};
+
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value;
+  if (showDropdown.value) {
+    setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
+  } else {
+    document.removeEventListener('click', handleClickOutside);
+  }
+};
+
+watchEffect(() => {
+  if (!showDropdown.value) {
+    document.removeEventListener('click', handleClickOutside);
+  }
+});
 
 watchEffect(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
+    fetchAdAccountNames();
+  }
+});
+
+// Watch for changes in isLoggedIn and fetch metrics if the user logs in
+watch(isLoggedIn, (newIsLoggedIn) => {
+  if (newIsLoggedIn) {
     fetchAdAccountNames();
   }
 });
@@ -119,10 +161,43 @@ watchEffect(() => {
   border: 3px solid #1C1B21;
 }
 
-.header-account-name {
-  margin: 0;
-  font-size: 1.5em;
+.selected-ad-account {
+  font-size: 2em;
   color: #1C1B21;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin: 0 0;
+}
+
+.caret {
+  margin-left: 10px;
+  font-size: 0.8em;
+}
+
+.dropdown {
+  margin-top: 10px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  z-index: 1000;
+}
+
+.dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.dropdown li:hover {
+  background-color: #f0f0f0;
 }
 
 .nav-bar {
