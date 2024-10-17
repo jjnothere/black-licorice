@@ -1,27 +1,30 @@
 <!-- HistoryPage.vue -->
 <template>
   <div class="content">
-    <HistoryChecker :dateRange="dateRange" />
+    <HistoryChecker :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
+      :groupName="groupName" :budget="budget" />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/auth';
 import HistoryChecker from '@/components/HistoryChecker.vue'; // Import the HistoryChecker component
 
-import { ref } from 'vue';
-
 const props = defineProps({
-  dateRange: Object
+  dateRange: Object,
+  metrics: Array,
+  groupName: String,
+  budget: Number,
+  selectedCampaigns: Array
 });
 
 const dateRange = ref(props.dateRange);
+const metrics = ref(props.metrics);
 
 const router = useRouter();
 const { setAuth, checkAuthStatus } = useAuth();
-
 
 onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -41,7 +44,6 @@ onMounted(() => {
     checkAuthStatus(router);
   }
 });
-
 </script>
 
 <style scoped>
