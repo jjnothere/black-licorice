@@ -11,30 +11,34 @@ import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/auth';
 import HistoryChecker from '@/components/HistoryChecker.vue'; // Import the HistoryChecker component
 
-defineProps({
+import { ref } from 'vue';
+
+const props = defineProps({
   dateRange: Object
 });
+
+const dateRange = ref(props.dateRange);
 
 const router = useRouter();
 const { setAuth, checkAuthStatus } = useAuth();
 
+
 onMounted(() => {
-
-  // Check the search params
-
-  // Extract token from URL
   const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token'); // Extract token
+  const token = urlParams.get('token');
+  const startDate = urlParams.get('startDate');
+  const endDate = urlParams.get('endDate');
 
+  // Update the dateRange
+  if (startDate && endDate) {
+    dateRange.value = { start: startDate, end: endDate };
+  }
 
   if (token) {
-    // Store the token in localStorage
     localStorage.setItem('token', token);
-
-    // Mark the user as authenticated
     setAuth(true);
   } else {
-    checkAuthStatus(router);  // Only check auth status if no token is found
+    checkAuthStatus(router);
   }
 });
 

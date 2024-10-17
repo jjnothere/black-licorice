@@ -130,6 +130,8 @@ const selectedMetric2 = ref('none');
 const selectedTimeInterval = ref('daily');
 
 const fetchCurrentCampaigns = async () => {
+
+
   try {
     const response = await api.get('/get-current-campaigns', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -275,7 +277,6 @@ const resetChartData = () => {
 };
 
 onMounted(async () => {
-  console.log(chartData.value, chartOptions.value);  // Check the content here
   resetChartData();         // Reset chart data before loading
   await fetchAllChanges();  // Fetch changes
   await checkForChanges();  // Check for changes and update differences
@@ -283,11 +284,16 @@ onMounted(async () => {
 });
 
 watch([() => props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
-  await fetchAllChanges();
-  await checkForChanges();
-  getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
+  resetChartData(); // Always reset chart data first
+  try {
+    await fetchAllChanges();
+    await checkForChanges();
+    getAnalyticsData(); // Rebuild chart data
+  } catch (error) {
+    console.error("Error updating chart data:", error); // Log errors for troubleshooting
+  }
+  chartDataReady.value = true; // Flip only after successfully fetching data
 });
-
 // Differences and campaigns
 const differences = ref([]);
 const campaignsMap = ref({});
