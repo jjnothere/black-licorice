@@ -1,29 +1,29 @@
 <!-- App.vue -->
 <template>
   <div class="full-content">
-    <HeaderComponent v-if="!isAuthRoute" />
-    <!-- <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange" :groupName="groupName"
-      :budget="budget" /> -->
+    <HeaderComponent v-if="!isAuthRoute" @update:selectedAdAccount="handleSelectedAdAccountChange" />
     <div v-if="isAuthRoute" class="auth-layout">
       <router-view></router-view>
     </div>
     <div v-else class="layout">
       <div v-if="showFilterFunction && !isProfilePage" class="filter-function">
-        <FilterFunction @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
+        <FilterFunction v-if="showFilterFunction && !isProfilePage" :selectedAdAccountId="selectedAdAccountId"
+          @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
         <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
         <BudgetDetails v-if="isBudgetTrackerPage" :selectedCampaigns="selectedCampaigns" :groupName="groupName"
-          :groupBudget="groupBudget" @budget-updated="handleBudgetUpdated" @update:metrics="updateMetrics" />
+          :groupBudget="groupBudget" :selectedAdAccountId="selectedAdAccountId" @budget-updated="handleBudgetUpdated"
+          @update:metrics="updateMetrics" />
         <router-view :metrics="metrics" :selectedCampaigns="selectedCampaigns" :dateRange="dateRange"
-          :groupName="groupName" :budget="budget" />
+          :groupName="groupName" :budget="budget" :selectedAdAccountId="selectedAdAccountId" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
@@ -71,11 +71,12 @@ const isProfilePage = computed(() => route.path === '/profile');
 const isHistoryPage = computed(() => route.path === '/history');
 const isBudgetTrackerPage = computed(() => route.path === '/budget-tracker');
 
-watch(route, (newRoute) => {
-  if (newRoute.path === '/') {
-    selectedCampaigns.value = [];
-  }
-});
+const selectedAdAccountId = ref(localStorage.getItem('selectedAdAccountId') || null);
+
+const handleSelectedAdAccountChange = (accountId) => {
+  selectedAdAccountId.value = accountId;
+  localStorage.setItem('selectedAdAccountId', accountId); // Update local storage
+};
 </script>
 
 <style scoped>

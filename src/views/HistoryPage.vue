@@ -2,7 +2,7 @@
 <template>
   <div class="content">
     <HistoryChecker :key="dateRange.start + dateRange.end" :metrics="metrics" :selectedCampaigns="selectedCampaigns"
-      :dateRange="dateRange" :budget="budget" />
+      :selectedAdAccountId="selectedAdAccountId" :dateRange="dateRange" :budget="budget" />
   </div>
 </template>
 
@@ -17,7 +17,8 @@ const props = defineProps({
   metrics: Array,
   groupName: String,
   budget: Number,
-  selectedCampaigns: Array
+  selectedCampaigns: Array,
+  selectedAdAccountId: String
 });
 
 const dateRange = ref(props.dateRange);

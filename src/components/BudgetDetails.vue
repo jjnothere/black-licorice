@@ -39,7 +39,8 @@ import { useAuth } from '@/composables/auth';
 const props = defineProps({
     selectedCampaigns: Array,
     groupName: String,
-    groupBudget: Number
+    groupBudget: Number,
+    selectedAdAccountId: String
 });
 const emit = defineEmits(['update:metrics', 'update-date-range', 'budget-updated']);
 const metrics = ref([]);
@@ -189,43 +190,50 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
 
 // Fetch the default budget from the server
 const fetchDefaultBudget = async () => {
+    if (!props.selectedAdAccountId) {
+        console.error('No accountId provided');
+        return 0;
+    }
+
     try {
         const response = await api.get('/get-budget', {
+            params: { accountId: props.selectedAdAccountId }, // Pass the accountId as a parameter
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        if (response.data && response.data.budget) {
+
+        if (response.data && response.data.budget !== null) {
             return response.data.budget;
         } else {
             return 0;
         }
     } catch (error) {
-        console.error('Error fetching default budget:', error);
+        console.error('Error fetching budget:', error);
         return 0;
     }
 };
 
 // Watcher to handle budget updates
+watch(() => props.selectedAdAccountId, async (newAccountId) => {
+    if (newAccountId) {
+        const defaultBudget = await fetchDefaultBudget();
+        budget.value = defaultBudget;
+        formattedBudget.value = defaultBudget.toFixed(2);
+        emit('budget-updated', budget.value); // Emit the updated budget
+    }
+}, { immediate: true });
+
 watch(() => props.groupBudget, async (newBudget) => {
     if (newBudget !== undefined && newBudget !== null) {
         budget.value = newBudget;
         formattedBudget.value = newBudget.toFixed(2);
-        emit('budget-updated', budget.value); // Emit budget-updated event
+        emit('budget-updated', budget.value);
     } else {
         const defaultBudget = await fetchDefaultBudget();
         budget.value = defaultBudget;
         formattedBudget.value = defaultBudget.toFixed(2);
-        emit('budget-updated', budget.value); // Emit budget-updated event
+        emit('budget-updated', budget.value);
     }
 }, { immediate: true });
-
-onMounted(async () => {
-    if (!props.groupBudget) {
-        const defaultBudget = await fetchDefaultBudget();
-        budget.value = defaultBudget;
-        formattedBudget.value = defaultBudget.toFixed(2);
-        emit('budget-updated', budget.value); // Emit budget-updated event
-    }
-});
 
 // Validate and update budget input
 const validateBudgetInput = (event) => {
@@ -246,10 +254,10 @@ const validateBudgetInput = (event) => {
 
 const saveBudget = async () => {
     try {
-        await api.post('/save-budget', { budget: budget.value }, {
+        await api.post('/save-budget', { accountId: props.selectedAdAccountId, budget: budget.value }, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        emit('budget-updated', budget.value); // Emit budget-updated event
+        emit('budget-updated', budget.value); // Emit the updated budget
     } catch (error) {
         console.error('Error saving budget:', error);
     }

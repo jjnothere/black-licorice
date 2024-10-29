@@ -109,73 +109,72 @@ const newGroupCampaigns = ref([]);
 const isGroupModalOpen = ref(false);
 const selectedGroup = ref('none');
 const selectedGroupName = ref('');
-const selectedGroupBudget = ref('');
+const selectedGroupBudget = ref(0);
 
 // State for editing group
 const isEditGroupModalOpen = ref(false);
 const editGroupId = ref(null);
 const editGroupName = ref('');
-const editGroupBudget = ref(0); // Budget for the group being edited
-const formattedEditGroupBudget = ref(''); // Formatted budget for display
+const editGroupBudget = ref(0);
+const formattedEditGroupBudget = ref('');
 const editGroupCampaigns = ref([]);
 
-const { isLoggedIn, checkAuthStatus } = useAuth(); // Get the user object
+const { isLoggedIn, checkAuthStatus } = useAuth();
+const props = defineProps(['selectedAdAccountId']);
 
-// Fetch campaigns and groups
-const fetchCampaigns = async () => {
+const fetchCampaignsAndGroups = async () => {
+  if (!props.selectedAdAccountId) return;
+
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      params: { accountIds: [props.selectedAdAccountId] },
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
-    campaigns.value = response.data.elements.map(campaign => ({
-      id: campaign.id,
-      name: campaign.name
-    }));
-  } catch (error) {
-    console.error('Error fetching campaigns:', error);
-  }
-};
 
-const fetchCampaignGroups = async () => {
-  try {
-    const response = await api.get('/user-campaign-groups', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    campaignGroups.value = response.data.groups || [];
+    const adCampaignsData = response.data.adCampaigns[props.selectedAdAccountId] || {
+      campaigns: [],
+      campaignGroups: [],
+    };
+
+    campaigns.value = adCampaignsData.campaigns.map(campaign => ({
+      id: campaign.id,
+      name: campaign.name,
+    }));
+    campaignGroups.value = adCampaignsData.campaignGroups;
   } catch (error) {
-    console.error('Error fetching campaign groups:', error);
+    console.error('Error fetching campaigns and groups:', error);
   }
 };
+watch(() => props.selectedAdAccountId, fetchCampaignsAndGroups, { immediate: true });
+onMounted(fetchCampaignsAndGroups);
 
 watchEffect(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
-    fetchCampaigns();
-    fetchCampaignGroups();
+    fetchCampaignsAndGroups();
   }
 });
 
-// When component is mounted, fetch campaigns and groups
-onMounted(() => {
-  // fetchCampaigns();
-  // fetchCampaignGroups();
-  // const storedSelectedCampaigns = localStorage.getItem('selectedCampaigns');
-  // if (storedSelectedCampaigns) {
-  //   selectedCampaigns.value = JSON.parse(storedSelectedCampaigns);
-  // }
-});
+const saveCampaignGroup = async (group) => {
+  const accountId = props.selectedAdAccountId;
+  try {
+    await api.post('/save-campaign-groups', { group, accountId }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+  } catch (error) {
+    console.error('Error saving campaign group:', error);
+  }
+};
 
 watch(selectedCampaigns, (newSelectedCampaigns) => {
   localStorage.setItem('selectedCampaigns', JSON.stringify(newSelectedCampaigns));
   emit('update:selectedCampaigns', newSelectedCampaigns);
 });
 
-// Budget formatted variables for new and edited groups
 const formattedNewGroupBudget = ref('');
 
-// Function to validate numeric input for budget
 const validateGroupBudgetInput = (event) => {
-  let value = event.target.value.replace(/[^\d.]/g, ''); // Remove non-numeric characters
+  let value = event.target.value.replace(/[^\d.]/g, '');
   const decimalIndex = value.indexOf('.');
 
   if (decimalIndex !== -1) {
@@ -183,10 +182,9 @@ const validateGroupBudgetInput = (event) => {
   }
 
   if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
-    value = value.slice(0, decimalIndex + 3); // Limit to two decimal places
+    value = value.slice(0, decimalIndex + 3);
   }
 
-  // Update the formatted budget for both new and edit group budgets
   if (event.target.id === 'new-group-budget') {
     formattedNewGroupBudget.value = value;
   } else if (event.target.id === 'edit-group-budget') {
@@ -195,69 +193,52 @@ const validateGroupBudgetInput = (event) => {
   }
 };
 
-// Create group with budget
 const createGroup = async () => {
   if (newGroupName.value && newGroupCampaigns.value.length > 0) {
     const group = {
       id: Date.now(),
       name: newGroupName.value,
       campaignIds: newGroupCampaigns.value,
-      budget: parseFloat(formattedNewGroupBudget.value) || null // Convert to number
+      budget: parseFloat(formattedNewGroupBudget.value) || null
     };
 
-    // Save group to frontend state
+    await saveCampaignGroup(group);
     campaignGroups.value.push(group);
-
-    // Save group to backend (e.g., MongoDB)
-    try {
-      await api.post('/save-campaign-groups', { group }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-    } catch (error) {
-      console.error('Error saving group:', error);
-    }
-
     closeGroupModal();
   } else {
     alert('Please provide a group name and select at least one campaign.');
   }
 };
 
-// Open modal to edit group, loading the current budget and other data
 const openEditGroupModal = (group) => {
   editGroupId.value = group.id;
   editGroupName.value = group.name;
-  editGroupBudget.value = group.budget || 0; // Load existing budget
-  formattedEditGroupBudget.value = group.budget ? group.budget.toFixed(2) : ''; // Format the budget
+  editGroupBudget.value = group.budget || 0;
+  formattedEditGroupBudget.value = group.budget ? group.budget.toFixed(2) : '';
   editGroupCampaigns.value = group.campaignIds || [];
   isEditGroupModalOpen.value = true;
 };
 
-// Save changes to the edited group, including the budget
 const saveEditedGroup = async () => {
   const group = {
     id: editGroupId.value,
     name: editGroupName.value,
     campaignIds: editGroupCampaigns.value,
-    budget: parseFloat(formattedEditGroupBudget.value) || null // Save the updated budget
+    budget: parseFloat(formattedEditGroupBudget.value) || null
   };
 
-  // Update group in frontend state
   const index = campaignGroups.value.findIndex(g => g.id === group.id);
   if (index !== -1) {
     campaignGroups.value[index] = group;
   }
 
-  // Emit the updated budget and selected campaigns after saving
   emit('update:budgetData', { name: group.name, budget: group.budget });
   emit('update:selectedCampaigns', group.campaignIds);
 
-  // Automatically select the updated group
   selectGroup(group);
 
-  // Save updated group to backend (e.g., MongoDB)
   try {
-    await api.post('/update-campaign-group', { group }, {
+    await api.post('/update-campaign-group', { group, accountId: props.selectedAdAccountId }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
   } catch (error) {
@@ -267,32 +248,28 @@ const saveEditedGroup = async () => {
   closeEditGroupModal();
 };
 
-// Close the edit modal
 const closeEditGroupModal = () => {
   isEditGroupModalOpen.value = false;
 };
 
-// Select a group and update campaigns and budget
 const selectGroup = (group) => {
   selectedCampaigns.value = group.campaignIds;
   selectedGroup.value = group.id;
   selectedGroupName.value = group.name;
   selectedGroupBudget.value = group.budget;
 
-  // Emit updated budget data
   emit('update:budgetData', { name: group.name, budget: group.budget });
 };
 
 const clearAllSelections = () => {
   selectedCampaigns.value = [];
   selectedGroup.value = 'none';
-  selectedGroupName.value = ''; // Clear the group name
-  selectedGroupBudget.value = 0; // Clear the budget
+  selectedGroupName.value = '';
+  selectedGroupBudget.value = 0;
   emit('update:selectedCampaigns', []);
   emit('update:budgetData', { name: null, budget: null });
 };
 
-// Open and close modal functions
 const openGroupModal = () => {
   isGroupModalOpen.value = true;
 };
@@ -304,13 +281,11 @@ const closeGroupModal = () => {
   newGroupCampaigns.value = [];
 };
 
-// Delete group function
 const deleteGroup = async (groupId) => {
   campaignGroups.value = campaignGroups.value.filter(group => group.id !== groupId);
 
-  // Remove group from backend (e.g., MongoDB)
   try {
-    await api.post('/delete-campaign-group', { groupId }, {
+    await api.post('/delete-campaign-group', { groupId, accountId: props.selectedAdAccountId }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
   } catch (error) {
@@ -461,12 +436,6 @@ input[type="radio"] {
   border: 3px solid #1C1B21;
   /* Outer border color */
 }
-
-
-
-
-
-
 
 .modal-content {
   display: flex;

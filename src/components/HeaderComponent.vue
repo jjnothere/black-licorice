@@ -61,32 +61,44 @@ const logout = async () => {
   }
 };
 
+const setDefaultAdAccount = () => {
+  if (adAccounts.value.length > 0) {
+    selectedAdAccount.value = adAccounts.value[0];
+    localStorage.setItem('selectedAdAccountId', selectedAdAccount.value.id);
+    emit('update:selectedAdAccount', selectedAdAccount.value.id);
+
+  } else {
+    console.warn('No ad accounts available.');
+  }
+};
+
 const fetchAdAccountNames = async () => {
-  const token = localStorage.getItem('token');
   try {
     const response = await api.get('/ad-account-name', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     });
     adAccounts.value = response.data.adAccounts;
-    selectedAdAccount.value = adAccounts.value[0];
-    emit('update:selectedAdAccount', selectedAdAccount.value.id); // Emit initial value
+
+    if (!selectedAdAccount.value) {
+      setDefaultAdAccount(); // Set the default ad account if none is selected
+    }
   } catch (error) {
     console.error('Error fetching ad account names:', error);
   }
 };
 
+// Inside HeaderComponent.vue
 const emit = defineEmits(['update:selectedAdAccount']);
 
 const selectAdAccount = (account) => {
   selectedAdAccount.value = account;
-  showDropdown.value = false; // Hide the dropdown
+  showDropdown.value = false;
 
-  // Extract the numeric ID from the URN
   const accountId = account.id;
-  emit('update:selectedAdAccount', accountId);
-
-  console.log("Selected Ad Account ID:", accountId);
+  localStorage.setItem('selectedAdAccountId', accountId); // Store the selected accountId
+  emit('update:selectedAdAccount', accountId); // Emit the selected account ID
 };
+
 const handleClickOutside = (event) => {
   const dropdownElement = document.querySelector('.dropdown');
   if (dropdownElement && !dropdownElement.contains(event.target)) {

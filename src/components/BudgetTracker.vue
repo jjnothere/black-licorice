@@ -16,7 +16,7 @@
 import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import LineChart from './LineChart.vue';
 import PieChart from './PieChart.vue';
-import api from '@/api';
+// import api from '@/api';
 
 const props = defineProps({
   metrics: Array,
@@ -31,22 +31,6 @@ const formattedBudget = ref('0.00');
 const selectedGroupName = ref('');
 const campaignNames = ref({}); // Define campaignNames before using it
 
-// Fetch the default budget from the server
-const fetchDefaultBudget = async () => {
-  try {
-    const response = await api.get('/get-budget', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (response.data && response.data.budget) {
-      return response.data.budget;
-    } else {
-      return 0;
-    }
-  } catch (error) {
-    console.error('Error fetching default budget:', error);
-    return 0;
-  }
-};
 
 // Watcher to handle budget updates
 watch(() => props.groupBudget, async (newBudget) => {
@@ -54,19 +38,12 @@ watch(() => props.groupBudget, async (newBudget) => {
     budgetRef.value = newBudget;
     formattedBudget.value = newBudget.toFixed(2);
   } else {
-    const defaultBudget = await fetchDefaultBudget();
-    budgetRef.value = defaultBudget;
-    formattedBudget.value = defaultBudget.toFixed(2);
+    // const defaultBudget = await fetchDefaultBudget();
+    //   budgetRef.value = defaultBudget;
+    //   formattedBudget.value = defaultBudget.toFixed(2);
   }
 }, { immediate: true });
 
-onMounted(async () => {
-  if (!props.groupBudget) {
-    const defaultBudget = await fetchDefaultBudget();
-    budgetRef.value = defaultBudget;
-    formattedBudget.value = defaultBudget.toFixed(2);
-  }
-});
 
 // Watch for changes in the selected group name
 watch(() => props.groupName, (newName) => {
@@ -75,22 +52,22 @@ watch(() => props.groupName, (newName) => {
   }
 });
 
-// Fetch campaign names from the server
-const fetchCampaignNames = async () => {
-  try {
-    const response = await api.get('/linkedin/ad-campaigns', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    // Extract campaign ID and name from the response
-    const campaigns = response.data.elements;
-    campaigns.forEach(campaign => {
-      campaignNames.value[campaign.id] = campaign.name;
-    });
-    updatePieChart(); // Ensure the pie chart is updated with the new campaign names
-  } catch (error) {
-    console.error('Error fetching campaign names:', error);
-  }
-};
+// // Fetch campaign names from the server
+// const fetchCampaignNames = async () => {
+//   try {
+//     const response = await api.get('/linkedin/ad-campaigns', {
+//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+//     });
+//     // Extract campaign ID and name from the response
+//     const campaigns = response.data.elements;
+//     campaigns.forEach(campaign => {
+//       campaignNames.value[campaign.id] = campaign.name;
+//     });
+//     updatePieChart(); // Ensure the pie chart is updated with the new campaign names
+//   } catch (error) {
+//     console.error('Error fetching campaign names:', error);
+//   }
+// };
 
 const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
 const spendData = computed(() => {
@@ -223,24 +200,24 @@ watch(() => props.metrics, updateChart);
 watch(() => props.dateRange, updateChart); // Watch the date range for changes
 
 onMounted(() => {
-  fetchCampaignNames();
-  fetchBudget(); // Fetch the budget from the database when the component is mounted
+  // fetchCampaignNames();
+  // fetchBudget(); // Fetch the budget from the database when the component is mounted
   updateChart();
   updatePieChart();
 });
 
 // Fetch the budget from the server
-const fetchBudget = async () => {
-  try {
-    const response = await api.get('/get-budget', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    budgetRef.value = response.data.budget;
-    formattedBudget.value = budgetRef.value.toFixed(2);
-  } catch (error) {
-    console.error('Error fetching budget:', error);
-  }
-};
+// const fetchBudget = async () => {
+//   try {
+//     const response = await api.get('/get-budget', {
+//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+//     });
+//     budgetRef.value = response.data.budget;
+//     formattedBudget.value = budgetRef.value.toFixed(2);
+//   } catch (error) {
+//     console.error('Error fetching budget:', error);
+//   }
+// };
 
 const getCampaignName = (urn) => {
   const id = urn.split(':').pop(); // Extract the ID from the URN
