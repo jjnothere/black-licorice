@@ -16,7 +16,7 @@
 import { ref, watch, computed, onMounted, nextTick } from 'vue';
 import LineChart from './LineChart.vue';
 import PieChart from './PieChart.vue';
-// import api from '@/api';
+import api from '@/api';
 
 const props = defineProps({
   metrics: Array,
@@ -24,6 +24,7 @@ const props = defineProps({
   groupName: String,
   groupBudget: Number,
   budget: Number, // Use the budget prop here
+  selectedAdAccountId: String, // Ensure this prop is available
 });
 
 const budgetRef = ref(0);
@@ -52,22 +53,40 @@ watch(() => props.groupName, (newName) => {
   }
 });
 
+
+
 // // Fetch campaign names from the server
-// const fetchCampaignNames = async () => {
-//   try {
-//     const response = await api.get('/linkedin/ad-campaigns', {
-//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-//     });
-//     // Extract campaign ID and name from the response
-//     const campaigns = response.data.elements;
-//     campaigns.forEach(campaign => {
-//       campaignNames.value[campaign.id] = campaign.name;
-//     });
-//     updatePieChart(); // Ensure the pie chart is updated with the new campaign names
-//   } catch (error) {
-//     console.error('Error fetching campaign names:', error);
-//   }
-// };
+
+// Fetch campaign names from the server
+const fetchCampaignNames = async () => {
+  try {
+    if (!props.selectedAdAccountId) {
+      console.error('selectedAdAccountId is missing.');
+      return;
+    }
+    console.log("🐒 ~ props.selectedAdAccountId:", props.selectedAdAccountId);
+
+    const response = await api.get('/linkedin/ad-campaign-names', {
+      params: { accountId: props.selectedAdAccountId },
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+
+    console.log("🐒 ~ response:", response.data);
+
+    const campaigns = response.data || []; // Default to an empty array if undefined
+    if (campaigns.length === 0) {
+      console.warn("No campaigns found in response data.");
+    } else {
+      campaigns.forEach(campaign => {
+        campaignNames.value[campaign.id] = campaign.name;
+      });
+    }
+
+    updatePieChart(); // Ensure the pie chart updates with the new campaign names
+  } catch (error) {
+    console.error('Error fetching campaign names:', error);
+  }
+};
 
 const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
 const spendData = computed(() => {
@@ -172,20 +191,20 @@ const updateChart = async () => {
       {
         label: 'Actual Spend',
         data: actualSpendData,
-        borderColor: 'blue',
+        borderColor: '#58A3A6',
         fill: false
       },
       {
         label: 'Projected Spend',
         data: projectedSpendDataset, // Only show the projection from where the actual ends
-        borderColor: 'red',
+        borderColor: '#E0635E',
         borderDash: [5, 5],
         fill: false
       },
       {
         label: 'Budget Line',
         data: budgetLine,
-        borderColor: 'green',
+        borderColor: '#4A6D6D',
         borderDash: [10, 5], // Dashed green line for the budget
         fill: false
       }
@@ -195,41 +214,34 @@ const updateChart = async () => {
   await nextTick();
 };
 
-watch(budgetRef, updateChart);
-watch(() => props.metrics, updateChart);
-watch(() => props.dateRange, updateChart); // Watch the date range for changes
+watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
 
 onMounted(() => {
-  // fetchCampaignNames();
-  // fetchBudget(); // Fetch the budget from the database when the component is mounted
+  fetchCampaignNames();
   updateChart();
-  updatePieChart();
 });
 
-// Fetch the budget from the server
-// const fetchBudget = async () => {
-//   try {
-//     const response = await api.get('/get-budget', {
-//       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-//     });
-//     budgetRef.value = response.data.budget;
-//     formattedBudget.value = budgetRef.value.toFixed(2);
-//   } catch (error) {
-//     console.error('Error fetching budget:', error);
-//   }
-// };
 
 const getCampaignName = (urn) => {
   const id = urn.split(':').pop(); // Extract the ID from the URN
   return campaignNames.value[id] || urn; // Return the name if found, otherwise the original URN
 };
 
-// Predefined distinct colors
+
 const distinctColors = [
-  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#66FF66', '#FF6666', '#66B2FF', '#FF66B2',
-  '#FF5733', '#33FF57', '#3357FF', '#FF33A6', '#33FFA6', '#A633FF', '#FFA633', '#33A6FF', '#FF33FF', '#33FF33',
-  '#FFB533', '#33FFB5', '#FF33B5', '#B533FF', '#FF5733', '#A6FF33', '#FF33A6', '#33FFA6', '#33A633', '#FFA6FF'
+  '#D9B984', '#58A3A6', '#E0635E', '#B44A4D', '#585C6A', '#F4DB7D', '#E3A1A2', '#A4B887',
+  '#40585B', '#F5C84E', '#A1A9C3', '#D8785B', '#3E5659', '#D6A0A1', '#4A6D6D', '#D4C46D',
+  '#A85B6A', '#8A9B76', '#C7AE99', '#C4393F', '#9F6E5A', '#E7BA6D', '#AF4C47', '#8C4046',
+  '#B1C1C4', '#5B7B6E', '#EBE8D5'
 ];
+
+// Predefined distinct colors
+// const distinctColors = [
+//   '#eeddae', '#905e42', '#db323c', '#65a2a2', '#5b5131', '#e09637', '#4e6568', '#ee332a',
+//   '#f6dbdc', '#8E44AD', '#C0392B', '#F1C40F', '#D35400', '#A29BFE', '#55E6C1', '#BDC3C7',
+//   '#6C5CE7', '#FF7675', '#F8EFBA', '#81ECEC', '#FD79A8', '#74B9FF', '#636E72', '#FDCB6E',
+//   '#D63031', '#00CEC9', '#E84393', '#0984E3', '#B2BEC3', '#FFEAA7'
+// ];
 
 // Pie chart data and options
 const pieChartData = ref({

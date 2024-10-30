@@ -99,7 +99,6 @@ import Tooltip from './TooltipComponent.vue';
 import { useAuth } from '@/composables/auth';
 
 const emit = defineEmits(['update:selectedCampaigns', 'update:budget', 'update:budgetData']);
-
 const campaigns = ref([]);
 const selectedCampaigns = ref([]);
 const campaignGroups = ref([]);
@@ -111,7 +110,6 @@ const selectedGroup = ref('none');
 const selectedGroupName = ref('');
 const selectedGroupBudget = ref(0);
 
-// State for editing group
 const isEditGroupModalOpen = ref(false);
 const editGroupId = ref(null);
 const editGroupName = ref('');
@@ -123,12 +121,15 @@ const { isLoggedIn, checkAuthStatus } = useAuth();
 const props = defineProps(['selectedAdAccountId']);
 
 const fetchCampaignsAndGroups = async () => {
-  if (!props.selectedAdAccountId) return;
+  const token = localStorage.getItem('token');
+  if (!token || !props.selectedAdAccountId) {
+    return;
+  }
 
   try {
     const response = await api.get('/linkedin/ad-campaigns', {
       params: { accountIds: [props.selectedAdAccountId] },
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     const adCampaignsData = response.data.adCampaigns[props.selectedAdAccountId] || {
@@ -145,11 +146,19 @@ const fetchCampaignsAndGroups = async () => {
     console.error('Error fetching campaigns and groups:', error);
   }
 };
-watch(() => props.selectedAdAccountId, fetchCampaignsAndGroups, { immediate: true });
-onMounted(fetchCampaignsAndGroups);
 
+// Watch for ad account changes and refetch campaigns/groups when necessary
+watch(() => props.selectedAdAccountId, fetchCampaignsAndGroups, { immediate: true });
+
+onMounted(() => {
+  checkAuthStatus(); // Check token validity and authentication status on mount
+  if (isLoggedIn.value) {
+    fetchCampaignsAndGroups();
+  }
+});
+
+// Watch for token changes in case it’s updated dynamically (like after login)
 watchEffect(() => {
-  checkAuthStatus();
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
   }
@@ -293,7 +302,6 @@ const deleteGroup = async (groupId) => {
   }
 };
 </script>
-
 <style scoped>
 /* Add styles for the modal and edit button */
 .layout {

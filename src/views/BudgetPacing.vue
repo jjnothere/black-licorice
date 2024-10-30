@@ -1,7 +1,8 @@
 <!-- BudgetPacing.vue -->
 <template>
   <div class="content">
-    <budget-tracker :metrics="metrics" :dateRange="dateRange" :groupName="groupName" :groupBudget="budget" />
+    <budget-tracker :metrics="metrics" :dateRange="dateRange" :groupName="groupName" :groupBudget="budget"
+      :selectedAdAccountId="selectedAdAccountId" />
   </div>
 </template>
 
@@ -13,7 +14,8 @@ defineProps({
   groupName: String,
   budget: Number, // Use budget prop here
   metrics: Array,
-  dateRange: Object
+  dateRange: Object,
+  selectedAdAccountId: String
 });
 
 </script>

@@ -69,14 +69,16 @@ const formatDate = (date) => {
 };
 
 const fetchMetrics = async (startDate, endDate, campaigns) => {
-    if (!isLoggedIn.value) {
+    if (!isLoggedIn.value || !props.selectedAdAccountId) {
+        console.error('No authorization or account ID found');
         return;
     }
 
     try {
-        let params = {
+        const params = {
             start: formatDate(startDate),
-            end: formatDate(endDate)
+            end: formatDate(endDate),
+            accountId: props.selectedAdAccountId // Add account ID to the params
         };
 
         if (campaigns && campaigns.length > 0) {
@@ -90,12 +92,14 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
         }
 
         const response = await api.get('/linkedin', {
-            params, // Contains the start, end, and campaigns
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } // Token in headers
+            params,
+            headers: { Authorization: `Bearer ${token}` }
         });
+
+        // Process the response as needed
         let data = response.data.elements;
 
-        // Filter data to ensure it falls within the specified date range
+        // Filter data within the date range
         data = data.filter(item => {
             const itemStartDate = new Date(item.dateRange.start.year, item.dateRange.start.month - 1, item.dateRange.start.day);
             const itemEndDate = new Date(item.dateRange.end.year, item.dateRange.end.month - 1, item.dateRange.end.day);
@@ -110,7 +114,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
         const sortedData = data.sort((a, b) => {
             const dateA = new Date(a.dateRange.start.year, a.dateRange.start.month - 1, a.dateRange.start.day);
             const dateB = new Date(b.dateRange.start.year, b.dateRange.start.month - 1, b.dateRange.start.day);
-            return dateB - dateA; // Sort by newest to oldest
+            return dateB - dateA;
         });
 
         metrics.value = sortedData.map(item => {
@@ -120,8 +124,8 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
             totalConversions += item.externalWebsiteConversions || 0;
 
             return {
-                id: `${item.pivotValues[0]}-${item.dateRange.start.month}-${item.dateRange.start.day}-${item.dateRange.start.year}`, // Unique key for each entry
-                campaign: item.pivotValues[0], // Assuming pivotValues contains the campaign information
+                id: `${item.pivotValues[0]}-${item.dateRange.start.month}-${item.dateRange.start.day}-${item.dateRange.start.year}`,
+                campaign: item.pivotValues[0],
                 spend: formatCurrency(parseFloat(item.costInLocalCurrency) || 0),
                 impressions: item.impressions,
                 clicks: item.landingPageClicks,

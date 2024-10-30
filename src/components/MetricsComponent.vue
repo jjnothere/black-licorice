@@ -43,7 +43,8 @@ import '@fortawesome/fontawesome-free/css/all.css'; // Import Font Awesome CSS
 import { useAuth } from '@/composables/auth';
 
 const props = defineProps({
-  selectedCampaigns: Array
+  selectedCampaigns: Array,
+  selectedAdAccountId: String
 });
 
 const emit = defineEmits(['update:metrics', 'update-date-range']);
@@ -82,24 +83,27 @@ const formatDate = (date) => {
 };
 
 const fetchMetrics = async (startDate, endDate, campaigns) => {
-  if (!isLoggedIn.value) {
+  if (!isLoggedIn.value || !props.selectedAdAccountId) {
     return;
   }
 
   try {
     let params = {
       start: formatDate(startDate),
-      end: formatDate(endDate)
+      end: formatDate(endDate),
+      accountId: props.selectedAdAccountId, // Pass selected ad account ID to the backend
     };
 
     if (campaigns && campaigns.length > 0) {
       const campaignList = campaigns.map(id => `urn%3Ali%3AsponsoredCampaign%3A${id}`).join(',');
       params.campaigns = `List(${campaignList})`;
     }
+
     const response = await api.get('/linkedin', {
-      params, // Contains the start, end, and campaigns
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } // Token in headers
+      params,
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
+
     let data = response.data.elements;
 
     // Filter data to ensure it falls within the specified date range
@@ -161,6 +165,12 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
 
 onMounted(() => {
   if (isLoggedIn.value) {
+    fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
+  }
+});
+// Watch for changes in selectedAdAccountId and trigger metrics fetch
+watch(() => props.selectedAdAccountId, (newAdAccountId) => {
+  if (newAdAccountId) {
     fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
   }
 });

@@ -148,9 +148,6 @@ async function fetchCurrentCampaigns() {
     return [];
   }
 }
-watch(() => props.selectedAdAccountId, (newVal) => {
-  console.log('Selected Ad Account ID changed af af af :', newVal);
-});
 
 const fetchLinkedInCampaigns = async () => {
   const token = localStorage.getItem('token');
@@ -184,14 +181,11 @@ const findDifferences = (obj1, obj2) => {
 
 const checkForChanges = async () => {
   const currentCampaigns = await fetchCurrentCampaigns();
-  console.log("🐒 ~ fetchCurrentCampaigns:", currentCampaigns)
   const linkedInCampaigns = await fetchLinkedInCampaigns();
-  console.log("🐒 ~ linkedInCampaigns:", linkedInCampaigns)
 
   const newDifferences = [];
   linkedInCampaigns.forEach((campaign2) => {
     const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
-    console.log("🐒 ~ campaign1:", campaign1)
     if (campaign1) {
       const changes = findDifferences(campaign1, campaign2);
       if (changes.length > 0) {
@@ -243,19 +237,16 @@ const checkForChanges = async () => {
 };
 
 const scrollToChange = (dateLabel) => {
-  console.log('Original Date Label:', dateLabel); // Debugging log
 
   // Adjust the dateLabel by adding one day
   const adjustedDate = new Date(dateLabel);
   adjustedDate.setDate(adjustedDate.getDate());
   const adjustedLabelDate = adjustedDate.toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
-  console.log('Adjusted Date Label:', adjustedLabelDate);
 
   const matchingIndex = filteredDifferences.value.findIndex(diff => {
     const diffDate = new Date(diff.date).toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
 
-    console.log(`Comparing: ${diffDate} with ${adjustedLabelDate}`);
     return diffDate === adjustedLabelDate;
   });
 
@@ -302,7 +293,7 @@ onMounted(async () => {
   getAnalyticsData();
 });
 
-watch([() => props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
+watch([() => props.selectedAdAccountId, props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
   await waitForToken(); // Ensure token is available before making requests
   await fetchAllChanges();
   await checkForChanges();
@@ -546,10 +537,13 @@ const enableEditMode = (changeId, noteId) => {
   note.newNote = note.note;
 };
 
-const saveNotePrompt = async (changeId, noteId, accountId, campaignId) => {
+const saveNotePrompt = async (changeId, noteId) => {
+  const accountId = props.selectedAdAccountId; // Use the selected ad account ID
+  const campaignId = changeId; // Use changeId as the campaign ID
   const difference = differences.value.find(diff => diff._id === changeId);
   const note = difference.notes.find(note => note._id === noteId);
-  if (!note.newNote) return;
+  if (!note.newNote || !accountId || !campaignId) return; // Ensure required fields are present
+
 
   try {
     await api.post('/edit-note', {
@@ -569,6 +563,7 @@ const saveNotePrompt = async (changeId, noteId, accountId, campaignId) => {
   }
 };
 
+
 const cancelEditMode = (changeId, noteId) => {
   const difference = differences.value.find(diff => diff._id === changeId);
   const note = difference.notes.find(note => note._id === noteId);
@@ -577,7 +572,12 @@ const cancelEditMode = (changeId, noteId) => {
 };
 
 // Function to delete a note
-const deleteNotePrompt = async (changeId, noteId, accountId, campaignId) => {
+const deleteNotePrompt = async (changeId, noteId) => {
+  const accountId = props.selectedAdAccountId;
+  const campaignId = changeId;
+  if (!accountId || !campaignId) return; // Ensure required fields are present
+
+
   try {
     await api.post('/delete-note', {
       accountId,

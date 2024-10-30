@@ -11,7 +11,8 @@
           @update:selectedCampaigns="updateSelectedCampaigns" @update:budgetData="updateBudgetData" />
       </div>
       <div class="main-content">
-        <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" @update:metrics="updateMetrics" />
+        <Metrics v-if="isHistoryPage" :selectedCampaigns="selectedCampaigns" :selectedAdAccountId="selectedAdAccountId"
+          @update:metrics="updateMetrics" />
         <BudgetDetails v-if="isBudgetTrackerPage" :selectedCampaigns="selectedCampaigns" :groupName="groupName"
           :groupBudget="groupBudget" :selectedAdAccountId="selectedAdAccountId" @budget-updated="handleBudgetUpdated"
           @update:metrics="updateMetrics" />
@@ -23,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import HeaderComponent from '@/components/HeaderComponent.vue';
 import FilterFunction from '@/components/FilterFunction.vue';
@@ -42,6 +43,8 @@ const groupBudget = ref(0);
 const budget = ref(0);
 
 const route = useRoute();
+
+const selectedAdAccountId = ref(localStorage.getItem('selectedAdAccountId') || null);
 
 const updateSelectedCampaigns = (newSelectedCampaigns) => {
   selectedCampaigns.value = newSelectedCampaigns;
@@ -71,12 +74,26 @@ const isProfilePage = computed(() => route.path === '/profile');
 const isHistoryPage = computed(() => route.path === '/history');
 const isBudgetTrackerPage = computed(() => route.path === '/budget-tracker');
 
-const selectedAdAccountId = ref(localStorage.getItem('selectedAdAccountId') || null);
-
 const handleSelectedAdAccountChange = (accountId) => {
   selectedAdAccountId.value = accountId;
   localStorage.setItem('selectedAdAccountId', accountId); // Update local storage
 };
+
+// Watch for changes in selectedAdAccountId and refresh data when it changes
+watch(selectedAdAccountId, (newAccountId) => {
+  if (newAccountId) {
+    // Reset data when the account changes
+    selectedCampaigns.value = [];
+    metrics.value = [];
+    groupName.value = '';
+    groupBudget.value = 0;
+    budget.value = 0;
+
+    // Notify child components to fetch new data
+    updateMetrics({ metrics: [], selectedStartDate: dateRange.value.start, selectedEndDate: dateRange.value.end });
+    updateBudgetData({ name: '', budget: 0 });
+  }
+});
 </script>
 
 <style scoped>
