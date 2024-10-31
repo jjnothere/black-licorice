@@ -26,18 +26,11 @@ const adjustTooltipPosition = () => {
 
   if (tooltipRect && containerRect) {
     if (tooltipRect.left < 0) {
-      // If tooltip goes off the left edge of the screen, align it to the left of the container
-      tooltipText.value.style.left = '0';
-      tooltipText.value.style.transform = 'translateX(0)';
+      tooltipContainer.value.setAttribute('data-position', 'right');
     } else if (tooltipRect.right > window.innerWidth) {
-      // If tooltip goes off the right edge, align it to the right of the container
-      tooltipText.value.style.left = 'auto';
-      tooltipText.value.style.right = '0';
-      tooltipText.value.style.transform = 'translateX(0)';
+      tooltipContainer.value.setAttribute('data-position', 'left');
     } else {
-      // Default positioning
-      tooltipText.value.style.left = '50%';
-      tooltipText.value.style.transform = 'translateX(-50%)';
+      tooltipContainer.value.setAttribute('data-position', 'center');
     }
   }
 };
@@ -65,23 +58,31 @@ watch(() => props.text, adjustTooltipPosition);
   border-radius: 4px;
   position: absolute;
   bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   white-space: nowrap;
-  z-index: 1;
+  z-index: 10;
+  /* Ensure it's above other elements */
   font-size: 0.8em;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
   opacity: 0;
   transition: opacity 0.3s;
 }
 
+/* Show tooltip */
 .tooltip-container:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
 }
 
-.campaign-name {
-  cursor: default;
-  /* Ensure the cursor is set to default */
+/* Example of dynamic adjustment */
+.tooltip-container[data-position="left"] .tooltip-text {
+  left: 0;
+  transform: none;
+}
+
+.tooltip-container[data-position="right"] .tooltip-text {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 </style>

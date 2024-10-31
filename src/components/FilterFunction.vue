@@ -315,9 +315,9 @@ const deleteGroup = async (groupId) => {
   max-width: 250px;
   /* height: 558px; */
   /* Set the fixed height */
-  overflow: hidden;
+  /* overflow: hidden; */
   /* Prevent scrolling on the outer container */
-  position: relative;
+  /* position: relative; */
   /* Ensure the inner container is positioned correctly */
 }
 
@@ -327,7 +327,7 @@ const deleteGroup = async (groupId) => {
   background-color: #F9F9F8;
   border-radius: 20px;
   /* Ensure it takes the full height of the outer container */
-  overflow: hidden;
+  /* overflow: hidden; */
   /* Prevent scrolling on the outer container */
 }
 
@@ -358,15 +358,15 @@ const deleteGroup = async (groupId) => {
   /* Outer border color */
 }
 
-.filter-content {
-  max-height: calc(100% - 30px);
-  /* Adjust based on padding and border */
-  overflow-y: auto;
-  /* Add vertical scrollbar if content exceeds max height */
-  overflow-x: hidden;
-  /* Prevent horizontal scrolling */
-  /* Add padding to avoid scrollbar overlap */
-}
+/* .filter-content { */
+/* max-height: calc(100% - 30px); */
+/* Adjust based on padding and border */
+/* overflow-y: auto; */
+/* Add vertical scrollbar if content exceeds max height */
+/* overflow-x: hidden; */
+/* Prevent horizontal scrolling */
+/* Add padding to avoid scrollbar overlap */
+/* } */
 
 /* CSS for the rounded line */
 .filter-header {
