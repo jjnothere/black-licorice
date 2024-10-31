@@ -1,6 +1,7 @@
 <template>
   <div class="layout">
     <div class="filter-function">
+
       <div class="filter-header">
         <strong>
           <h3 class="filters-header">Filters:</h3>
@@ -29,11 +30,14 @@
               <label for="none">None</label>
             </div>
 
-            <!-- Campaign groups with radio buttons -->
-            <div v-for="group in campaignGroups" :key="group.id">
+            <!-- Campaign groups with radio buttons and tooltip for long names -->
+            <div v-for="group in campaignGroups" :key="group.id" class="group-item">
               <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
-              <label>{{ group.name }}</label>
-              <span v-if="group.budget"> (Budget: ${{ group.budget }}) </span>
+              <Tooltip :text="group.name">
+                <label class="group-label">{{ group.name }}</label>
+              </Tooltip>
+              <br />
+              <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
               <!-- Edit and Delete Icons -->
               <button class="icon-button" @click="openEditGroupModal(group)">
                 <i class="fas fa-edit"></i>
@@ -41,6 +45,8 @@
               <button class="icon-button" @click="deleteGroup(group.id)">
                 <i class="fas fa-trash"></i>
               </button>
+              <!-- Separator line -->
+              <div class="group-separator"></div>
             </div>
           </div>
 
@@ -68,7 +74,6 @@
             </div>
           </div>
 
-          <!-- Modal for editing group -->
           <div v-if="isEditGroupModalOpen" class="modal">
             <div class="modal-content">
               <h3 class="model-heading">Edit Group</h3>
@@ -90,6 +95,7 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -302,11 +308,17 @@ const deleteGroup = async (groupId) => {
   }
 };
 </script>
+
 <style scoped>
-/* Add styles for the modal and edit button */
 .layout {
   display: flex;
   max-width: 250px;
+  height: 558px;
+  /* Set the fixed height */
+  overflow: hidden;
+  /* Prevent scrolling on the outer container */
+  position: relative;
+  /* Ensure the inner container is positioned correctly */
 }
 
 .filter-function {
@@ -314,6 +326,9 @@ const deleteGroup = async (groupId) => {
   padding: 15px;
   background-color: #F9F9F8;
   border-radius: 20px;
+  /* Ensure it takes the full height of the outer container */
+  overflow: hidden;
+  /* Prevent scrolling on the outer container */
 }
 
 .filter-function::before,
@@ -341,6 +356,16 @@ const deleteGroup = async (groupId) => {
 .filter-function::after {
   border: 3px solid #1C1B21;
   /* Outer border color */
+}
+
+.filter-content {
+  max-height: calc(100% - 30px);
+  /* Adjust based on padding and border */
+  overflow-y: auto;
+  /* Add vertical scrollbar if content exceeds max height */
+  overflow-x: hidden;
+  /* Prevent horizontal scrolling */
+  /* Add padding to avoid scrollbar overlap */
 }
 
 /* CSS for the rounded line */
@@ -551,5 +576,54 @@ input[type="radio"] {
   font-size: 20px;
   text-transform: uppercase;
   margin: 5px 0;
+}
+
+/* Add a gray line separator under each campaign group */
+.group-separator {
+  height: 1px;
+  background-color: #ccc;
+  margin: 10px 0;
+}
+
+/* Tooltip for long campaign group names */
+.group-label {
+  display: inline-block;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  position: relative;
+}
+
+.group-label[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  top: 100%;
+  left: 0;
+  transform: translateY(5px);
+  z-index: 10;
+  font-size: 0.8em;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.group-label[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  border-style: solid;
+  border-width: 5px 5px 0;
+  border-color: #333 transparent transparent transparent;
+  top: calc(100% + 5px);
+  left: 10px;
+  z-index: 10;
+}
+
+.budget-number {
+  padding-left: 20px;
 }
 </style>
