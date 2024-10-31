@@ -35,11 +35,19 @@
       </div>
     </div>
 
-    <!-- Line chart section -->
-    <div v-if="chartDataReady">
-      <div class="line-chart-container">
-        <line-chart :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
+    <div class="line-chart-container">
+      <!-- Show placeholder while data is loading -->
+      <div v-if="!chartDataReady" class="chart-placeholder">
+        Loading chart data...
       </div>
+
+      <!-- Show "No data" message if there's no data to display after loading -->
+      <div v-else-if="isChartDataEmpty" class="chart-placeholder">
+        No data to display
+      </div>
+
+      <!-- Show actual chart if data is available -->
+      <line-chart v-else :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
     </div>
 
     <!-- Table of differences -->
@@ -54,10 +62,10 @@
       </thead>
       <tbody>
         <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
-          <td>{{ difference.campaign }}</td>
+          <td class="campaign-name">{{ difference.campaign }}</td>
           <td>{{ difference.date }}</td>
           <td v-html="difference.changes"></td>
-          <td>
+          <td class="campaign-notes">
             <div v-if="difference.addingNote" class="note-input">
               <input v-model="difference.newNote" placeholder="Add a new note"
                 @keyup.enter="saveNewNotePrompt(difference._id)" @keyup.esc="cancelAddNotePrompt(difference._id)" />
@@ -236,6 +244,10 @@ const checkForChanges = async () => {
   }
 };
 
+const isChartDataEmpty = computed(() => {
+  return !chartData.value || !chartData.value.datasets || chartData.value.datasets.every(dataset => dataset.data.length === 0);
+});
+
 const scrollToChange = (dateLabel) => {
 
   // Adjust the dateLabel by adding one day
@@ -294,20 +306,14 @@ onMounted(async () => {
 });
 
 watch([() => props.selectedAdAccountId, props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
+  resetChartData();
   await waitForToken(); // Ensure token is available before making requests
   await fetchAllChanges();
   await checkForChanges();
   getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
 });
 
-// Watch for changes in dateRange and update chart data
-// watch(() => props.dateRange, async () => {
-//   await waitForToken(); // Ensure token is available before making requests
-//   await fetchAllChanges();
-//   getAnalyticsData();
-// }, { deep: true });
 
-// Function to fetch all changes
 const fetchAllChanges = async () => {
   try {
     const response = await api.get('/get-all-changes', {
@@ -340,14 +346,6 @@ const filteredDifferences = computed(() => {
     return isWithinDateRange && isSelectedCampaign;
   });
 });
-
-// Watch and initialize functions
-
-// watch([() => props.selectedCampaigns, () => props.dateRange], async () => {
-//   await waitForToken(); // Ensure token is available before making requests
-//   await fetchAllChanges();
-//   getAnalyticsData(); // Update chart data if selected campaigns or date range change
-// });
 
 const getAggregatedData = (data, interval) => {
   const aggregatedData = {};
@@ -425,6 +423,7 @@ const formatDateLabel = (dateString) => {
 
 const getAnalyticsData = () => {
   if (!props.metrics || props.metrics.length === 0) {
+    chartDataReady.value = true; // No data, ready to display "No data" message
     return;
   }
 
@@ -453,7 +452,7 @@ const getAnalyticsData = () => {
       {
         label: selectedMetric1.value.charAt(0).toUpperCase() + selectedMetric1.value.slice(1),
         data: metric1Data,
-        borderColor: 'blue',
+        borderColor: '#61bca8ff',
         fill: false,
         pointBackgroundColor: pointBackgroundColors,
         pointBorderColor: pointBorderColors,
@@ -462,7 +461,7 @@ const getAnalyticsData = () => {
       ...(selectedMetric2.value !== 'none' ? [{
         label: selectedMetric2.value.charAt(0).toUpperCase() + selectedMetric2.value.slice(1),
         data: metric2Data,
-        borderColor: 'green',
+        borderColor: '#F3D287',
         fill: false,
         pointBackgroundColor: pointBackgroundColors,
         pointBorderColor: pointBorderColors,
@@ -668,11 +667,11 @@ const formatTimestamp = (timestamp) => {
 }
 
 .color-indicator.blue {
-  background-color: blue;
+  background-color: #61bca8ff;
 }
 
 .color-indicator.red {
-  background-color: #008000;
+  background-color: #F3D287;
 }
 
 select {
@@ -831,8 +830,26 @@ td {
 
 .line-chart-container {
   width: 100%;
-  /* Keep the chart full-width */
   max-height: 900px;
+  min-height: 300px;
+  /* Enforce minimum height to reserve space for the chart */
+}
+
+.chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  /* Match the height of the chart */
+  color: #888;
+  /* Light color for placeholder text */
+  font-size: 1.2em;
+  /* Increase font size for better readability */
+  background-color: #f2f2f2;
+  /* Light background color */
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  /* Border for placeholder */
 }
 
 canvas {
@@ -860,11 +877,11 @@ canvas {
 
 /* Color the carets based on their previous indicator colors */
 .blue-caret {
-  color: blue;
+  color: #61bca8ff;
 }
 
 .green-caret {
-  color: #008000;
+  color: #F3D287;
   /* Green */
 }
 
@@ -873,5 +890,12 @@ select {
   padding-right: 30px;
   /* Make space for the larger caret */
   padding-left: 10px;
+}
+
+.campaign-name .campaign-notes {
+  white-space: normal;
+  /* Allow text to wrap */
+  word-wrap: break-word;
+  /* Ensure long words break within the width */
 }
 </style>

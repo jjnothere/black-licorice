@@ -88,6 +88,10 @@ const fetchCampaignNames = async () => {
   }
 };
 
+const truncateName = (name, maxLength = 40) => {
+  return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
+};
+
 const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
 const spendData = computed(() => {
   const data = [];
@@ -191,20 +195,20 @@ const updateChart = async () => {
       {
         label: 'Actual Spend',
         data: actualSpendData,
-        borderColor: '#58A3A6',
+        borderColor: '#F3D287',
         fill: false
       },
       {
         label: 'Projected Spend',
         data: projectedSpendDataset, // Only show the projection from where the actual ends
-        borderColor: '#E0635E',
+        borderColor: '#BEBDBF',
         borderDash: [5, 5],
         fill: false
       },
       {
         label: 'Budget Line',
         data: budgetLine,
-        borderColor: '#4A6D6D',
+        borderColor: '#61BCA8FF',
         borderDash: [10, 5], // Dashed green line for the budget
         fill: false
       }
@@ -262,12 +266,14 @@ const pieChartOptions = ref({
     tooltip: {
       callbacks: {
         title: function (context) {
-          return context[0].label.split(' ($')[0]; // Extract campaign name
+          // Access tooltip text from pieChartData's tooltipText array
+          const index = context[0].dataIndex;
+          return pieChartData.value.tooltipText[index];
         },
         label: function (context) {
           const value = parseFloat(context.raw).toFixed(2); // Format value to 2 decimal places
-          const percentage = context.label.split(' - ')[1];
-          return `$${value} (${percentage}`;
+          const percentage = context.label.split(' - ')[1].replace(/\)$/, ''); // Remove trailing parenthesis
+          return `$${value} (${percentage})`;
         }
       }
     },
@@ -287,23 +293,33 @@ const updatePieChart = async () => {
     return acc;
   }, {});
 
-  const filteredLabels = Object.keys(campaignSpend).map(campaign => {
-    const spend = campaignSpend[campaign];
-    const total = Object.values(campaignSpend).reduce((sum, s) => sum + s, 0);
-    const percentage = ((spend / total) * 100).toFixed(2);
-    return `${campaign} ($${spend.toFixed(2)} - ${percentage}%)`;
-  });
-  const filteredData = Object.values(campaignSpend);
+  // Create labels and tooltip data
+  const labels = [];
+  const tooltipText = [];
+  const filteredData = [];
+  const totalSpend = Object.values(campaignSpend).reduce((sum, spend) => sum + spend, 0);
 
+  Object.keys(campaignSpend).forEach((campaign) => {
+    const truncatedCampaign = truncateName(campaign);
+    const spend = campaignSpend[campaign];
+    const percentage = ((spend / totalSpend) * 100).toFixed(2);
+    labels.push(`${truncatedCampaign} ($${spend.toFixed(2)} - ${percentage}%)`);
+    tooltipText.push(campaign); // Store the full campaign name for tooltip
+    filteredData.push(spend);
+  });
+
+  // Set pie chart data and tooltip information
   pieChartData.value = {
-    labels: filteredLabels,
+    labels,
     datasets: [
       {
         data: filteredData,
-        backgroundColor: filteredLabels.map((_, index) => distinctColors[index % distinctColors.length])
+        backgroundColor: labels.map((_, index) => distinctColors[index % distinctColors.length])
       }
-    ]
+    ],
+    tooltipText, // Add tooltipText to the pieChartData to access in tooltip callback
   };
+
   await nextTick();
 };
 
