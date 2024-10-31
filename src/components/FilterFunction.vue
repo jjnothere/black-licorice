@@ -313,7 +313,7 @@ const deleteGroup = async (groupId) => {
 .layout {
   display: flex;
   max-width: 250px;
-  height: 558px;
+  /* height: 558px; */
   /* Set the fixed height */
   overflow: hidden;
   /* Prevent scrolling on the outer container */

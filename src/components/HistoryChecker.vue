@@ -2,158 +2,157 @@
 <template>
   <div class="history-checker">
     <!-- Chart Section -->
-    <div class="section-container">
-      <div class="metric-selection">
-        <!-- Metric selection dropdowns -->
-        <div class="metric-dropdown">
-          <select id="metric1" v-model="selectedMetric1">
-            <option value="conversions">Conversions</option>
-            <option value="clicks">Clicks</option>
-            <option value="impressions">Impressions</option>
-            <option value="spend">Spend</option>
-          </select>
-          <span class="caret blue-caret">&#9662;</span>
-        </div>
-        <div class="metric-dropdown">
-          <select id="metric2" v-model="selectedMetric2">
-            <option value="none">None</option>
-            <option value="conversions">Conversions</option>
-            <option value="clicks">Clicks</option>
-            <option value="impressions">Impressions</option>
-            <option value="spend">Spend</option>
-          </select>
-          <span class="caret green-caret">&#9662;</span>
-        </div>
 
-        <!-- Time interval selection -->
-        <div class="time-interval-dropdown">
-          <select v-model="selectedTimeInterval">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-          </select>
-          <span class="caret">&#9662;</span>
-        </div>
+    <div class="metric-selection">
+      <!-- Metric selection dropdowns -->
+      <div class="metric-dropdown">
+        <select id="metric1" v-model="selectedMetric1">
+          <option value="conversions">Conversions</option>
+          <option value="clicks">Clicks</option>
+          <option value="impressions">Impressions</option>
+          <option value="spend">Spend</option>
+        </select>
+        <span class="caret blue-caret">&#9662;</span>
+      </div>
+      <div class="metric-dropdown">
+        <select id="metric2" v-model="selectedMetric2">
+          <option value="none">None</option>
+          <option value="conversions">Conversions</option>
+          <option value="clicks">Clicks</option>
+          <option value="impressions">Impressions</option>
+          <option value="spend">Spend</option>
+        </select>
+        <span class="caret green-caret">&#9662;</span>
       </div>
 
-      <div class="line-chart-container">
-        <!-- Show placeholder while data is loading -->
-        <div v-if="!chartDataReady" class="chart-placeholder">
-          Loading chart data...
-        </div>
-
-        <!-- Show "No data" message if there's no data to display after loading -->
-        <div v-else-if="isChartDataEmpty" class="chart-placeholder">
-          No data to display
-        </div>
-
-        <!-- Show actual chart if data is available -->
-        <line-chart v-else :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
+      <!-- Time interval selection -->
+      <div class="time-interval-dropdown">
+        <select v-model="selectedTimeInterval">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+        </select>
+        <span class="caret">&#9662;</span>
       </div>
     </div>
+
+    <div class="line-chart-container">
+      <!-- Show placeholder while data is loading -->
+      <div v-if="!chartDataReady" class="chart-placeholder">
+        Loading chart data...
+      </div>
+
+      <!-- Show "No data" message if there's no data to display after loading -->
+      <div v-else-if="isChartDataEmpty" class="chart-placeholder">
+        No data to display
+      </div>
+
+      <!-- Show actual chart if data is available -->
+      <line-chart v-else :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
+    </div>
+
 
     <!-- Table Section -->
-    <div class="section-container table-section">
-      <!-- Table of differences -->
-      <table v-if="filteredDifferences.length > 0">
-        <thead>
-          <tr>
-            <th>Campaign Name</th>
-            <th>Date</th>
-            <th>Changes</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
-            <td class="campaign-name">{{ difference.campaign }}</td>
-            <td>{{ difference.date }}</td>
-            <td v-html="difference.changes"></td>
-            <td class="campaign-notes">
-              <div v-if="difference.addingNote" class="note-input">
-                <input v-model="difference.newNote" placeholder="Add a new note"
-                  @keyup.enter="saveNewNotePrompt(difference._id)" @keyup.esc="cancelAddNotePrompt(difference._id)" />
-                <button class="icon-button" @click="saveNewNotePrompt(difference._id)">
+    <!-- Table of differences -->
+    <table v-if="filteredDifferences.length > 0">
+      <thead>
+        <tr>
+          <th>Campaign Name</th>
+          <th>Date</th>
+          <th>Changes</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
+          <td class="campaign-name">{{ difference.campaign }}</td>
+          <td>{{ difference.date }}</td>
+          <td v-html="difference.changes"></td>
+          <td class="campaign-notes">
+            <div v-if="difference.addingNote" class="note-input">
+              <input v-model="difference.newNote" placeholder="Add a new note"
+                @keyup.enter="saveNewNotePrompt(difference._id)" @keyup.esc="cancelAddNotePrompt(difference._id)" />
+              <button class="icon-button" @click="saveNewNotePrompt(difference._id)">
+                <i class="fas fa-save"></i>
+              </button>
+              <button class="icon-button" @click="cancelAddNotePrompt(difference._id)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <button v-else class="icon-button" @click="enableAddNotePrompt(difference._id)">
+              <i class="fas fa-plus"></i> Add Note
+            </button>
+
+            <!-- Toggle button to expand/collapse notes -->
+            <div v-if="difference.notes.length > 1">
+              <button class="icon-button toggle-notes" @click="toggleNotes(difference._id)">
+                <i :class="difference.showAllNotes ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+                {{ difference.showAllNotes ? 'Show Less' : 'Show All Notes' }}
+              </button>
+            </div>
+
+            <!-- Display only the newest note or all notes based on toggle -->
+            <div v-if="difference.showAllNotes">
+              <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
+                <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
+                <span v-if="!note.isEditing">{{ note.note }}</span>
+                <input v-if="note.isEditing" v-model="note.newNote"
+                  @keyup.enter="saveNotePrompt(difference._id, note._id)"
+                  @keyup.esc="cancelEditMode(difference._id, note._id)"
+                  @blur="saveNotePrompt(difference._id, note._id)" />
+                <div v-if="!note.isEditing" class="icon-buttons">
+                  <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="icon-button" @click="deleteNotePrompt(difference._id, note._id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <button v-if="note.isEditing" class="icon-button" @click="saveNotePrompt(difference._id, note._id)">
                   <i class="fas fa-save"></i>
                 </button>
-                <button class="icon-button" @click="cancelAddNotePrompt(difference._id)">
-                  <i class="fas fa-times"></i>
-                </button>
+                <div class="note-separator"></div>
               </div>
-              <button v-else class="icon-button" @click="enableAddNotePrompt(difference._id)">
-                <i class="fas fa-plus"></i> Add Note
-              </button>
-
-              <!-- Toggle button to expand/collapse notes -->
-              <div v-if="difference.notes.length > 1">
-                <button class="icon-button toggle-notes" @click="toggleNotes(difference._id)">
-                  <i :class="difference.showAllNotes ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-                  {{ difference.showAllNotes ? 'Show Less' : 'Show All Notes' }}
-                </button>
-              </div>
-
-              <!-- Display only the newest note or all notes based on toggle -->
-              <div v-if="difference.showAllNotes">
-                <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
-                  <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
-                  <span v-if="!note.isEditing">{{ note.note }}</span>
-                  <input v-if="note.isEditing" v-model="note.newNote"
-                    @keyup.enter="saveNotePrompt(difference._id, note._id)"
-                    @keyup.esc="cancelEditMode(difference._id, note._id)"
-                    @blur="saveNotePrompt(difference._id, note._id)" />
-                  <div v-if="!note.isEditing" class="icon-buttons">
-                    <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="icon-button" @click="deleteNotePrompt(difference._id, note._id)">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                  <button v-if="note.isEditing" class="icon-button" @click="saveNotePrompt(difference._id, note._id)">
-                    <i class="fas fa-save"></i>
+            </div>
+            <div v-else>
+              <!-- Show only the newest note with edit/delete buttons -->
+              <div class="note" v-if="difference.notes.length > 0">
+                <small class="note-timestamp">{{ formatTimestamp(difference.notes[difference.notes.length -
+                  1].timestamp) }}</small>
+                <span v-if="!difference.notes[difference.notes.length - 1].isEditing">{{
+                  difference.notes[difference.notes.length - 1].note }}</span>
+                <input v-if="difference.notes[difference.notes.length - 1].isEditing"
+                  v-model="difference.notes[difference.notes.length - 1].newNote"
+                  @keyup.enter="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)"
+                  @keyup.esc="cancelEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)"
+                  @blur="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)" />
+                <div v-if="!difference.notes[difference.notes.length - 1].isEditing" class="icon-buttons">
+                  <button class="icon-button"
+                    @click="enableEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                    <i class="fas fa-edit"></i>
                   </button>
-                  <div class="note-separator"></div>
-                </div>
-              </div>
-              <div v-else>
-                <!-- Show only the newest note with edit/delete buttons -->
-                <div class="note" v-if="difference.notes.length > 0">
-                  <small class="note-timestamp">{{ formatTimestamp(difference.notes[difference.notes.length -
-                    1].timestamp) }}</small>
-                  <span v-if="!difference.notes[difference.notes.length - 1].isEditing">{{
-                    difference.notes[difference.notes.length - 1].note }}</span>
-                  <input v-if="difference.notes[difference.notes.length - 1].isEditing"
-                    v-model="difference.notes[difference.notes.length - 1].newNote"
-                    @keyup.enter="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)"
-                    @keyup.esc="cancelEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)"
-                    @blur="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)" />
-                  <div v-if="!difference.notes[difference.notes.length - 1].isEditing" class="icon-buttons">
-                    <button class="icon-button"
-                      @click="enableEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="icon-button"
-                      @click="deleteNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                  <button v-if="difference.notes[difference.notes.length - 1].isEditing" class="icon-button"
-                    @click="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                    <i class="fas fa-save"></i>
+                  <button class="icon-button"
+                    @click="deleteNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </div>
+                <button v-if="difference.notes[difference.notes.length - 1].isEditing" class="icon-button"
+                  @click="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                  <i class="fas fa-save"></i>
+                </button>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-      <div v-else>
-        No changes found for the selected filters.
-      </div>
+    <div v-else>
+      No changes found for the selected filters.
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -657,14 +656,14 @@ const formatTimestamp = (timestamp) => {
 </script>
 
 <style scoped>
-/* .history-checker {
+.history-checker {
   position: relative;
   padding: 15px;
   background-color: #F9F9F8;
   border-radius: 20px;
-} */
+}
 
-.section-container {
+.history-checker {
   position: relative;
   padding: 15px;
   background-color: #F9F9F8;
@@ -672,8 +671,8 @@ const formatTimestamp = (timestamp) => {
   margin-bottom: 20px;
 }
 
-.section-container::before,
-.section-container::after {
+.history-checker::before,
+.history-checker::after {
   content: '';
   position: absolute;
   top: 0;
@@ -684,7 +683,7 @@ const formatTimestamp = (timestamp) => {
   pointer-events: none;
 }
 
-.section-container::before {
+.history-checker::before {
   border: 3px solid #BEBDBF;
   top: 5px;
   left: 5px;
@@ -692,7 +691,7 @@ const formatTimestamp = (timestamp) => {
   bottom: 5px;
 }
 
-.section-container::after {
+.history-checker::after {
   border: 3px solid #1C1B21;
 }
 
