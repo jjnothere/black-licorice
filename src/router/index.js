@@ -72,7 +72,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (!token && to.meta.requiresAuth) {
     // Comment this line out temporarily
-    return next('/auth')
+    // return next('/auth')
   }
 
   next()
