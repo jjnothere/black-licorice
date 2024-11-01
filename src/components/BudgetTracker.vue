@@ -27,31 +27,54 @@ const props = defineProps({
   selectedAdAccountId: String, // Ensure this prop is available
 });
 
+const propsData = computed(() => ({
+  groupBudget: props.groupBudget,
+  metrics: props.metrics,
+  dateRange: props.dateRange,
+}));
+
+watch(propsData, (newPropsData, oldPropsData) => {
+  // Check for significant changes to avoid unnecessary updates
+  const hasGroupBudgetChanged = newPropsData.groupBudget !== oldPropsData.groupBudget;
+  const hasMetricsChanged = JSON.stringify(newPropsData.metrics) !== JSON.stringify(oldPropsData.metrics);
+  const hasDateRangeChanged = JSON.stringify(newPropsData.dateRange) !== JSON.stringify(oldPropsData.dateRange);
+
+  if (hasGroupBudgetChanged) {
+    budgetRef.value = newPropsData.groupBudget || 0;
+    formattedBudget.value = budgetRef.value.toFixed(2);
+  }
+
+  if (hasMetricsChanged || hasDateRangeChanged) {
+    updateChart();
+    updatePieChart();
+  }
+}, { deep: true });
+
 const budgetRef = ref(0);
 const formattedBudget = ref('0.00');
-const selectedGroupName = ref('');
+// const selectedGroupName = ref('');
 const campaignNames = ref({}); // Define campaignNames before using it
 
 
 // Watcher to handle budget updates
-watch(() => props.groupBudget, async (newBudget) => {
-  if (newBudget !== undefined && newBudget !== null) {
-    budgetRef.value = newBudget;
-    formattedBudget.value = newBudget.toFixed(2);
-  } else {
-    // const defaultBudget = await fetchDefaultBudget();
-    //   budgetRef.value = defaultBudget;
-    //   formattedBudget.value = defaultBudget.toFixed(2);
-  }
-}, { immediate: true });
+// watch(() => props.groupBudget, async (newBudget) => {
+//   if (newBudget !== undefined && newBudget !== null) {
+//     budgetRef.value = newBudget;
+//     formattedBudget.value = newBudget.toFixed(2);
+//   } else {
+//     // const defaultBudget = await fetchDefaultBudget();
+//     //   budgetRef.value = defaultBudget;
+//     //   formattedBudget.value = defaultBudget.toFixed(2);
+//   }
+// }, { immediate: true });
 
 
 // Watch for changes in the selected group name
-watch(() => props.groupName, (newName) => {
-  if (newName) {
-    selectedGroupName.value = newName;
-  }
-});
+// watch(() => props.groupName, (newName) => {
+//   if (newName) {
+//     selectedGroupName.value = newName;
+//   }
+// });
 
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
@@ -212,7 +235,7 @@ const updateChart = async () => {
   await nextTick();
 };
 
-watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
+// watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
 
 onMounted(() => {
   fetchCampaignNames();
@@ -317,7 +340,7 @@ const updatePieChart = async () => {
   await nextTick();
 };
 
-watch(() => props.metrics, updatePieChart);
+// watch(() => props.metrics, updatePieChart);
 
 // const saveBudget = async () => {
 //   try {
