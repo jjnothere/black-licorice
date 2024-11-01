@@ -15,35 +15,27 @@ import { useAuth } from '@/composables/auth';
 
 const errorMessage = ref('');
 const router = useRouter();
-const { setAuth, checkAuthStatus } = useAuth();
+const { setAuth } = useAuth();
 
 const loginWithLinkedIn = async () => {
   try {
-    // Redirect the user to LinkedIn login via the backend
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/linkedin`; // Initiates LinkedIn OAuth
   } catch (error) {
     errorMessage.value = 'Login failed. Please try again.';
     console.error('Error during login:', error);
   }
 };
+
 onMounted(() => {
-  // Log full URL to ensure we're on the right page
-
   const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get('token'); // Extract token from URL
-
+  const token = urlParams.get('token');
+  const refreshToken = urlParams.get('refreshToken');
 
   if (token) {
-    // Store the token in localStorage
     localStorage.setItem('token', token);
-
-    // Mark the user as authenticated
+    localStorage.setItem('refreshToken', refreshToken);
     setAuth(true);
-
-    // Optionally redirect to another route
-    router.push('/history'); // Adjust the route if necessary
-  } else {
-    checkAuthStatus(router);  // Fallback if no token is found
+    router.push('/history'); // Redirect to /history after storing tokens
   }
 });
 </script>

@@ -7,7 +7,7 @@ import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/ProfilePage.vue'
 import { useAuth, isTokenExpired } from '@/composables/auth'
 
-const { isLoggedIn, setAuth } = useAuth()
+const { setAuth } = useAuth()
 
 const routes = [
   {
@@ -56,23 +56,33 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
 
-  // Temporarily comment out the auth redirect for debugging
-  if (token && !isLoggedIn.value) {
-    // Set auth state if token is valid
-    if (!isTokenExpired(token)) {
-      setAuth(true)
-      return next()
-    } else {
-      localStorage.removeItem('token')
-      setAuth(false)
-      // Comment this line out temporarily
-      return next('/auth')
-    }
+  if (to.path.startsWith('/auth')) {
+    return next()
   }
 
-  if (!token && to.meta.requiresAuth) {
-    // Comment this line out temporarily
-    // return next('/auth')
+  // Check if the route requires authentication
+  if (to.meta.requiresAuth) {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlToken = urlParams.get('token')
+
+    if (!token && !urlToken) {
+      // No stored token and no token in URL, redirect to auth
+      setAuth(false)
+      return next('/auth')
+    }
+
+    if (urlToken) {
+      localStorage.setItem('token', urlToken)
+      localStorage.setItem('refreshToken', urlParams.get('refreshToken'))
+      setAuth(true)
+      return next() // Allow navigation once token is stored
+    }
+
+    if (isTokenExpired(token)) {
+      localStorage.removeItem('token')
+      setAuth(false)
+      return next('/auth')
+    }
   }
 
   next()
