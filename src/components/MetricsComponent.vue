@@ -109,7 +109,9 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     // Filter data to ensure it falls within the specified date range
     data = data.filter(item => {
       const itemStartDate = new Date(item.dateRange.start.year, item.dateRange.start.month - 1, item.dateRange.start.day);
+      console.log("🐒 ~ itemStartDate:", itemStartDate)
       const itemEndDate = new Date(item.dateRange.end.year, item.dateRange.end.month - 1, item.dateRange.end.day);
+      console.log("🐒 ~ itemEndDate:", itemEndDate)
       return (itemStartDate >= startDate && itemEndDate <= endDate);
     });
 

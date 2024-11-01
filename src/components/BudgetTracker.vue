@@ -109,8 +109,8 @@ const truncateName = (name, maxLength = 40) => {
   return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
 };
 
-const labels = computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
-const spendData = computed(() => {
+computed(() => props.metrics.map(metric => metric.dateRange.split(' - ')[0]).reverse());
+computed(() => {
   const data = [];
   let cumulativeSpend = 0;
   props.metrics.slice().reverse().forEach(metric => {
@@ -147,57 +147,79 @@ const chartOptions = ref({
   }
 });
 
+const aggregatedData = computed(() => {
+  const dateSpendMap = new Map();
+
+  // Loop through metrics and aggregate spend for each unique date
+  props.metrics.forEach(metric => {
+    const date = metric.dateRange.split(' - ')[0]; // Extract the start date for the metric
+    const spend = parseFloat(metric.spend.replace(/[$,]/g, '')) || 0;
+
+    // Accumulate spend for each date
+    if (dateSpendMap.has(date)) {
+      dateSpendMap.set(date, dateSpendMap.get(date) + spend);
+    } else {
+      dateSpendMap.set(date, spend);
+    }
+  });
+
+  // Sort dates and create cumulative spend data
+  const sortedDates = Array.from(dateSpendMap.keys()).sort((a, b) => new Date(a) - new Date(b));
+  const cumulativeSpendData = [];
+  let cumulativeTotal = 0;
+
+  // Compute cumulative total for each date
+  sortedDates.forEach(date => {
+    cumulativeTotal += dateSpendMap.get(date);
+    cumulativeSpendData.push(cumulativeTotal);
+  });
+
+  return { labels: sortedDates, spendData: cumulativeSpendData };
+});
+
+// Use aggregated labels and spendData
+const chartLabels = computed(() => aggregatedData.value.labels);
+const chartSpendData = computed(() => aggregatedData.value.spendData);
+
+
 const updateChart = async () => {
-  console.log("Running updateChart function");
 
   if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
     console.error("Date range is not properly defined");
     return;
   }
 
-  const actualLabels = labels.value;
-  const actualSpendData = spendData.value;
-
-  console.log("Actual Labels:", actualLabels);
-  console.log("Actual Spend Data:", actualSpendData);
+  const actualLabels = chartLabels.value;
+  const actualSpendData = chartSpendData.value;
 
   const lastActualDate = new Date(actualLabels[actualLabels.length - 1]);
   const endDate = new Date(props.dateRange.end);
+
   const daysLeftForProjection = Math.round((endDate - lastActualDate) / (1000 * 3600 * 24));
 
   const allLabels = [...actualLabels];
-  const projectedSpendDataset = [...actualSpendData];
+  const allSpendData = [...actualSpendData];
 
   if (daysLeftForProjection > 0) {
-    const avgDailySpend = actualSpendData[actualSpendData.length - 1] / actualLabels.length;
-    const projectedSpendData = [];
-    const projectedLabels = [];
-    let projectedSpend = actualSpendData[actualSpendData.length - 1];
+    const avgDailySpend = allSpendData[allSpendData.length - 1] / actualLabels.length;
+    let projectedSpend = allSpendData[allSpendData.length - 1];
+    let currentDate = lastActualDate;
 
     for (let i = 1; i <= daysLeftForProjection; i++) {
-      const projectedDate = new Date(lastActualDate);
-      projectedDate.setDate(projectedDate.getDate() + i);
-      const formattedDate = `${projectedDate.getMonth() + 1}/${projectedDate.getDate()}/${projectedDate.getFullYear()}`;
-      projectedLabels.push(formattedDate);
+      currentDate.setDate(currentDate.getDate() + 1);
+
+      const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+      allLabels.push(formattedDate);
 
       projectedSpend += avgDailySpend;
-      projectedSpendData.push(projectedSpend);
+      allSpendData.push(projectedSpend);
     }
 
-    console.log("Projected Labels:", projectedLabels);
-    console.log("Projected Spend Data:", projectedSpendData);
-
-    allLabels.push(...projectedLabels);
-    projectedSpendDataset.push(...new Array(actualSpendData.length).fill(null), ...projectedSpendData);
-  } else {
-    console.log("No days left for projection.");
   }
 
-  const dailyBudget = budgetRef.value / allLabels.length;
-  const budgetLine = allLabels.map((_, index) => (index + 1) * dailyBudget);
-
-  console.log("Final Labels for Chart:", allLabels);
-  console.log("Budget Line Data:", budgetLine);
+  // Budget line calculation
+  const dailyBudget = budgetRef.value / (allLabels.length - 1);
+  const budgetLine = allLabels.map((_, index) => index * dailyBudget);
 
   chartData.value = {
     labels: allLabels,
@@ -206,31 +228,29 @@ const updateChart = async () => {
         label: 'Actual Spend',
         data: actualSpendData,
         borderColor: '#F3D287',
-        fill: false,
+        fill: false
       },
       {
         label: 'Projected Spend',
-        data: projectedSpendDataset,
+        data: allSpendData,
         borderColor: '#BEBDBF',
         borderDash: [5, 5],
-        fill: false,
+        fill: false
       },
       {
         label: 'Budget Line',
         data: budgetLine,
         borderColor: '#61BCA8FF',
         borderDash: [10, 5],
-        fill: false,
-      },
-    ],
+        fill: false
+      }
+    ]
   };
-
-  console.log("Final Chart Data:", chartData.value);
 
   await nextTick();
 };
 
-// watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
+watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
 
 onMounted(() => {
   fetchCampaignNames();
