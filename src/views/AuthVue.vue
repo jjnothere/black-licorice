@@ -20,7 +20,7 @@ const { setAuth, checkAuthStatus } = useAuth();
 const loginWithLinkedIn = async () => {
   try {
     // Redirect the user to LinkedIn login via the backend
-    window.location.href = 'https://black-licorice-800232d1d761.herokuapp.com:51369/auth/linkedin'; // This initiates LinkedIn OAuth
+    window.location.href = 'https://black-licorice-800232d1d761.herokuapp.com/auth/linkedin'; // This initiates LinkedIn OAuth
   } catch (error) {
     errorMessage.value = 'Login failed. Please try again.';
     console.error('Error during login:', error);
