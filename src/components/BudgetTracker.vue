@@ -148,7 +148,7 @@ const chartOptions = ref({
 });
 
 const updateChart = async () => {
-  // Log the dateRange to verify it is passed correctly
+  console.log("Running updateChart function");
 
   // Check if dateRange is properly defined, if not, return early
   if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
@@ -159,6 +159,10 @@ const updateChart = async () => {
   const actualLabels = labels.value;
   const actualSpendData = spendData.value;
 
+  // Log labels and actual spend data for debugging
+  console.log("Actual Labels:", actualLabels);
+  console.log("Actual Spend Data:", actualSpendData);
+
   // Find the last date in the actual data (latest recorded date)
   const lastActualDate = new Date(actualLabels[actualLabels.length - 1]);
   const endDate = new Date(props.dateRange.end); // Ensure endDate is a Date object
@@ -167,6 +171,7 @@ const updateChart = async () => {
   const daysLeftForProjection = Math.round((endDate - lastActualDate) / (1000 * 3600 * 24)); // Convert milliseconds to days
 
   if (daysLeftForProjection <= 0) {
+    console.log("No days left for projection.");
     return;
   }
 
@@ -175,37 +180,37 @@ const updateChart = async () => {
   const totalSpend = actualSpendData[actualSpendData.length - 1];
   const avgDailySpend = totalSpend / totalDaysOfData;
 
+  console.log("Average Daily Spend:", avgDailySpend);
+
   // Generate projection data
   const projectedSpendData = [];
   const projectedLabels = [];
   let projectedSpend = totalSpend;
 
-  // Start the projection from the next day after the last actual date
   for (let i = 1; i <= daysLeftForProjection; i++) {
     const projectedDate = new Date(lastActualDate);
-    projectedDate.setDate(projectedDate.getDate() + i); // Increment date by 1 for each projection day
+    projectedDate.setDate(projectedDate.getDate() + i);
 
-    // Format the date for the label in M/D/YYYY format (no leading zeros)
     const formattedDate = `${projectedDate.getMonth() + 1}/${projectedDate.getDate()}/${projectedDate.getFullYear()}`;
     projectedLabels.push(formattedDate);
 
-    // Add projected spend
     projectedSpend += avgDailySpend;
     projectedSpendData.push(projectedSpend);
   }
 
-  // Combine actual and projected data
-  const allLabels = [...actualLabels, ...projectedLabels]; // Combine actual labels with projected labels
-  // const allSpendData = [...actualSpendData]; // Keep actual spend data as is
+  console.log("Projected Labels:", projectedLabels);
+  console.log("Projected Spend Data:", projectedSpendData);
 
-  // Create the projected spend as a separate dataset starting from the next day
+  const allLabels = [...actualLabels, ...projectedLabels];
   const projectedSpendDataset = new Array(actualSpendData.length).fill(null).concat(projectedSpendData);
 
-  // Calculate cumulative budget data for the chart
   const dailyBudget = budgetRef.value / allLabels.length;
   const budgetLine = allLabels.map((_, index) => (index + 1) * dailyBudget);
 
-  // Update chartData to include actual, projected, and budget data
+  console.log("Final Labels for Chart:", allLabels);
+  console.log("Budget Line Data:", budgetLine);
+
+  // Update chartData
   chartData.value = {
     labels: allLabels,
     datasets: [
@@ -217,7 +222,7 @@ const updateChart = async () => {
       },
       {
         label: 'Projected Spend',
-        data: projectedSpendDataset, // Only show the projection from where the actual ends
+        data: projectedSpendDataset,
         borderColor: '#BEBDBF',
         borderDash: [5, 5],
         fill: false
@@ -226,11 +231,13 @@ const updateChart = async () => {
         label: 'Budget Line',
         data: budgetLine,
         borderColor: '#61BCA8FF',
-        borderDash: [10, 5], // Dashed green line for the budget
+        borderDash: [10, 5],
         fill: false
       }
     ]
   };
+
+  console.log("Final Chart Data:", chartData.value);
 
   await nextTick();
 };
