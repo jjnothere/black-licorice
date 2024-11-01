@@ -57,16 +57,16 @@ const campaignNames = ref({}); // Define campaignNames before using it
 
 
 // Watcher to handle budget updates
-// watch(() => props.groupBudget, async (newBudget) => {
-//   if (newBudget !== undefined && newBudget !== null) {
-//     budgetRef.value = newBudget;
-//     formattedBudget.value = newBudget.toFixed(2);
-//   } else {
-//     // const defaultBudget = await fetchDefaultBudget();
-//     //   budgetRef.value = defaultBudget;
-//     //   formattedBudget.value = defaultBudget.toFixed(2);
-//   }
-// }, { immediate: true });
+watch(() => props.groupBudget, async (newBudget) => {
+  if (newBudget !== undefined && newBudget !== null) {
+    budgetRef.value = newBudget;
+    formattedBudget.value = newBudget.toFixed(2);
+  } else {
+    // const defaultBudget = await fetchDefaultBudget();
+    //   budgetRef.value = defaultBudget;
+    //   formattedBudget.value = defaultBudget.toFixed(2);
+  }
+}, { immediate: true });
 
 
 // Watch for changes in the selected group name
@@ -250,7 +250,7 @@ const updateChart = async () => {
   await nextTick();
 };
 
-watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
+// watch([budgetRef, () => props.metrics, () => props.dateRange], updateChart);
 
 onMounted(() => {
   fetchCampaignNames();
