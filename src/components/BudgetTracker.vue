@@ -150,59 +150,48 @@ const chartOptions = ref({
 const updateChart = async () => {
   console.log("Running updateChart function");
 
-  // Check if dateRange is properly defined, if not, return early
   if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
     console.error("Date range is not properly defined");
-    return; // Early return if dateRange is invalid
+    return;
   }
 
   const actualLabels = labels.value;
   const actualSpendData = spendData.value;
 
-  // Log labels and actual spend data for debugging
   console.log("Actual Labels:", actualLabels);
   console.log("Actual Spend Data:", actualSpendData);
 
-  // Find the last date in the actual data (latest recorded date)
   const lastActualDate = new Date(actualLabels[actualLabels.length - 1]);
-  const endDate = new Date(props.dateRange.end); // Ensure endDate is a Date object
+  const endDate = new Date(props.dateRange.end);
+  const daysLeftForProjection = Math.round((endDate - lastActualDate) / (1000 * 3600 * 24));
 
-  // Calculate the number of days left for projection
-  const daysLeftForProjection = Math.round((endDate - lastActualDate) / (1000 * 3600 * 24)); // Convert milliseconds to days
+  const allLabels = [...actualLabels];
+  const projectedSpendDataset = [...actualSpendData];
 
-  if (daysLeftForProjection <= 0) {
+  if (daysLeftForProjection > 0) {
+    const avgDailySpend = actualSpendData[actualSpendData.length - 1] / actualLabels.length;
+    const projectedSpendData = [];
+    const projectedLabels = [];
+    let projectedSpend = actualSpendData[actualSpendData.length - 1];
+
+    for (let i = 1; i <= daysLeftForProjection; i++) {
+      const projectedDate = new Date(lastActualDate);
+      projectedDate.setDate(projectedDate.getDate() + i);
+      const formattedDate = `${projectedDate.getMonth() + 1}/${projectedDate.getDate()}/${projectedDate.getFullYear()}`;
+      projectedLabels.push(formattedDate);
+
+      projectedSpend += avgDailySpend;
+      projectedSpendData.push(projectedSpend);
+    }
+
+    console.log("Projected Labels:", projectedLabels);
+    console.log("Projected Spend Data:", projectedSpendData);
+
+    allLabels.push(...projectedLabels);
+    projectedSpendDataset.push(...new Array(actualSpendData.length).fill(null), ...projectedSpendData);
+  } else {
     console.log("No days left for projection.");
-    return;
   }
-
-  // Calculate average daily spend
-  const totalDaysOfData = actualLabels.length;
-  const totalSpend = actualSpendData[actualSpendData.length - 1];
-  const avgDailySpend = totalSpend / totalDaysOfData;
-
-  console.log("Average Daily Spend:", avgDailySpend);
-
-  // Generate projection data
-  const projectedSpendData = [];
-  const projectedLabels = [];
-  let projectedSpend = totalSpend;
-
-  for (let i = 1; i <= daysLeftForProjection; i++) {
-    const projectedDate = new Date(lastActualDate);
-    projectedDate.setDate(projectedDate.getDate() + i);
-
-    const formattedDate = `${projectedDate.getMonth() + 1}/${projectedDate.getDate()}/${projectedDate.getFullYear()}`;
-    projectedLabels.push(formattedDate);
-
-    projectedSpend += avgDailySpend;
-    projectedSpendData.push(projectedSpend);
-  }
-
-  console.log("Projected Labels:", projectedLabels);
-  console.log("Projected Spend Data:", projectedSpendData);
-
-  const allLabels = [...actualLabels, ...projectedLabels];
-  const projectedSpendDataset = new Array(actualSpendData.length).fill(null).concat(projectedSpendData);
 
   const dailyBudget = budgetRef.value / allLabels.length;
   const budgetLine = allLabels.map((_, index) => (index + 1) * dailyBudget);
@@ -210,7 +199,6 @@ const updateChart = async () => {
   console.log("Final Labels for Chart:", allLabels);
   console.log("Budget Line Data:", budgetLine);
 
-  // Update chartData
   chartData.value = {
     labels: allLabels,
     datasets: [
@@ -218,23 +206,23 @@ const updateChart = async () => {
         label: 'Actual Spend',
         data: actualSpendData,
         borderColor: '#F3D287',
-        fill: false
+        fill: false,
       },
       {
         label: 'Projected Spend',
         data: projectedSpendDataset,
         borderColor: '#BEBDBF',
         borderDash: [5, 5],
-        fill: false
+        fill: false,
       },
       {
         label: 'Budget Line',
         data: budgetLine,
         borderColor: '#61BCA8FF',
         borderDash: [10, 5],
-        fill: false
-      }
-    ]
+        fill: false,
+      },
+    ],
   };
 
   console.log("Final Chart Data:", chartData.value);
