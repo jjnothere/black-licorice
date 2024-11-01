@@ -218,7 +218,7 @@ const fetchDefaultBudget = async () => {
 
 // Watcher to handle budget updates
 watch(() => props.selectedAdAccountId, async (newAccountId) => {
-    if (newAccountId) {
+    if (newAccountId && (!props.groupBudget || props.groupBudget === 0)) {
         const defaultBudget = await fetchDefaultBudget();
         budget.value = defaultBudget;
         formattedBudget.value = defaultBudget.toFixed(2);
@@ -227,7 +227,7 @@ watch(() => props.selectedAdAccountId, async (newAccountId) => {
 }, { immediate: true });
 
 watch(() => props.groupBudget, async (newBudget) => {
-    if (newBudget !== undefined && newBudget !== null) {
+    if (newBudget !== undefined && newBudget !== null && newBudget !== 0) {
         budget.value = newBudget;
         formattedBudget.value = newBudget.toFixed(2);
         emit('budget-updated', budget.value);

@@ -53,10 +53,6 @@ watch(() => props.groupName, (newName) => {
   }
 });
 
-
-
-// // Fetch campaign names from the server
-
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
   try {
@@ -64,14 +60,12 @@ const fetchCampaignNames = async () => {
       console.error('selectedAdAccountId is missing.');
       return;
     }
-    console.log("🐒 ~ props.selectedAdAccountId:", props.selectedAdAccountId);
 
     const response = await api.get('/linkedin/ad-campaign-names', {
       params: { accountId: props.selectedAdAccountId },
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
 
-    console.log("🐒 ~ response:", response.data);
 
     const campaigns = response.data || []; // Default to an empty array if undefined
     if (campaigns.length === 0) {

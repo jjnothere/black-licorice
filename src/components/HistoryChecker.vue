@@ -33,7 +33,7 @@
           <option value="monthly">Monthly</option>
           <option value="quarterly">Quarterly</option>
         </select>
-        <span class="caret">&#9662;</span>
+        <span class="caret dark-caret">&#9662;</span>
       </div>
     </div>
 
@@ -940,5 +940,9 @@ select {
   color: #fff;
   background-color: #61bca8ff;
   border-radius: 4px;
+}
+
+.dark-caret {
+  color: #1C1B21;
 }
 </style>

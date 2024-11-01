@@ -27,7 +27,8 @@
             <!-- Default "None" option that clears all selections -->
             <div>
               <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
-              <label for="none">None</label>
+              <label for="none">None (Selects all campaigns)</label>
+              <div class="group-separator"></div>
             </div>
 
             <!-- Campaign groups with radio buttons and tooltip for long names -->
@@ -153,8 +154,20 @@ const fetchCampaignsAndGroups = async () => {
   }
 };
 
-// Watch for ad account changes and refetch campaigns/groups when necessary
-watch(() => props.selectedAdAccountId, fetchCampaignsAndGroups, { immediate: true });
+watch(() => props.selectedAdAccountId, async () => {
+  // Refetch campaigns and groups when ad account changes
+  await fetchCampaignsAndGroups();
+
+  // Clear selected campaigns and groups, reset to default "None"
+  selectedCampaigns.value = [];
+  selectedGroup.value = 'none';
+  selectedGroupName.value = '';
+  selectedGroupBudget.value = 0;
+
+  // Emit events to notify parent components of the reset state
+  emit('update:selectedCampaigns', []);
+  emit('update:budgetData', { name: null, budget: null });
+}, { immediate: true });
 
 onMounted(() => {
   checkAuthStatus(); // Check token validity and authentication status on mount
