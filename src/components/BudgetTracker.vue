@@ -310,13 +310,21 @@ const updatePieChart = async () => {
     return acc;
   }, {});
 
-  // Create labels and tooltip data
+  // Filter out campaigns with $0.00 spend
+  const nonZeroSpendCampaigns = Object.keys(campaignSpend).filter(
+    (campaign) => campaignSpend[campaign] > 0
+  );
+
+  // Create labels and tooltip data only for campaigns with non-zero spend
   const labels = [];
   const tooltipText = [];
   const filteredData = [];
-  const totalSpend = Object.values(campaignSpend).reduce((sum, spend) => sum + spend, 0);
+  const totalSpend = nonZeroSpendCampaigns.reduce(
+    (sum, campaign) => sum + campaignSpend[campaign],
+    0
+  );
 
-  Object.keys(campaignSpend).forEach((campaign) => {
+  nonZeroSpendCampaigns.forEach((campaign) => {
     const truncatedCampaign = truncateName(campaign);
     const spend = campaignSpend[campaign];
     const percentage = ((spend / totalSpend) * 100).toFixed(2);
