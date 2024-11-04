@@ -56,15 +56,16 @@ const formattedBudget = ref('0.00');
 const campaignNames = ref({}); // Define campaignNames before using it
 
 
-// Watcher to handle budget updates
+// Watcher to handle budget updates and update the chart accordingly
 watch(() => props.groupBudget, async (newBudget) => {
+  console.log('New budget:', newBudget);
   if (newBudget !== undefined && newBudget !== null) {
     budgetRef.value = newBudget;
     formattedBudget.value = newBudget.toFixed(2);
-  } else {
-    // const defaultBudget = await fetchDefaultBudget();
-    //   budgetRef.value = defaultBudget;
-    //   formattedBudget.value = defaultBudget.toFixed(2);
+
+    // Update the chart whenever the budget changes
+    await nextTick(); // Wait for DOM updates if needed
+    updateChart();  // Ensure the chart reflects the new budget
   }
 }, { immediate: true });
 
