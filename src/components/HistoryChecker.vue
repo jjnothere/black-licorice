@@ -183,7 +183,15 @@ const selectedTimeInterval = ref('daily');
 const differences = ref([]);
 const campaignsMap = ref({});
 
-// Fetch campaigns and groups
+// Helper function to retrieve the token from cookies
+
+const getTokenFromCookies = () => {
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
+  const token = cookie ? cookie.split('=')[1] : null;
+  return token;
+};
+
+// Update fetchCurrentCampaigns to use getTokenFromCookies
 async function fetchCurrentCampaigns() {
   if (!props.selectedAdAccountId) {
     console.warn('No selected Ad Account ID available');
@@ -191,11 +199,15 @@ async function fetchCurrentCampaigns() {
   }
 
   try {
-    const response = await api.get('/get-current-campaigns', {
+    const token = getTokenFromCookies();
+    if (!token) throw new Error("No authorization token found");
+
+    const response = await api.get('/api/get-current-campaigns', {
       params: { accountId: props.selectedAdAccountId },
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-    return response.data.campaigns || []; // Adjust to point to campaigns under adCampaigns.<selectedAdAccountId>
+    return response.data.campaigns || [];
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     return [];
@@ -203,11 +215,16 @@ async function fetchCurrentCampaigns() {
 }
 
 const fetchLinkedInCampaigns = async () => {
-  const token = localStorage.getItem('token');
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error("Authorization token missing");
+    return [];
+  }
   try {
-    const response = await api.get('/linkedin/ad-campaigns', {
+    const response = await api.get('/api/linkedin/ad-campaigns', {
       params: { accountIds: [props.selectedAdAccountId] },
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
     return response.data.adCampaigns[props.selectedAdAccountId].campaigns || [];
   } catch (error) {
@@ -233,9 +250,15 @@ const findDifferences = (obj1, obj2) => {
 };
 
 const checkForChanges = async () => {
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error('No authorization token found');
+    return;
+  }
   const currentCampaigns = await fetchCurrentCampaigns();
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
+  // Process and find differences
   const newDifferences = [];
   linkedInCampaigns.forEach((campaign2) => {
     const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
@@ -243,7 +266,7 @@ const checkForChanges = async () => {
       const changes = findDifferences(campaign1, campaign2);
       if (changes.length > 0) {
         const changesString = changes.map(change => {
-          const color = colorMapping[change] || 'black'; // Default to black if color not found
+          const color = colorMapping[change] || 'black';
           return `<span class="change-key" style="color:${color};"><b>${change}<b/></span>`;
         }).join('<br>');
         newDifferences.push({
@@ -252,7 +275,7 @@ const checkForChanges = async () => {
           changes: changesString,
           notes: campaign2.notes || [],
           addingNote: false,
-          _id: campaign1._id // Ensure we have the correct MongoDB ID
+          _id: campaign1._id
         });
       }
     } else {
@@ -262,7 +285,7 @@ const checkForChanges = async () => {
         changes: 'New campaign added',
         notes: campaign2.notes || [],
         addingNote: false,
-        _id: campaign2._id // Include _id if available
+        _id: campaign2._id
       });
     }
   });
@@ -278,11 +301,13 @@ const checkForChanges = async () => {
   differences.value = [...uniqueDifferences, ...differences.value];
 
   try {
-    await api.post('/save-campaigns', { campaigns: linkedInCampaigns, accountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    await api.post('/api/save-campaigns', { campaigns: linkedInCampaigns, accountId: props.selectedAdAccountId }, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-    await api.post('/save-changes', { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    await api.post('/api/save-changes', { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId }, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
   } catch (error) {
     console.error('Error saving campaigns and changes:', error);
@@ -328,19 +353,19 @@ const resetChartData = () => {
   chartDataReady.value = false;
 };
 
-const waitForToken = async () => {
-  return new Promise((resolve) => {
-    const checkToken = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        resolve(token);
-      } else {
-        setTimeout(checkToken, 100); // Check again after a short delay
-      }
-    };
-    checkToken();
-  });
-};
+// const waitForToken = async () => {
+//   return new Promise((resolve) => {
+//     const checkToken = () => {
+//       const token = localStorage.getItem('token');
+//       if (token) {
+//         resolve(token);
+//       } else {
+//         setTimeout(checkToken, 100); // Check again after a short delay
+//       }
+//     };
+//     checkToken();
+//   });
+// };
 
 const toggleNotes = (id) => {
   const difference = differences.value.find(diff => diff._id === id);
@@ -350,19 +375,20 @@ const toggleNotes = (id) => {
 };
 
 onMounted(async () => {
-  await waitForToken(); // Ensure token is available
-  resetChartData();
-  await fetchAllChanges();
-  await checkForChanges(); // Only one call here now
-  getAnalyticsData();
-  differences.value.forEach(difference => {
-    difference.showAllNotes = false;
-  });
+  console.log("onMounted triggered");
+
+  if (props.selectedAdAccountId) {
+    resetChartData();
+    await fetchAllChanges();
+    await checkForChanges();
+    getAnalyticsData();
+  }
 });
+
 
 watch([() => props.selectedAdAccountId, props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
   resetChartData();
-  await waitForToken(); // Ensure token is available before making requests
+  // await waitForToken(); // Ensure token is available before making requests
   await fetchAllChanges();
   await checkForChanges();
   getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
@@ -371,9 +397,15 @@ watch([() => props.selectedAdAccountId, props.selectedCampaigns, () => props.dat
 
 const fetchAllChanges = async () => {
   try {
-    const response = await api.get('/get-all-changes', {
+    const token = getTokenFromCookies();
+    if (!token) {
+      console.error('No authorization token found');
+      return;
+    }
+    const response = await api.get('/api/get-all-changes', {
       params: { adAccountId: props.selectedAdAccountId },
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
     differences.value = response.data.reverse().map(change => {
       if (!change._id) {
@@ -385,7 +417,6 @@ const fetchAllChanges = async () => {
     console.error('Error fetching all changes from the database:', error);
   }
 };
-
 // Computed property for filtered differences based on selected campaigns and date range
 const filteredDifferences = computed(() => {
   if (!props.dateRange || !props.dateRange.start || !props.dateRange.end) {
@@ -563,22 +594,28 @@ const cancelAddNotePrompt = (id) => {
   difference.newNote = '';
 };
 
+// Save a new note
 const saveNewNotePrompt = async (changeId) => {
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error('No authorization token found');
+    return;
+  }
   const difference = differences.value.find(diff => diff._id === changeId);
   if (!difference.newNote) return;
 
   try {
-    await api.post('/add-note', {
-      accountId: props.selectedAdAccountId, // Pass the adAccountId here
-      campaignId: difference._id,           // Include the campaign ID
+    await api.post('/api/add-note', {
+      accountId: props.selectedAdAccountId,
+      campaignId: difference._id,
       newNote: difference.newNote
     }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-
     difference.notes.push({ _id: ObjectID().toHexString(), note: difference.newNote, timestamp: new Date().toISOString() });
-    difference.newNote = ''; // Clear input
-    difference.addingNote = false; // Hide the input field
+    difference.newNote = '';
+    difference.addingNote = false;
   } catch (error) {
     console.error('Error adding note:', error);
   }
@@ -591,24 +628,29 @@ const enableEditMode = (changeId, noteId) => {
   note.newNote = note.note;
 };
 
+// Save edited note
 const saveNotePrompt = async (changeId, noteId) => {
-  const accountId = props.selectedAdAccountId; // Use the selected ad account ID
-  const campaignId = changeId; // Use changeId as the campaign ID
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error('No authorization token found');
+    return;
+  }
+  const accountId = props.selectedAdAccountId;
+  const campaignId = changeId;
   const difference = differences.value.find(diff => diff._id === changeId);
   const note = difference.notes.find(note => note._id === noteId);
-  if (!note.newNote || !accountId || !campaignId) return; // Ensure required fields are present
-
+  if (!note.newNote || !accountId || !campaignId) return;
 
   try {
-    await api.post('/edit-note', {
+    await api.post('/api/edit-note', {
       accountId,
       campaignId,
       noteId,
       updatedNote: note.newNote
     }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-
     note.note = note.newNote;
     note.isEditing = false;
     note.timestamp = new Date().toISOString();
@@ -627,20 +669,24 @@ const cancelEditMode = (changeId, noteId) => {
 
 // Function to delete a note
 const deleteNotePrompt = async (changeId, noteId) => {
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error('No authorization token found');
+    return;
+  }
   const accountId = props.selectedAdAccountId;
   const campaignId = changeId;
-  if (!accountId || !campaignId) return; // Ensure required fields are present
-
+  if (!accountId || !campaignId) return;
 
   try {
-    await api.post('/delete-note', {
+    await api.post('/api/delete-note', {
       accountId,
       campaignId,
       noteId
     }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-
     const difference = differences.value.find(diff => diff._id === changeId);
     difference.notes = difference.notes.filter(note => note._id !== noteId);
   } catch (error) {

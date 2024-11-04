@@ -48,13 +48,14 @@ export default {
   },
   methods: {
     async fetchCampaigns() {
-      const apiUrl = '/linkedin/ad-campaigns'; // Ensure the URL is correct
+      const apiUrl = '/api/linkedin/ad-campaigns'; // Ensure the URL is correct
       this.loading = true;
       this.error = '';
 
       try {
         const response = await api.get(apiUrl, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          withCredentials: true
         });
         this.campaigns = response.data.elements || []; // Adjust according to the actual structure of your API response
         this.localSelectedCampaigns = this.campaigns.map(campaign => campaign.id); // Select all campaigns

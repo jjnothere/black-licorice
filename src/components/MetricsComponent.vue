@@ -74,6 +74,12 @@ const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 const lastValidStartDate = ref(startOfMonth);
 const lastValidEndDate = ref(today);
 
+// Helper function to retrieve the token from cookies
+const getTokenFromCookies = () => {
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
+  return cookie ? cookie.split('=')[1] : null;
+};
+
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 };
@@ -88,6 +94,9 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
   }
 
   try {
+    const token = getTokenFromCookies();
+    if (!token) throw new Error("No authorization token found");
+
     let params = {
       start: formatDate(startDate),
       end: formatDate(endDate),
@@ -99,9 +108,10 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
       params.campaigns = `List(${campaignList})`;
     }
 
-    const response = await api.get('/linkedin', {
+    const response = await api.get('/api/linkedin', {
       params,
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
 
     let data = response.data.elements;
@@ -109,9 +119,7 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     // Filter data to ensure it falls within the specified date range
     data = data.filter(item => {
       const itemStartDate = new Date(item.dateRange.start.year, item.dateRange.start.month - 1, item.dateRange.start.day);
-      console.log("🐒 ~ itemStartDate:", itemStartDate)
       const itemEndDate = new Date(item.dateRange.end.year, item.dateRange.end.month - 1, item.dateRange.end.day);
-      console.log("🐒 ~ itemEndDate:", itemEndDate)
       return (itemStartDate >= startDate && itemEndDate <= endDate);
     });
 
@@ -170,6 +178,7 @@ onMounted(() => {
     fetchMetrics(selectedStartDate.value, selectedEndDate.value, props.selectedCampaigns);
   }
 });
+
 // Watch for changes in selectedAdAccountId and trigger metrics fetch
 watch(() => props.selectedAdAccountId, (newAdAccountId) => {
   if (newAdAccountId) {
@@ -193,10 +202,6 @@ watch([selectedStartDate, selectedEndDate, () => props.selectedCampaigns], ([new
     emit('update-date-range', {
       start: newStartDate,
       end: newEndDate
-    });
-    emit('update-date-range', {
-      start: selectedStartDate.value,
-      end: selectedEndDate.value
     });
   }
 });

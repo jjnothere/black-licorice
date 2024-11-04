@@ -86,14 +86,16 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
             params.campaigns = `List(${campaignList})`;
         }
 
-        const token = localStorage.getItem('token');
+        // Retrieve token from cookies
+        const token = getTokenFromCookies();
         if (!token) {
             throw new Error('No authorization token found');
         }
 
-        const response = await api.get('/linkedin', {
+        const response = await api.get('/api/linkedin', {
             params,
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true
         });
 
         // Process the response as needed
@@ -156,6 +158,12 @@ const fetchMetrics = async (startDate, endDate, campaigns) => {
     }
 };
 
+// Helper function to retrieve the token from cookies
+const getTokenFromCookies = () => {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
+    return cookie ? cookie.split('=')[1] : null;
+};
+
 const updateDateRange = ({ start, end }) => {
     selectedStartDate.value = start;
     selectedEndDate.value = end;
@@ -200,9 +208,10 @@ const fetchDefaultBudget = async () => {
     }
 
     try {
-        const response = await api.get('/get-budget', {
+        const response = await api.get('/api/get-budget', {
             params: { accountId: props.selectedAdAccountId }, // Pass the accountId as a parameter
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            withCredentials: true
         });
 
         if (response.data && response.data.budget !== null) {
@@ -258,8 +267,9 @@ const validateBudgetInput = (event) => {
 
 const saveBudget = async () => {
     try {
-        await api.post('/save-budget', { accountId: props.selectedAdAccountId, budget: budget.value }, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        await api.post('/api/save-budget', { accountId: props.selectedAdAccountId, budget: budget.value }, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            withCredentials: true
         });
         emit('budget-updated', budget.value); // Emit the updated budget
     } catch (error) {

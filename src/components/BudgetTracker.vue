@@ -58,7 +58,6 @@ const campaignNames = ref({}); // Define campaignNames before using it
 
 // Watcher to handle budget updates and update the chart accordingly
 watch(() => props.groupBudget, async (newBudget) => {
-  console.log('New budget:', newBudget);
   if (newBudget !== undefined && newBudget !== null) {
     budgetRef.value = newBudget;
     formattedBudget.value = newBudget.toFixed(2);
@@ -85,9 +84,10 @@ const fetchCampaignNames = async () => {
       return;
     }
 
-    const response = await api.get('/linkedin/ad-campaign-names', {
+    const response = await api.get('/api/linkedin/ad-campaign-names', {
       params: { accountId: props.selectedAdAccountId },
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      withCredentials: true
     });
 
 

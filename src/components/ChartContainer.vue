@@ -24,8 +24,9 @@ const props = defineProps({
 // Fetch campaign names from the server
 const fetchCampaignNames = async () => {
     try {
-        const response = await api.get('/linkedin/ad-campaigns', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        const response = await api.get('/api/linkedin/ad-campaigns', {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            withCredentials: true
         });
         // Extract campaign ID and name from the response
         const campaigns = response.data.elements;

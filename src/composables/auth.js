@@ -9,7 +9,6 @@ const user = reactive({
 })
 
 // Helper function to check if the token is expired
-// Helper function to check if the token is expired
 export const isTokenExpired = (token) => {
   const isJwt = (token) => token.split('.').length === 3
   if (!isJwt(token)) {
@@ -26,6 +25,12 @@ export const isTokenExpired = (token) => {
   }
 }
 
+// Helper function to retrieve the token from cookies
+const getTokenFromCookies = () => {
+  const cookie = document.cookie.split('; ').find((row) => row.startsWith('accessToken='))
+  return cookie ? cookie.split('=')[1] : null
+}
+
 export function useAuth() {
   // Function to set authentication status
   const setAuth = (isAuthenticated) => {
@@ -33,38 +38,33 @@ export function useAuth() {
   }
 
   // Check authentication status and get user profile if token exists
+  // checkAuthStatus function
   const checkAuthStatus = async () => {
-    const token = localStorage.getItem('token')
+    const token = getTokenFromCookies() // Retrieves token from cookies
 
     if (token && !isTokenExpired(token)) {
       try {
         const response = await api.get('/api/user-profile', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
         })
-        isLoggedIn.value = true
+        setAuth(true)
         user.email = response.data.email
         user.accountId = response.data.accountId
-      } catch {
-        localStorage.removeItem('token')
-        isLoggedIn.value = false
-        user.email = ''
-        user.accountId = ''
+      } catch (error) {
+        console.error('🐒 ~ Error retrieving user profile:', error)
+        document.cookie = 'accessToken=; Max-Age=0' // Clear token if request fails
+        setAuth(false)
       }
     } else {
-      isLoggedIn.value = false
-      user.email = ''
-      user.accountId = ''
+      setAuth(false)
     }
   }
 
   // Function to set initial auth state on app creation
   const setInitialAuthState = () => {
-    const token = localStorage.getItem('token')
-    if (token && !isTokenExpired(token)) {
-      isLoggedIn.value = true
-    } else {
-      isLoggedIn.value = false
-    }
+    const token = getTokenFromCookies()
+    isLoggedIn.value = token && !isTokenExpired(token)
   }
 
   return {

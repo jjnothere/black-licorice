@@ -9,6 +9,12 @@ import { useAuth, isTokenExpired } from '@/composables/auth'
 
 const { setAuth } = useAuth()
 
+// Helper function to retrieve a cookie
+const getCookie = (name) => {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+  return match ? decodeURIComponent(match[2]) : null
+}
+
 const routes = [
   {
     path: '/',
@@ -54,38 +60,23 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('token')
+  const token = getCookie('accessToken') // Retrieve token from cookies
 
   if (to.path.startsWith('/auth')) {
-    return next()
+    return next() // Allow navigation to /auth routes
   }
 
-  // Check if the route requires authentication
   if (to.meta.requiresAuth) {
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlToken = urlParams.get('token')
-
-    if (!token && !urlToken) {
-      // No stored token and no token in URL, redirect to auth
+    if (!token || isTokenExpired(token)) {
       setAuth(false)
-      return next('/auth')
-    }
-
-    if (urlToken) {
-      localStorage.setItem('token', urlToken)
-      localStorage.setItem('refreshToken', urlParams.get('refreshToken'))
+      return next('/auth') // Redirect to auth if token missing/expired
+    } else {
       setAuth(true)
-      return next() // Allow navigation once token is stored
-    }
-
-    if (isTokenExpired(token)) {
-      localStorage.removeItem('token')
-      setAuth(false)
-      return next('/auth')
+      return next() // Proceed if token is valid
     }
   }
 
-  next()
+  next() // Default navigation if no authentication needed
 })
 
 export default router

@@ -46,16 +46,28 @@ const router = useRouter();
 
 const isLoggedInComputed = computed(() => isLoggedIn.value);
 
+// Helper function to retrieve the token from cookies
+const getTokenFromCookies = () => {
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
+  return cookie ? cookie.split('=')[1] : null;
+};
+
 const logout = async () => {
   try {
-    await api.post('/logout', {}, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    const token = getTokenFromCookies(); // Ensure we have the token from cookies
+    if (!token) throw new Error("Authorization token is missing");
+
+    await api.post('/api/logout', {}, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
-    localStorage.removeItem('token');
+
+    // Clear local storage and other logout steps
+    localStorage.removeItem('selectedAdAccountId');
     setAuth(false);
     user.email = '';
     user.accountId = '';
-    router.push('/auth');
+    router.push('/auth'); // Redirect to authentication page
   } catch (error) {
     console.error('Error during logout:', error);
   }
@@ -74,9 +86,7 @@ const setDefaultAdAccount = () => {
 
 const fetchAdAccountNames = async () => {
   try {
-    const response = await api.get('/ad-account-name', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
+    const response = await api.get('/api/ad-account-name', { withCredentials: true }); // No Authorization header needed
     adAccounts.value = response.data.adAccounts;
 
     if (!selectedAdAccount.value) {

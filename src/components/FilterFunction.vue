@@ -127,16 +127,23 @@ const editGroupCampaigns = ref([]);
 const { isLoggedIn, checkAuthStatus } = useAuth();
 const props = defineProps(['selectedAdAccountId']);
 
+// Helper function to retrieve the token from cookies
+const getTokenFromCookies = () => {
+  const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
+  return cookie ? cookie.split('=')[1] : null;
+};
+
 const fetchCampaignsAndGroups = async () => {
-  const token = localStorage.getItem('token');
+  const token = getTokenFromCookies();
   if (!token || !props.selectedAdAccountId) {
     return;
   }
 
   try {
-    const response = await api.get('/linkedin/ad-campaigns', {
+    const response = await api.get('/api/linkedin/ad-campaigns', {
       params: { accountIds: [props.selectedAdAccountId] },
       headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
 
     const adCampaignsData = response.data.adCampaigns[props.selectedAdAccountId] || {
@@ -155,28 +162,24 @@ const fetchCampaignsAndGroups = async () => {
 };
 
 watch(() => props.selectedAdAccountId, async () => {
-  // Refetch campaigns and groups when ad account changes
   await fetchCampaignsAndGroups();
 
-  // Clear selected campaigns and groups, reset to default "None"
   selectedCampaigns.value = [];
   selectedGroup.value = 'none';
   selectedGroupName.value = '';
   selectedGroupBudget.value = 0;
 
-  // Emit events to notify parent components of the reset state
   emit('update:selectedCampaigns', []);
   emit('update:budgetData', { name: null, budget: null });
 }, { immediate: true });
 
 onMounted(() => {
-  checkAuthStatus(); // Check token validity and authentication status on mount
+  checkAuthStatus();
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
   }
 });
 
-// Watch for token changes in case it’s updated dynamically (like after login)
 watchEffect(() => {
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
@@ -185,9 +188,13 @@ watchEffect(() => {
 
 const saveCampaignGroup = async (group) => {
   const accountId = props.selectedAdAccountId;
+  const token = getTokenFromCookies();
+  if (!token) return;
+
   try {
-    await api.post('/save-campaign-groups', { group, accountId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    await api.post('/api/save-campaign-groups', { group, accountId }, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
   } catch (error) {
     console.error('Error saving campaign group:', error);
@@ -265,9 +272,13 @@ const saveEditedGroup = async () => {
 
   selectGroup(group);
 
+  const token = getTokenFromCookies();
+  if (!token) return;
+
   try {
-    await api.post('/update-campaign-group', { group, accountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    await api.post('/api/update-campaign-group', { group, accountId: props.selectedAdAccountId }, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
   } catch (error) {
     console.error('Error updating group:', error);
@@ -311,10 +322,13 @@ const closeGroupModal = () => {
 
 const deleteGroup = async (groupId) => {
   campaignGroups.value = campaignGroups.value.filter(group => group.id !== groupId);
+  const token = getTokenFromCookies();
+  if (!token) return;
 
   try {
-    await api.post('/delete-campaign-group', { groupId, accountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    await api.post('/api/delete-campaign-group', { groupId, accountId: props.selectedAdAccountId }, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true
     });
   } catch (error) {
     console.error('Error deleting group:', error);
