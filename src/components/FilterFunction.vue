@@ -1,7 +1,6 @@
 <template>
   <div class="layout">
     <div class="filter-function">
-
       <div class="filter-header">
         <strong>
           <h3 class="filters-header">Filters:</h3>
@@ -24,14 +23,12 @@
           <!-- Campaign Groups filter with radio buttons and None option -->
           <div class="filter-group">
             <p class="filter-heading"><strong>Campaign Groups</strong></p>
-            <!-- Default "None" option that clears all selections -->
             <div>
               <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
               <label for="none">None (Selects all campaigns)</label>
               <div class="group-separator"></div>
             </div>
 
-            <!-- Campaign groups with radio buttons and tooltip for long names -->
             <div v-for="group in campaignGroups" :key="group.id" class="group-item">
               <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
               <Tooltip :text="group.name">
@@ -39,64 +36,68 @@
               </Tooltip>
               <br />
               <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
-              <!-- Edit and Delete Icons -->
               <button class="icon-button" @click="openEditGroupModal(group)">
                 <i class="fas fa-edit"></i>
               </button>
               <button class="icon-button" @click="deleteGroup(group.id)">
                 <i class="fas fa-trash"></i>
               </button>
-              <!-- Separator line -->
               <div class="group-separator"></div>
             </div>
           </div>
 
-          <!-- Add Group Button styled like Add Note -->
+          <!-- Add Group Button -->
           <button class="add-group-button" @click="openGroupModal">
             <i class="fas fa-plus"></i> Add Group
           </button>
 
-          <!-- Modal for adding group -->
-          <div v-if="isGroupModalOpen" class="modal">
+          <!-- Add Group Modal -->
+          <div v-if="isGroupModalOpen" class="modal" @click.self="closeGroupModal">
             <div class="modal-content">
               <h3 class="model-heading">Create New Group</h3>
-              <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
+              <div class="modal-inner-wrapper">
+                <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
+                <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
+                  @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
 
-              <!-- Budget input that allows only numeric input -->
-              <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
-                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+                <div class="modal-button-group">
+                  <button class="modal-button" @click="createGroup">Create Group</button>
+                  <button class="modal-button" @click="closeGroupModal">Cancel</button>
+                </div>
 
-              <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
-                <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
-                <label>{{ campaign.name }}</label>
+                <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
+                  <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
+                  <label>{{ campaign.name }}</label>
+                </div>
               </div>
-              <button class="modal-button" @click="createGroup">Create Group</button>
-              <button class="modal-button" @click="closeGroupModal">Cancel</button>
             </div>
           </div>
 
-          <div v-if="isEditGroupModalOpen" class="modal">
+          <!-- Edit Group Modal -->
+          <div v-if="isEditGroupModalOpen" class="modal" @click.self="closeEditGroupModal">
             <div class="modal-content">
               <h3 class="model-heading">Edit Group</h3>
-              <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
+              <div class="modal-inner-wrapper">
+                <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
+                <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
+                  @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
 
-              <!-- Budget input for editing group with validation -->
-              <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
-                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+                <div class="modal-button-group">
+                  <button class="modal-button" @click="saveEditedGroup">Save Changes</button>
+                  <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
+                </div>
 
-              <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
-                <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
-                <label>{{ campaign.name }}</label>
+                <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
+                  <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
+                  <label>{{ campaign.name }}</label>
+                </div>
               </div>
-              <button class="modal-button" @click="saveEditedGroup">Save Changes</button>
-              <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script setup>
@@ -457,21 +458,28 @@ input[type="radio"] {
 .modal {
   z-index: 10;
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #F9F9F8;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 90%;
-  max-width: 1000px;
-  overflow-y: auto;
-  border-radius: 20px;
-
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.modal::before,
-.modal::after {
+.modal-content {
+  background-color: #F9F9F8;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  border-radius: 20px;
+  position: relative;
+  /* Add borders here to keep them fixed */
+}
+
+.modal-content::before,
+.modal-content::after {
   content: '';
   position: absolute;
   top: 0;
@@ -482,25 +490,22 @@ input[type="radio"] {
   pointer-events: none;
 }
 
-.modal::before {
+.modal-content::before {
   border: 3px solid #BEBDBF;
-  /* Inner border color */
   top: 5px;
-  /* Gap between the borders */
   left: 5px;
   right: 5px;
   bottom: 5px;
 }
 
-.modal::after {
+.modal-content::after {
   border: 3px solid #1C1B21;
-  /* Outer border color */
 }
 
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
+.modal-inner-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px 0;
 }
 
 .icon-button {
@@ -526,6 +531,7 @@ input[type="radio"] {
 .model-heading {
   margin: 0;
   padding-bottom: 5px;
+  font-size: 2em;
 }
 
 .modle-item {
@@ -533,18 +539,22 @@ input[type="radio"] {
   font-size: 1.2em;
 }
 
+.modal-button-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .modal-button {
   padding: 10px 20px;
-  border: 1px solid #eee;
-  border-radius: 5px;
+  border: 2px solid #61bca8;
+  border-radius: 20px;
   text-decoration: none;
   font-weight: bold;
   color: black;
   background-color: #f9f9f9;
   cursor: pointer;
-  margin-right: 10px;
-  margin-bottom: 5px;
-  max-width: 50%;
 }
 
 .modal-button:hover {
@@ -554,6 +564,8 @@ input[type="radio"] {
 .modal-text-input {
   width: 50%;
   max-width: 50%;
+  padding: 5px 5px;
+  margin-bottom: 10px;
 }
 
 /* FilterFunction.vue */
