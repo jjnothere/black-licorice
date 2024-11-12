@@ -45,8 +45,28 @@
               <div class="group-separator"></div>
             </div>
           </div>
-
-          <!-- Add Group Button -->
+          <!-- LinkedIn Campaign Groups -->
+          <div class="filter-group">
+            <p class="filter-heading"><strong>LinkedIn Campaign Groups</strong></p>
+            <div v-for="group in linkedInCampaignGroups" :key="group.id" class="group-item">
+              <div @click="toggleGroupVisibility(group.id)" class="group-label">
+                <span>{{ group.name }}</span>
+                <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
+              </div>
+              <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
+                :checked="areAllCampaignsSelectedInGroup(group)" />
+              <label :for="`select-group-${group.id}`">Select All</label>
+              <div v-if="group.visible" class="campaigns-list">
+                <div v-for="campaign in group.campaigns" :key="campaign.id">
+                  <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
+                  <Tooltip :text="campaign.name">
+                    <label class="campaign-label">{{ campaign.name }}</label>
+                  </Tooltip>
+                </div>
+              </div>
+              <div class="group-separator"></div>
+            </div>
+          </div>
           <button class="add-group-button" @click="openGroupModal">
             <i class="fas fa-plus"></i> Add Group
           </button>
@@ -99,7 +119,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted, watch, watchEffect } from 'vue';
 import api from '@/api';
@@ -124,6 +143,58 @@ const editGroupName = ref('');
 const editGroupBudget = ref(0);
 const formattedEditGroupBudget = ref('');
 const editGroupCampaigns = ref([]);
+const linkedInCampaignGroups = ref([]); // Array to hold LinkedIn campaign groups
+
+// Method to select all campaigns in a group
+const selectAllCampaignsInGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  if (areAllCampaignsSelectedInGroup(group)) {
+    // If all campaigns are selected, remove them from the selected list
+    selectedCampaigns.value = selectedCampaigns.value.filter(id => !allCampaignIds.includes(id));
+  } else {
+    // Otherwise, add all campaigns in the group to the selected list
+    selectedCampaigns.value = [...new Set([...selectedCampaigns.value, ...allCampaignIds])];
+  }
+};
+
+// Helper method to check if all campaigns in a group are selected
+const areAllCampaignsSelectedInGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  return allCampaignIds.every(id => selectedCampaigns.value.includes(id));
+};
+
+
+const toggleGroupVisibility = (groupId) => {
+  const group = linkedInCampaignGroups.value.find(group => group.id === groupId);
+  if (group) {
+    group.visible = !group.visible; // Toggle the visibility
+  }
+};
+
+const fetchLinkedInCampaignGroups = async () => {
+  try {
+    // Fetch LinkedIn campaign groups and campaigns using the server-side API
+    const response = await api.get('/api/linkedin/linkedin-ad-campaign-groups', {
+      params: { accountId: props.selectedAdAccountId },
+      headers: { Authorization: `Bearer ${getTokenFromCookies()}` },
+      withCredentials: true,
+    });
+
+    // Update the data arrays with simplified objects
+    linkedInCampaignGroups.value = response.data.map(group => ({
+      id: group.id,
+      name: group.name,
+      campaigns: group.campaigns.map(campaign => ({
+        id: campaign.id,
+        name: campaign.name,
+      })),
+      visible: false, // Add visibility toggle property
+    }));
+    console.log("🐒 ~ LinkedIn Campaign Groups:", JSON.stringify(response.data));
+  } catch (error) {
+    console.error('Error fetching LinkedIn campaign groups:', error);
+  }
+};
 
 const { isLoggedIn, checkAuthStatus } = useAuth();
 const props = defineProps(['selectedAdAccountId']);
@@ -178,6 +249,7 @@ onMounted(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
+    fetchLinkedInCampaignGroups();
   }
 });
 
