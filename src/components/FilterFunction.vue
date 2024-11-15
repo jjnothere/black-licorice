@@ -160,6 +160,13 @@ const selectAllCampaignsInGroup = (group) => {
 // Helper method to check if all campaigns in a group are selected
 const areAllCampaignsSelectedInGroup = (group) => {
   const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+
+  // Check if there are no campaigns in the group, and return false in that case
+  if (allCampaignIds.length === 0) {
+    return false;
+  }
+
+  // Otherwise, check if all campaigns in the group are selected
   return allCampaignIds.every(id => selectedCampaigns.value.includes(id));
 };
 
@@ -234,7 +241,6 @@ const fetchCampaignsAndGroups = async () => {
 
 watch(() => props.selectedAdAccountId, async () => {
   await fetchCampaignsAndGroups();
-
   selectedCampaigns.value = [];
   selectedGroup.value = 'none';
   selectedGroupName.value = '';
@@ -248,7 +254,10 @@ onMounted(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
-    fetchLinkedInCampaignGroups();
+    fetchLinkedInCampaignGroups().then(() => {
+      // Ensure no LinkedIn campaign groups are selected on load
+      selectedCampaigns.value = []; // Clear all selected campaigns
+    });
   }
 });
 
