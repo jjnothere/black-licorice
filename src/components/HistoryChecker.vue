@@ -207,7 +207,12 @@ async function fetchCurrentCampaigns() {
       headers: { Authorization: `Bearer ${token}` },
       withCredentials: true
     });
-    return response.data.campaigns || [];
+    const campaigns = response.data.campaigns || [];
+    campaignsMap.value = campaigns.reduce((map, campaign) => {
+      map[campaign.id] = campaign.name;
+      return map;
+    }, {});
+    return campaigns;
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     return [];
@@ -375,8 +380,6 @@ const toggleNotes = (id) => {
 };
 
 onMounted(async () => {
-  console.log("onMounted triggered");
-
   if (props.selectedAdAccountId) {
     resetChartData();
     await fetchAllChanges();

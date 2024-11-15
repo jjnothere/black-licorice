@@ -190,7 +190,6 @@ const fetchLinkedInCampaignGroups = async () => {
       })),
       visible: false, // Add visibility toggle property
     }));
-    console.log("🐒 ~ LinkedIn Campaign Groups:", JSON.stringify(response.data));
   } catch (error) {
     console.error('Error fetching LinkedIn campaign groups:', error);
   }
