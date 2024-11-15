@@ -20,7 +20,7 @@
           <div class="filter-group">
             <p class="filter-heading"><strong>Campaign Groups</strong></p>
             <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
-              <div @click="toggleGroupVisibility(group.id)" class="group-label">
+              <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
                 <span>{{ group.name }}</span>
                 <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
               </div>
@@ -74,6 +74,13 @@
             <div class="modal-content">
               <h3 class="model-heading">Create New Group</h3>
               <div class="modal-inner-wrapper">
+                <!-- Search Bar in Modal -->
+                <div class="search-bar">
+                  <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
+                    placeholder="Search Campaigns..." />
+                  <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+                </div>
+
                 <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
                 <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
                   @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
@@ -83,9 +90,19 @@
                   <button class="modal-button" @click="closeGroupModal">Cancel</button>
                 </div>
 
-                <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
-                  <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
-                  <label>{{ campaign.name }}</label>
+                <!-- Campaign Groups in Modal -->
+                <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
+                  <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
+                    <span>{{ group.name }}</span>
+                    <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
+                  </div>
+                  <div v-if="group.visible" class="campaigns-list">
+                    <div v-for="campaign in group.campaigns" :key="campaign.id">
+                      <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
+                      <label>{{ campaign.name }}</label>
+                    </div>
+                  </div>
+                  <div class="group-separator"></div>
                 </div>
               </div>
             </div>
@@ -96,6 +113,13 @@
             <div class="modal-content">
               <h3 class="model-heading">Edit Group</h3>
               <div class="modal-inner-wrapper">
+                <!-- Search Bar in Modal -->
+                <div class="search-bar">
+                  <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
+                    placeholder="Search Campaigns..." />
+                  <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+                </div>
+
                 <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
                 <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
                   @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
@@ -105,9 +129,19 @@
                   <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
                 </div>
 
-                <div class="modle-item" v-for="campaign in campaigns" :key="campaign.id">
-                  <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
-                  <label>{{ campaign.name }}</label>
+                <!-- Campaign Groups in Modal -->
+                <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
+                  <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
+                    <span>{{ group.name }}</span>
+                    <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
+                  </div>
+                  <div v-if="group.visible" class="campaigns-list">
+                    <div v-for="campaign in group.campaigns" :key="campaign.id">
+                      <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
+                      <label>{{ campaign.name }}</label>
+                    </div>
+                  </div>
+                  <div class="group-separator"></div>
                 </div>
               </div>
             </div>
@@ -142,11 +176,14 @@ const editGroupName = ref('');
 const editGroupBudget = ref(0);
 const formattedEditGroupBudget = ref('');
 const editGroupCampaigns = ref([]);
-const linkedInCampaignGroups = ref([]); // Array to hold LinkedIn campaign groups
-const searchQuery = ref(''); // Search query for filtering
-const filteredLinkedInCampaignGroups = ref([]); // Filtered campaign groups
+const linkedInCampaignGroups = ref([]);
+const searchQuery = ref('');
+const filteredLinkedInCampaignGroups = ref([]);
 
-// Method to filter campaigns based on search query
+const modalSearchQuery = ref('');
+const filteredLinkedInCampaignGroupsModal = ref([]);
+
+// Method to filter campaigns based on search query in the main filter
 const filterCampaigns = () => {
   if (!searchQuery.value) {
     filteredLinkedInCampaignGroups.value = linkedInCampaignGroups.value;
@@ -160,61 +197,74 @@ const filterCampaigns = () => {
   }
 };
 
-// Method to clear search query
+// Method to filter campaigns in the modals
+const filterModalCampaigns = () => {
+  if (!modalSearchQuery.value) {
+    filteredLinkedInCampaignGroupsModal.value = linkedInCampaignGroups.value;
+  } else {
+    filteredLinkedInCampaignGroupsModal.value = linkedInCampaignGroups.value.map(group => ({
+      ...group,
+      campaigns: group.campaigns.filter(campaign =>
+        campaign.name.toLowerCase().includes(modalSearchQuery.value.toLowerCase())
+      ),
+    })).filter(group => group.campaigns.length > 0);
+  }
+};
+
+// Method to clear the search query in the main filter
 const clearSearch = () => {
   searchQuery.value = '';
   filterCampaigns();
 };
 
-// Method to select all campaigns in a group
-const selectAllCampaignsInGroup = (group) => {
-  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
-  if (areAllCampaignsSelectedInGroup(group)) {
-    // If all campaigns are selected, remove them from the selected list
-    selectedCampaigns.value = selectedCampaigns.value.filter(id => !allCampaignIds.includes(id));
-  } else {
-    // Otherwise, add all campaigns in the group to the selected list
-    selectedCampaigns.value = [...new Set([...selectedCampaigns.value, ...allCampaignIds])];
-  }
+// Method to clear the search query in the modal
+const clearModalSearch = () => {
+  modalSearchQuery.value = '';
+  filterModalCampaigns();
 };
 
 // Helper method to check if all campaigns in a group are selected
 const areAllCampaignsSelectedInGroup = (group) => {
   const allCampaignIds = group.campaigns.map(campaign => campaign.id);
-
-  // Check if there are no campaigns in the group, and return false in that case
-  if (allCampaignIds.length === 0) {
-    return false;
-  }
-
-  // Otherwise, check if all campaigns in the group are selected
-  return allCampaignIds.every(id => selectedCampaigns.value.includes(id));
+  return allCampaignIds.length > 0 && allCampaignIds.every(id => selectedCampaigns.value.includes(id));
 };
 
-const toggleGroupVisibility = (groupId) => {
-  // Update visibility in both linkedInCampaignGroups and filteredLinkedInCampaignGroups
+// Method to select or deselect all campaigns in a group
+const selectAllCampaignsInGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  if (areAllCampaignsSelectedInGroup(group)) {
+    selectedCampaigns.value = selectedCampaigns.value.filter(id => !allCampaignIds.includes(id));
+  } else {
+    selectedCampaigns.value = [...new Set([...selectedCampaigns.value, ...allCampaignIds])];
+  }
+};
+
+const toggleGroupVisibility = (groupId, origin) => {
   const updateVisibility = (groupList) => {
     const group = groupList.find(group => group.id === groupId);
     if (group) {
+      // Toggle the visibility of the group
       group.visible = !group.visible;
     }
   };
 
-  // Update visibility for both lists
-  updateVisibility(linkedInCampaignGroups.value);
-  updateVisibility(filteredLinkedInCampaignGroups.value);
+  // Only update visibility for the relevant list based on the origin
+  if (origin === 'filter') {
+    updateVisibility(filteredLinkedInCampaignGroups.value);
+  } else if (origin === 'modal') {
+    updateVisibility(filteredLinkedInCampaignGroupsModal.value);
+  }
 };
 
+// Fetch LinkedIn campaign groups from the server
 const fetchLinkedInCampaignGroups = async () => {
   try {
-    // Fetch LinkedIn campaign groups and campaigns using the server-side API
     const response = await api.get('/api/linkedin/linkedin-ad-campaign-groups', {
       params: { accountId: props.selectedAdAccountId },
       headers: { Authorization: `Bearer ${getTokenFromCookies()}` },
       withCredentials: true,
     });
 
-    // Update the data arrays with simplified objects
     linkedInCampaignGroups.value = response.data.map(group => ({
       id: group.id,
       name: group.name,
@@ -222,29 +272,30 @@ const fetchLinkedInCampaignGroups = async () => {
         id: campaign.id,
         name: campaign.name,
       })),
-      visible: false, // Add visibility toggle property
+      visible: false,
     }));
 
-    filterCampaigns(); // Apply the initial filter
+    filterCampaigns();
+    filterModalCampaigns();
   } catch (error) {
     console.error('Error fetching LinkedIn campaign groups:', error);
   }
 };
 
+// Authentication setup
 const { isLoggedIn, checkAuthStatus } = useAuth();
 const props = defineProps(['selectedAdAccountId']);
 
-// Helper function to retrieve the token from cookies
+// Helper function to get the token from cookies
 const getTokenFromCookies = () => {
   const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
   return cookie ? cookie.split('=')[1] : null;
 };
 
+// Fetch campaigns and campaign groups from the server
 const fetchCampaignsAndGroups = async () => {
   const token = getTokenFromCookies();
-  if (!token || !props.selectedAdAccountId) {
-    return;
-  }
+  if (!token || !props.selectedAdAccountId) return;
 
   try {
     const response = await api.get('/api/linkedin/ad-campaigns', {
@@ -268,6 +319,7 @@ const fetchCampaignsAndGroups = async () => {
   }
 };
 
+// Watchers to react to changes in selectedAdAccountId
 watch(() => props.selectedAdAccountId, async () => {
   await fetchCampaignsAndGroups();
   selectedCampaigns.value = [];
@@ -279,23 +331,23 @@ watch(() => props.selectedAdAccountId, async () => {
   emit('update:budgetData', { name: null, budget: null });
 }, { immediate: true });
 
+// Initialize on component mount
 onMounted(() => {
   checkAuthStatus();
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
-    fetchLinkedInCampaignGroups().then(() => {
-      // Ensure no LinkedIn campaign groups are selected on load
-      selectedCampaigns.value = []; // Clear all selected campaigns
-    });
+    fetchLinkedInCampaignGroups();
   }
 });
 
+// Watch effect for logged-in status
 watchEffect(() => {
   if (isLoggedIn.value) {
     fetchCampaignsAndGroups();
   }
 });
 
+// Function to save a new campaign group
 const saveCampaignGroup = async (group) => {
   const accountId = props.selectedAdAccountId;
   const token = getTokenFromCookies();
@@ -311,21 +363,20 @@ const saveCampaignGroup = async (group) => {
   }
 };
 
+// Watch selected campaigns and update local storage
 watch(selectedCampaigns, (newSelectedCampaigns) => {
   localStorage.setItem('selectedCampaigns', JSON.stringify(newSelectedCampaigns));
   emit('update:selectedCampaigns', newSelectedCampaigns);
 });
 
+// Input validation for budget fields
 const formattedNewGroupBudget = ref('');
-
 const validateGroupBudgetInput = (event) => {
   let value = event.target.value.replace(/[^\d.]/g, '');
   const decimalIndex = value.indexOf('.');
-
   if (decimalIndex !== -1) {
     value = value.slice(0, decimalIndex + 1) + value.slice(decimalIndex).replace(/\./g, '');
   }
-
   if (decimalIndex !== -1 && value.length > decimalIndex + 3) {
     value = value.slice(0, decimalIndex + 3);
   }
@@ -338,6 +389,7 @@ const validateGroupBudgetInput = (event) => {
   }
 };
 
+// Functions to handle creating and editing groups
 const createGroup = async () => {
   if (newGroupName.value && newGroupCampaigns.value.length > 0) {
     const group = {
@@ -397,6 +449,7 @@ const saveEditedGroup = async () => {
   closeEditGroupModal();
 };
 
+// Modal management functions
 const closeEditGroupModal = () => {
   isEditGroupModalOpen.value = false;
 };
