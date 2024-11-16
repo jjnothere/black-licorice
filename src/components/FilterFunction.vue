@@ -1,148 +1,164 @@
 <template>
-  <div class="layout">
-    <div class="filter-function">
-      <div class="filter-header">
-        <strong>
-          <h3 class="filters-header">Filters:</h3>
-        </strong>
-        <div class="rounded-line"></div>
-      </div>
-      <div class="filter-content">
-        <div class="filters">
-          <!-- Search Bar -->
-          <div class="search-bar">
-            <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
-              placeholder="Search Campaigns..." />
-            <button v-if="searchQuery" @click="clearSearch">X</button>
-          </div>
+  <div class="filter-function-page">
+    <div class="filter-header">
+      <strong>
+        <h3 class="filters-header">Filters:</h3>
+      </strong>
+      <div class="rounded-line"></div>
+    </div>
+    <div class="filter-content">
+      <div class="filters">
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
+            placeholder="Search Campaigns..." />
+          <button v-if="searchQuery" @click="clearSearch">X</button>
+        </div>
 
-          <!-- LinkedIn Campaign Groups -->
-          <div class="filter-group">
-            <p class="filter-heading"><strong>Campaign Groups</strong></p>
-            <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
-              <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
-                <span>{{ group.name }}</span>
-                <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
-              </div>
-              <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
-                :checked="areAllCampaignsSelectedInGroup(group)" />
-              <label :for="`select-group-${group.id}`">Select All</label>
-              <div v-if="group.visible" class="campaigns-list">
-                <div v-for="campaign in group.campaigns" :key="campaign.id">
-                  <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
-                  <Tooltip :text="campaign.name">
-                    <label class="campaign-label">{{ campaign.name }}</label>
-                  </Tooltip>
-                </div>
-              </div>
-              <div class="group-separator"></div>
+        <!-- LinkedIn Campaign Groups -->
+        <div class="filter-group">
+          <p class="filter-heading"><strong>Campaign Groups</strong></p>
+          <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
+            <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
+              :checked="areAllCampaignsSelectedInGroup(group)" />
+            <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
+              <span class="campaign-names">{{ group.name }}</span>
+              <i :class="filterGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
             </div>
-          </div>
 
+            <!-- <label :for="`select-group-${group.id}`">Select All</label> -->
+            <div v-if="filterGroupVisibility[group.id]" class="campaigns-list">
+              <div v-for="campaign in group.campaigns" :key="campaign.id">
+                <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
+                <Tooltip :text="campaign.name">
+                  <label class="campaign-label">{{ campaign.name }}</label>
+                </Tooltip>
+              </div>
+            </div>
+            <div class="group-separator"></div>
+          </div>
+        </div>
+
+
+
+        <!-- Campaign Groups filter with radio buttons and None option -->
+        <div class="filter-group">
+          <p class="filter-heading"><strong>User Groups</strong></p>
           <button class="add-group-button" @click="openGroupModal">
             <i class="fas fa-plus"></i> Add User Group
           </button>
-
-          <!-- Campaign Groups filter with radio buttons and None option -->
-          <div class="filter-group">
-            <p class="filter-heading"><strong>User Groups</strong></p>
-            <div>
-              <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
-              <label for="none">None (Selects all campaigns)</label>
-              <div class="group-separator"></div>
-            </div>
-
-            <div v-for="group in campaignGroups" :key="group.id" class="group-item">
-              <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
-              <Tooltip :text="group.name">
-                <label class="group-label">{{ group.name }}</label>
-              </Tooltip>
-              <br />
-              <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
-              <button class="icon-button" @click="openEditGroupModal(group)">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="icon-button" @click="deleteGroup(group.id)">
-                <i class="fas fa-trash"></i>
-              </button>
-              <div class="group-separator"></div>
-            </div>
+          <div>
+            <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
+            <label for="none">None (Selects all campaigns)</label>
+            <div class="group-separator"></div>
           </div>
 
-          <!-- Add Group Modal -->
-          <div v-if="isGroupModalOpen" class="modal" @click.self="closeGroupModal">
-            <div class="modal-content">
-              <h3 class="model-heading">Create New Group</h3>
-              <div class="modal-inner-wrapper">
-                <!-- Search Bar in Modal -->
-                <div class="search-bar">
-                  <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
-                    placeholder="Search Campaigns..." />
-                  <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+          <div v-for="group in campaignGroups" :key="group.id" class="group-item">
+            <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
+            <Tooltip :text="group.name">
+              <label class="group-label">{{ group.name }}</label>
+            </Tooltip>
+            <br />
+            <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
+            <button class="icon-button" @click="openEditGroupModal(group)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="icon-button" @click="deleteGroup(group.id)">
+              <i class="fas fa-trash"></i>
+            </button>
+            <div class="group-separator"></div>
+          </div>
+        </div>
+
+        <!-- Add Group Modal -->
+        <!-- Add Group Modal -->
+        <div v-if="isGroupModalOpen" class="modal" @click.self="closeGroupModal">
+          <div class="modal-content">
+            <h3 class="model-heading">Create New Group</h3>
+            <div class="modal-inner-wrapper">
+              <!-- Search Bar in Modal -->
+              <div class="search-bar">
+                <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
+                  placeholder="Search Campaigns..." />
+                <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+              </div>
+
+              <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
+              <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+
+              <div class="modal-button-group">
+                <button class="modal-button" @click="createGroup">Create Group</button>
+                <button class="modal-button" @click="closeGroupModal">Cancel</button>
+              </div>
+
+              <!-- Campaign Groups in Modal with Select All -->
+              <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
+                <input type="checkbox" :id="`modal-select-group-${group.id}`"
+                  @change="selectAllCampaignsInModalGroup(group)"
+                  :checked="areAllCampaignsSelectedInModalGroup(group)" />
+                <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
+                  <span class="campaign-names">{{ group.name }}</span>
+                  <i :class="modalGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
                 </div>
 
-                <input class="modal-text-input" v-model="newGroupName" placeholder="Group Name" />
-                <input class="modal-text-input" type="text" id="new-group-budget" :value="formattedNewGroupBudget"
-                  @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+                <!-- Select All Checkbox in Modal -->
+                <!-- <label :for="`modal-select-group-${group.id}`">Select All</label> -->
 
-                <div class="modal-button-group">
-                  <button class="modal-button" @click="createGroup">Create Group</button>
-                  <button class="modal-button" @click="closeGroupModal">Cancel</button>
-                </div>
-
-                <!-- Campaign Groups in Modal -->
-                <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
-                  <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
-                    <span>{{ group.name }}</span>
-                    <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
+                <div v-if="modalGroupVisibility[group.id]" class="campaigns-list">
+                  <div v-for="campaign in group.campaigns" :key="campaign.id">
+                    <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
+                    <label>{{ campaign.name }}</label>
                   </div>
-                  <div v-if="group.visible" class="campaigns-list">
-                    <div v-for="campaign in group.campaigns" :key="campaign.id">
-                      <input type="checkbox" :value="campaign.id" v-model="newGroupCampaigns" />
-                      <label>{{ campaign.name }}</label>
-                    </div>
-                  </div>
-                  <div class="group-separator"></div>
                 </div>
+                <div class="group-separator"></div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Edit Group Modal -->
-          <div v-if="isEditGroupModalOpen" class="modal" @click.self="closeEditGroupModal">
-            <div class="modal-content">
-              <h3 class="model-heading">Edit Group</h3>
-              <div class="modal-inner-wrapper">
-                <!-- Search Bar in Modal -->
-                <div class="search-bar">
-                  <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
-                    placeholder="Search Campaigns..." />
-                  <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+        <!-- Edit Group Modal -->
+        <div v-if="isEditGroupModalOpen" class="modal" @click.self="closeEditGroupModal">
+          <div class="modal-content">
+            <h3 class="model-heading">Edit Group</h3>
+            <div class="modal-inner-wrapper">
+              <!-- Search Bar in Modal -->
+              <div class="search-bar">
+                <input class="search-input" type="text" v-model="modalSearchQuery" @input="filterModalCampaigns"
+                  placeholder="Search Campaigns..." />
+                <button v-if="modalSearchQuery" @click="clearModalSearch">X</button>
+              </div>
+
+              <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
+              <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
+                @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+
+              <div class="modal-button-group">
+                <button class="modal-button" @click="saveEditedGroup">Save Changes</button>
+                <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
+              </div>
+
+              <!-- Campaign Groups in Modal with Select All -->
+              <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
+                <input type="checkbox" :id="`edit-modal-select-group-${group.id}`"
+                  @change="selectAllCampaignsInEditModalGroup(group)"
+                  :checked="areAllCampaignsSelectedInEditModalGroup(group)" />
+                <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
+                  <span class="campaign-names">{{ group.name }}</span>
+                  <i :class="modalGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
                 </div>
 
-                <input class="modal-text-input" v-model="editGroupName" placeholder="Group Name" />
-                <input class="modal-text-input" type="text" id="edit-group-budget" :value="formattedEditGroupBudget"
-                  @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
+                <!-- Select All Checkbox in Modal -->
 
-                <div class="modal-button-group">
-                  <button class="modal-button" @click="saveEditedGroup">Save Changes</button>
-                  <button class="modal-button" @click="closeEditGroupModal">Cancel</button>
-                </div>
+                <!-- <label :for="`edit-modal-select-group-${group.id}`">Select All</label> -->
 
-                <!-- Campaign Groups in Modal -->
-                <div v-for="group in filteredLinkedInCampaignGroupsModal" :key="group.id" class="group-item">
-                  <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
-                    <span>{{ group.name }}</span>
-                    <i :class="group.visible ? 'fas fa-caret-down' : 'fas fa-caret-right'"></i>
+                <div v-if="modalGroupVisibility[group.id]" class="campaigns-list">
+                  <div v-for="campaign in group.campaigns" :key="campaign.id">
+                    <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
+                    <label>{{ campaign.name }}</label>
                   </div>
-                  <div v-if="group.visible" class="campaigns-list">
-                    <div v-for="campaign in group.campaigns" :key="campaign.id">
-                      <input type="checkbox" :value="campaign.id" v-model="editGroupCampaigns" />
-                      <label>{{ campaign.name }}</label>
-                    </div>
-                  </div>
-                  <div class="group-separator"></div>
                 </div>
+                <div class="group-separator"></div>
               </div>
             </div>
           </div>
@@ -179,6 +195,8 @@ const editGroupCampaigns = ref([]);
 const linkedInCampaignGroups = ref([]);
 const searchQuery = ref('');
 const filteredLinkedInCampaignGroups = ref([]);
+const filterGroupVisibility = ref({});
+const modalGroupVisibility = ref({});
 
 const modalSearchQuery = ref('');
 const filteredLinkedInCampaignGroupsModal = ref([]);
@@ -240,19 +258,43 @@ const selectAllCampaignsInGroup = (group) => {
 };
 
 const toggleGroupVisibility = (groupId, origin) => {
-  const updateVisibility = (groupList) => {
-    const group = groupList.find(group => group.id === groupId);
-    if (group) {
-      // Toggle the visibility of the group
-      group.visible = !group.visible;
-    }
-  };
-
-  // Only update visibility for the relevant list based on the origin
   if (origin === 'filter') {
-    updateVisibility(filteredLinkedInCampaignGroups.value);
+    // Toggle visibility for the filter section
+    filterGroupVisibility.value[groupId] = !filterGroupVisibility.value[groupId];
   } else if (origin === 'modal') {
-    updateVisibility(filteredLinkedInCampaignGroupsModal.value);
+    // Toggle visibility for the modal section
+    modalGroupVisibility.value[groupId] = !modalGroupVisibility.value[groupId];
+  }
+};
+// Helper method to check if all campaigns in a group are selected in the modal
+const areAllCampaignsSelectedInModalGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  return allCampaignIds.length > 0 && allCampaignIds.every(id => newGroupCampaigns.value.includes(id));
+};
+
+// Method to select or deselect all campaigns in a group in the modal
+const selectAllCampaignsInModalGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  if (areAllCampaignsSelectedInModalGroup(group)) {
+    newGroupCampaigns.value = newGroupCampaigns.value.filter(id => !allCampaignIds.includes(id));
+  } else {
+    newGroupCampaigns.value = [...new Set([...newGroupCampaigns.value, ...allCampaignIds])];
+  }
+};
+
+// Helper method to check if all campaigns in a group are selected in the edit modal
+const areAllCampaignsSelectedInEditModalGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  return allCampaignIds.length > 0 && allCampaignIds.every(id => editGroupCampaigns.value.includes(id));
+};
+
+// Method to select or deselect all campaigns in a group in the edit modal
+const selectAllCampaignsInEditModalGroup = (group) => {
+  const allCampaignIds = group.campaigns.map(campaign => campaign.id);
+  if (areAllCampaignsSelectedInEditModalGroup(group)) {
+    editGroupCampaigns.value = editGroupCampaigns.value.filter(id => !allCampaignIds.includes(id));
+  } else {
+    editGroupCampaigns.value = [...new Set([...editGroupCampaigns.value, ...allCampaignIds])];
   }
 };
 
@@ -500,29 +542,19 @@ const deleteGroup = async (groupId) => {
 </script>
 
 <style scoped>
-.layout {
-  display: flex;
-  max-width: 250px;
-  /* height: 558px; */
-  /* Set the fixed height */
-  /* overflow: hidden; */
-  /* Prevent scrolling on the outer container */
-  /* position: relative; */
-  /* Ensure the inner container is positioned correctly */
-}
-
-.filter-function {
+.filter-function-page {
   position: relative;
   padding: 15px;
   background-color: #F9F9F8;
   border-radius: 20px;
+  min-width: 400px;
   /* Ensure it takes the full height of the outer container */
   /* overflow: hidden; */
   /* Prevent scrolling on the outer container */
 }
 
-.filter-function::before,
-.filter-function::after {
+.filter-function-page::before,
+.filter-function-page::after {
   content: '';
   position: absolute;
   top: 0;
@@ -533,7 +565,7 @@ const deleteGroup = async (groupId) => {
   pointer-events: none;
 }
 
-.filter-function::before {
+.filter-function-page::before {
   border: 3px solid #BEBDBF;
   /* Inner border color */
   top: 5px;
@@ -543,7 +575,7 @@ const deleteGroup = async (groupId) => {
   bottom: 5px;
 }
 
-.filter-function::after {
+.filter-function-page::after {
   border: 3px solid #1C1B21;
   /* Outer border color */
 }
@@ -596,6 +628,8 @@ const deleteGroup = async (groupId) => {
   cursor: pointer;
   padding: 5px;
   color: #61bca8ff;
+  width: fit-content;
+  margin-bottom: 10px;
 }
 
 /* Align checkboxes and radio buttons with text */
@@ -733,7 +767,7 @@ input[type="radio"] {
 /* FilterFunction.vue */
 .campaign-label {
   display: inline-block;
-  max-width: 150px;
+  max-width: 350px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -789,7 +823,7 @@ input[type="radio"] {
 /* Tooltip for long campaign group names */
 .group-label {
   display: inline-block;
-  max-width: 150px;
+  max-width: 350px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -849,7 +883,7 @@ input[type="radio"] {
 .search-bar button {
   position: absolute;
   top: 50%;
-  right: 10px;
+  left: 160px;
   /* Position the button inside the input */
   transform: translateY(-50%);
   background: none;
@@ -864,5 +898,25 @@ input[type="radio"] {
 .search-bar button:hover {
   color: #3b9d8d;
   /* Darker green color on hover */
+}
+
+/* Chevron Icon Styling */
+.group-label i {
+  margin-left: 5px;
+  color: #61bca8ff;
+}
+
+/* Optional: Hover Effect for Chevron Icon */
+.group-label:hover i {
+  color: #3b9d8d;
+  /* Darker green color for hover effect */
+}
+
+.campaigns-list {
+  margin-left: 15px;
+}
+
+.campaign-names {
+  font-weight: bold;
 }
 </style>
