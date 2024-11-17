@@ -603,7 +603,6 @@ const deleteGroup = async (groupId) => {
 .filter-content {
   flex: 1;
   /* Make the filter content scrollable */
-  padding-right: 10px;
   margin-top: 15px;
   box-sizing: border-box;
   z-index: 1;
@@ -893,12 +892,8 @@ input[type="radio"] {
 
 .scrollalbe-content {
   max-height: calc(100vh - 250px);
-  /* Adjust height to fit within the viewport */
   overflow-y: auto;
-  /* Enable vertical scrolling */
   overflow-x: hidden;
-  /* Disable horizontal scrolling */
-  padding-right: 10px;
   box-sizing: border-box;
 }
 
