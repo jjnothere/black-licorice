@@ -1,73 +1,76 @@
 <template>
   <div class="filter-function-page">
-    <div class="filter-header">
-      <strong>
-        <h3 class="filters-header">Filters:</h3>
-      </strong>
-      <div class="rounded-line"></div>
-    </div>
-    <div class="filter-content">
-      <div class="filters">
-        <!-- Search Bar -->
-        <div class="search-bar">
-          <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
-            placeholder="Search Campaigns..." />
-          <button v-if="searchQuery" @click="clearSearch">X</button>
+    <div class="header-search-container">
+      <div class="filter-header">
+        <strong>
+          <h3 class="filters-header">Filters:</h3>
+        </strong>
+        <div class="rounded-line"></div>
+      </div>
+      <div class="filter-content">
+        <div class="filters">
+          <!-- Search Bar -->
+          <div class="search-bar">
+            <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
+              placeholder="Search Campaigns..." />
+            <button v-if="searchQuery" @click="clearSearch">X</button>
+          </div>
         </div>
 
         <!-- LinkedIn Campaign Groups -->
-        <div class="filter-group">
-          <p class="filter-heading"><strong>Campaign Groups</strong></p>
-          <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
-            <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
-              :checked="areAllCampaignsSelectedInGroup(group)" />
-            <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
-              <i :class="filterGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
-              <span class="campaign-names">{{ group.name }}</span>
-            </div>
-
-            <!-- <label :for="`select-group-${group.id}`">Select All</label> -->
-            <div v-if="filterGroupVisibility[group.id]" class="campaigns-list">
-              <div v-for="campaign in group.campaigns" :key="campaign.id">
-                <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
-                <Tooltip :text="campaign.name">
-                  <label class="campaign-label">{{ campaign.name }}</label>
-                </Tooltip>
+        <div class="scrollalbe-content">
+          <div class="filter-group">
+            <p class="filter-heading"><strong>Campaign Groups</strong></p>
+            <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
+              <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
+                :checked="areAllCampaignsSelectedInGroup(group)" />
+              <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
+                <i :class="filterGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
+                <span class="campaign-names">{{ group.name }}</span>
               </div>
+
+              <!-- <label :for="`select-group-${group.id}`">Select All</label> -->
+              <div v-if="filterGroupVisibility[group.id]" class="campaigns-list">
+                <div v-for="campaign in group.campaigns" :key="campaign.id">
+                  <input type="checkbox" :value="campaign.id" v-model="selectedCampaigns" />
+                  <Tooltip :text="campaign.name">
+                    <label class="campaign-label">{{ campaign.name }}</label>
+                  </Tooltip>
+                </div>
+              </div>
+              <div class="group-separator"></div>
             </div>
-            <div class="group-separator"></div>
+          </div>
+
+          <!-- Campaign Groups filter with radio buttons and None option -->
+          <div class="filter-group">
+            <p class="filter-heading"><strong>User Groups</strong></p>
+            <button class="add-group-button" @click="openGroupModal">
+              <i class="fas fa-plus"></i> Add User Group
+            </button>
+            <div>
+              <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
+              <label for="none">None (Selects all campaigns)</label>
+              <div class="group-separator"></div>
+            </div>
+
+            <div v-for="group in campaignGroups" :key="group.id" class="group-item">
+              <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
+              <Tooltip :text="group.name">
+                <label class="group-label">{{ group.name }}</label>
+              </Tooltip>
+              <br />
+              <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
+              <button class="icon-button" @click="openEditGroupModal(group)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="icon-button" @click="deleteGroup(group.id)">
+                <i class="fas fa-trash"></i>
+              </button>
+              <div class="group-separator"></div>
+            </div>
           </div>
         </div>
-
-        <!-- Campaign Groups filter with radio buttons and None option -->
-        <div class="filter-group">
-          <p class="filter-heading"><strong>User Groups</strong></p>
-          <button class="add-group-button" @click="openGroupModal">
-            <i class="fas fa-plus"></i> Add User Group
-          </button>
-          <div>
-            <input type="radio" id="none" value="none" v-model="selectedGroup" @change="clearAllSelections()" />
-            <label for="none">None (Selects all campaigns)</label>
-            <div class="group-separator"></div>
-          </div>
-
-          <div v-for="group in campaignGroups" :key="group.id" class="group-item">
-            <input type="radio" :value="group.id" v-model="selectedGroup" @change="selectGroup(group)" />
-            <Tooltip :text="group.name">
-              <label class="group-label">{{ group.name }}</label>
-            </Tooltip>
-            <br />
-            <span v-if="group.budget" class="budget-number">(Budget: ${{ group.budget }})</span>
-            <button class="icon-button" @click="openEditGroupModal(group)">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="icon-button" @click="deleteGroup(group.id)">
-              <i class="fas fa-trash"></i>
-            </button>
-            <div class="group-separator"></div>
-          </div>
-        </div>
-
         <!-- Add Group Modal -->
         <div v-if="isGroupModalOpen" class="modal" @click.self="closeGroupModal">
           <div class="modal-content">
@@ -546,10 +549,14 @@ const deleteGroup = async (groupId) => {
   padding: 15px;
   background-color: #F9F9F8;
   border-radius: 20px;
+  height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
   min-width: 400px;
-  /* Ensure it takes the full height of the outer container */
-  /* overflow: hidden; */
-  /* Prevent scrolling on the outer container */
+  overflow: hidden;
+  /* Ensure content stays within the bordered lines */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
 }
 
 .filter-function-page::before,
@@ -566,9 +573,7 @@ const deleteGroup = async (groupId) => {
 
 .filter-function-page::before {
   border: 3px solid #BEBDBF;
-  /* Inner border color */
   top: 5px;
-  /* Gap between the borders */
   left: 5px;
   right: 5px;
   bottom: 5px;
@@ -576,24 +581,13 @@ const deleteGroup = async (groupId) => {
 
 .filter-function-page::after {
   border: 3px solid #1C1B21;
-  /* Outer border color */
 }
 
-/* .filter-content { */
-/* max-height: calc(100% - 30px); */
-/* Adjust based on padding and border */
-/* overflow-y: auto; */
-/* Add vertical scrollbar if content exceeds max height */
-/* overflow-x: hidden; */
-/* Prevent horizontal scrolling */
-/* Add padding to avoid scrollbar overlap */
-/* } */
-
-/* CSS for the rounded line */
 .filter-header {
   position: relative;
   padding-bottom: 10px;
-  /* Add some padding for spacing */
+  z-index: 2;
+  /* Ensure the header stays above the content */
 }
 
 .rounded-line {
@@ -604,12 +598,19 @@ const deleteGroup = async (groupId) => {
   height: 5px;
   background-color: #F3D287;
   border-radius: 20px;
-  /* Make the line edges rounded */
 }
 
 .filter-content {
-  font-size: 0.9em;
-  line-height: 1.5;
+  flex: 1;
+  /* Make the filter content scrollable */
+  padding-right: 10px;
+  margin-top: 15px;
+  box-sizing: border-box;
+  z-index: 1;
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+  overflow-x: hidden;
+  /* Disable horizontal scrolling */
 }
 
 .filters {
@@ -617,8 +618,18 @@ const deleteGroup = async (groupId) => {
   flex-direction: column;
 }
 
-.filter-group {
-  margin-bottom: 10px;
+.search-bar {
+  margin-top: 10px;
+  position: relative;
+  z-index: 2;
+  /* Ensure the search bar stays above the content */
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  vertical-align: middle;
+  margin-top: -4px;
+  /* Align checkboxes and radio buttons with text */
 }
 
 .add-group-button {
@@ -629,19 +640,6 @@ const deleteGroup = async (groupId) => {
   color: #61bca8ff;
   width: fit-content;
   margin-bottom: 10px;
-}
-
-/* Align checkboxes and radio buttons with text */
-input[type="checkbox"] {
-  vertical-align: middle;
-  margin-top: -1px;
-  /* Adjust this value if needed to better align */
-}
-
-input[type="radio"] {
-  vertical-align: middle;
-  margin-top: -4px;
-  /* Adjust this value if needed to better align */
 }
 
 .add-group-button:hover {
@@ -670,7 +668,6 @@ input[type="radio"] {
   max-width: 600px;
   border-radius: 20px;
   position: relative;
-  /* Add borders here to keep them fixed */
 }
 
 .modal-content::before,
@@ -729,11 +726,6 @@ input[type="radio"] {
   font-size: 2em;
 }
 
-.modle-item {
-  margin-bottom: 10px;
-  font-size: 1.2em;
-}
-
 .modal-button-group {
   display: flex;
   justify-content: flex-start;
@@ -745,7 +737,6 @@ input[type="radio"] {
   padding: 10px 20px;
   border: 2px solid #61bca8;
   border-radius: 20px;
-  text-decoration: none;
   font-weight: bold;
   color: black;
   background-color: #f9f9f9;
@@ -758,12 +749,10 @@ input[type="radio"] {
 
 .modal-text-input {
   width: 50%;
-  max-width: 50%;
   padding: 5px 5px;
   margin-bottom: 10px;
 }
 
-/* FilterFunction.vue */
 .campaign-label {
   display: inline-block;
   max-width: 350px;
@@ -771,10 +760,8 @@ input[type="radio"] {
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
-  position: relative;
 }
 
-/* Tooltip styling */
 .campaign-label[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -782,18 +769,14 @@ input[type="radio"] {
   color: #fff;
   padding: 5px 10px;
   border-radius: 4px;
-  white-space: nowrap;
   top: 100%;
-  /* Position below the label */
   left: 0;
   transform: translateY(5px);
-  /* Add some spacing from the label */
   z-index: 10;
   font-size: 0.8em;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Tooltip arrow styling */
 .campaign-label[data-tooltip]:hover::before {
   content: '';
   position: absolute;
@@ -801,7 +784,6 @@ input[type="radio"] {
   border-width: 5px 5px 0;
   border-color: #333 transparent transparent transparent;
   top: calc(100% + 5px);
-  /* Position the arrow below the label */
   left: 10px;
   z-index: 10;
 }
@@ -812,14 +794,12 @@ input[type="radio"] {
   margin: 5px 0;
 }
 
-/* Add a gray line separator under each campaign group */
 .group-separator {
   height: 1px;
   background-color: #ccc;
   margin: 10px 0;
 }
 
-/* Tooltip for long campaign group names */
 .group-label {
   display: inline-block;
   max-width: 350px;
@@ -827,7 +807,15 @@ input[type="radio"] {
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
-  position: relative;
+}
+
+.group-label i {
+  margin-right: 3px;
+  color: #61bca8ff;
+}
+
+.group-label:hover i {
+  color: #3b9d8d;
 }
 
 .group-label[data-tooltip]:hover::after {
@@ -837,7 +825,6 @@ input[type="radio"] {
   color: #fff;
   padding: 5px 10px;
   border-radius: 4px;
-  white-space: nowrap;
   top: 100%;
   left: 0;
   transform: translateY(5px);
@@ -864,11 +851,12 @@ input[type="radio"] {
 .search-bar {
   margin-top: 10px;
   position: relative;
+  z-index: 2;
+  /* Ensure the search bar stays above the content */
 }
 
 .search-input {
   padding: 8px 30px 8px 10px;
-  /* Extra padding on the right for the "X" button */
   border: 1px solid #ccc;
   border-radius: 4px;
   outline: none;
@@ -876,19 +864,16 @@ input[type="radio"] {
 
 .search-input:focus {
   border-color: #61bca8ff;
-  /* Change the border color on focus */
 }
 
 .search-bar button {
   position: absolute;
   top: 50%;
-  left: 160px;
-  /* Position the button inside the input */
+  right: 10px;
   transform: translateY(-50%);
   background: none;
   border: none;
   color: #61bca8ff;
-  /* Green color for the "X" button */
   cursor: pointer;
   font-size: 16px;
   outline: none;
@@ -896,19 +881,6 @@ input[type="radio"] {
 
 .search-bar button:hover {
   color: #3b9d8d;
-  /* Darker green color on hover */
-}
-
-/* Chevron Icon Styling */
-.group-label i {
-  margin-right: 3px;
-  color: #61bca8ff;
-}
-
-/* Optional: Hover Effect for Chevron Icon */
-.group-label:hover i {
-  color: #3b9d8d;
-  /* Darker green color for hover effect */
 }
 
 .campaigns-list {
@@ -917,5 +889,16 @@ input[type="radio"] {
 
 .campaign-names {
   font-weight: bold;
+}
+
+.scrollalbe-content {
+  max-height: calc(100vh - 250px);
+  /* Adjust height to fit within the viewport */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+  overflow-x: hidden;
+  /* Disable horizontal scrolling */
+  padding-right: 10px;
+  box-sizing: border-box;
 }
 </style>
