@@ -22,8 +22,8 @@
             <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
               :checked="areAllCampaignsSelectedInGroup(group)" />
             <div @click="toggleGroupVisibility(group.id, 'filter')" class="group-label">
-              <span class="campaign-names">{{ group.name }}</span>
               <i :class="filterGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
+              <span class="campaign-names">{{ group.name }}</span>
             </div>
 
             <!-- <label :for="`select-group-${group.id}`">Select All</label> -->
@@ -38,8 +38,6 @@
             <div class="group-separator"></div>
           </div>
         </div>
-
-
 
         <!-- Campaign Groups filter with radio buttons and None option -->
         <div class="filter-group">
@@ -71,7 +69,6 @@
         </div>
 
         <!-- Add Group Modal -->
-        <!-- Add Group Modal -->
         <div v-if="isGroupModalOpen" class="modal" @click.self="closeGroupModal">
           <div class="modal-content">
             <h3 class="model-heading">Create New Group</h3>
@@ -98,8 +95,8 @@
                   @change="selectAllCampaignsInModalGroup(group)"
                   :checked="areAllCampaignsSelectedInModalGroup(group)" />
                 <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
-                  <span class="campaign-names">{{ group.name }}</span>
                   <i :class="modalGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
+                  <span class="campaign-names">{{ group.name }}</span>
                 </div>
 
                 <!-- Select All Checkbox in Modal -->
@@ -144,8 +141,8 @@
                   @change="selectAllCampaignsInEditModalGroup(group)"
                   :checked="areAllCampaignsSelectedInEditModalGroup(group)" />
                 <div @click="toggleGroupVisibility(group.id, 'modal')" class="group-label">
-                  <span class="campaign-names">{{ group.name }}</span>
                   <i :class="modalGroupVisibility[group.id] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"></i>
+                  <span class="campaign-names">{{ group.name }}</span>
                 </div>
 
                 <!-- Select All Checkbox in Modal -->
@@ -306,6 +303,7 @@ const fetchLinkedInCampaignGroups = async () => {
       headers: { Authorization: `Bearer ${getTokenFromCookies()}` },
       withCredentials: true,
     });
+    console.log("🐒 ~ accountId:", props.selectedAdAccountId)
 
     linkedInCampaignGroups.value = response.data.map(group => ({
       id: group.id,
@@ -409,6 +407,7 @@ const saveCampaignGroup = async (group) => {
 watch(selectedCampaigns, (newSelectedCampaigns) => {
   localStorage.setItem('selectedCampaigns', JSON.stringify(newSelectedCampaigns));
   emit('update:selectedCampaigns', newSelectedCampaigns);
+  fetchLinkedInCampaignGroups();
 });
 
 // Input validation for budget fields
@@ -902,7 +901,7 @@ input[type="radio"] {
 
 /* Chevron Icon Styling */
 .group-label i {
-  margin-left: 5px;
+  margin-right: 3px;
   color: #61bca8ff;
 }
 
