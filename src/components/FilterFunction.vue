@@ -20,7 +20,7 @@
         <!-- LinkedIn Campaign Groups -->
         <div class="scrollalbe-content">
           <div class="filter-group">
-            <p class="filter-heading"><strong>Campaign Groups</strong></p>
+            <p class="filter-heading sticky-header"><strong>Campaign Groups</strong></p>
             <div v-for="group in filteredLinkedInCampaignGroups" :key="group.id" class="group-item">
               <input type="checkbox" :id="`select-group-${group.id}`" @change="selectAllCampaignsInGroup(group)"
                 :checked="areAllCampaignsSelectedInGroup(group)" />
@@ -44,7 +44,7 @@
 
           <!-- Campaign Groups filter with radio buttons and None option -->
           <div class="filter-group">
-            <p class="filter-heading"><strong>User Groups</strong></p>
+            <p class="filter-heading sticky-header"><strong>User Groups</strong></p>
             <button class="add-group-button" @click="openGroupModal">
               <i class="fas fa-plus"></i> Add User Group
             </button>
@@ -900,5 +900,14 @@ input[type="radio"] {
   /* Disable horizontal scrolling */
   padding-right: 10px;
   box-sizing: border-box;
+}
+
+.sticky-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  background-color: #F9F9F8;
+  z-index: 1;
+  padding: 10px 0;
 }
 </style>
