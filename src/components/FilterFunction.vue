@@ -8,13 +8,11 @@
         <div class="rounded-line"></div>
       </div>
       <div class="filter-content">
-        <div class="filters">
-          <!-- Search Bar -->
-          <div class="search-bar">
-            <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
-              placeholder="Search Campaigns..." />
-            <button v-if="searchQuery" @click="clearSearch">X</button>
-          </div>
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <input class="search-input" type="text" v-model="searchQuery" @input="filterCampaigns"
+            placeholder="Search Campaigns..." />
+          <button v-if="searchQuery" @click="clearSearch">X</button>
         </div>
 
         <!-- LinkedIn Campaign Groups -->
@@ -617,13 +615,6 @@ const deleteGroup = async (groupId) => {
   flex-direction: column;
 }
 
-.search-bar {
-  margin-top: 10px;
-  position: relative;
-  z-index: 2;
-  /* Ensure the search bar stays above the content */
-}
-
 input[type="checkbox"],
 input[type="radio"] {
   vertical-align: middle;
@@ -847,15 +838,17 @@ input[type="radio"] {
   padding-left: 20px;
 }
 
+
 .search-bar {
-  margin-top: 10px;
+  width: 50%;
   position: relative;
   z-index: 2;
-  /* Ensure the search bar stays above the content */
 }
 
 .search-input {
-  padding: 8px 30px 8px 10px;
+  width: 100%;
+  /* Make the input field take up the full width of the search bar */
+  padding: 8px 0px 8px 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   outline: none;
@@ -868,7 +861,7 @@ input[type="radio"] {
 .search-bar button {
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: -10px;
   transform: translateY(-50%);
   background: none;
   border: none;
