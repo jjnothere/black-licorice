@@ -304,7 +304,6 @@ const fetchLinkedInCampaignGroups = async () => {
       headers: { Authorization: `Bearer ${getTokenFromCookies()}` },
       withCredentials: true,
     });
-    console.log("🐒 ~ accountId:", props.selectedAdAccountId)
 
     linkedInCampaignGroups.value = response.data.map(group => ({
       id: group.id,

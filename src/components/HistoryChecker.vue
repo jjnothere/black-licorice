@@ -2,7 +2,6 @@
 <template>
   <div class="history-checker">
     <!-- Chart Section -->
-
     <div class="metric-selection">
       <!-- Metric selection dropdowns -->
       <div class="metric-dropdown">
@@ -52,7 +51,6 @@
       <line-chart v-else :chart-data="chartData" :options="chartOptions" @point-clicked="scrollToChange"></line-chart>
     </div>
 
-
     <!-- Table Section -->
     <!-- Table of differences -->
     <table v-if="filteredDifferences.length > 0">
@@ -68,8 +66,23 @@
         <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
           <td class="campaign-name">{{ difference.campaign }}</td>
           <td>{{ difference.date }}</td>
-          <td v-html="difference.changes"></td>
+          <td>
+            <div v-for="(changeValue, changeKey) in difference.changes" :key="changeKey" class="change-item">
+              <div class="change-header" @click="toggleChangeDetail(difference._id, changeKey)">
+                <strong :style="{ color: getColorForChange(changeKey) }">
+                  {{ keyMapping[changeKey] || changeKey }}
+                </strong>
+                <i :class="difference.expandedChanges[changeKey] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"
+                  class="chevron-icon"></i>
+              </div>
+              <div v-if="difference.expandedChanges[changeKey]" class="change-details">
+                {{ formatChange(changeValue) }}
+              </div>
+            </div>
+          </td>
+          <!-- Notes Column in Table -->
           <td class="campaign-notes">
+            <!-- Add Note Section -->
             <div v-if="difference.addingNote" class="note-input">
               <input v-model="difference.newNote" placeholder="Add a new note"
                 @keyup.enter="saveNewNotePrompt(difference._id)" @keyup.esc="cancelAddNotePrompt(difference._id)" />
@@ -92,55 +105,75 @@
               </button>
             </div>
 
-            <!-- Display only the newest note or all notes based on toggle -->
+            <!-- Display Notes -->
             <div v-if="difference.showAllNotes">
               <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
                 <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
-                <span v-if="!note.isEditing">{{ note.note }}</span>
-                <input v-if="note.isEditing" v-model="note.newNote"
-                  @keyup.enter="saveNotePrompt(difference._id, note._id)"
-                  @keyup.esc="cancelEditMode(difference._id, note._id)"
-                  @blur="saveNotePrompt(difference._id, note._id)" />
-                <div v-if="!note.isEditing" class="icon-buttons">
-                  <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
-                    <i class="fas fa-edit"></i>
+
+                <!-- Edit Note Input -->
+                <div v-if="note.isEditing" class="note-input">
+                  <input v-model="note.newNote" @keyup.enter="saveNotePrompt(difference._id, note._id)"
+                    @keyup.esc="cancelEditMode(difference._id, note._id)" />
+                  <button class="icon-button" @click="saveNotePrompt(difference._id, note._id)">
+                    <i class="fas fa-save"></i>
                   </button>
-                  <button class="icon-button" @click="deleteNotePrompt(difference._id, note._id)">
-                    <i class="fas fa-trash"></i>
+                  <button class="icon-button" @click="cancelEditMode(difference._id, note._id)">
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
-                <button v-if="note.isEditing" class="icon-button" @click="saveNotePrompt(difference._id, note._id)">
-                  <i class="fas fa-save"></i>
-                </button>
+
+                <!-- Display Note Text and Action Buttons -->
+                <div v-else>
+                  <span>{{ note.note }}</span>
+                  <div class="icon-buttons">
+                    <button class="icon-button" @click="enableEditMode(difference._id, note._id)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="icon-button" @click="deleteNotePrompt(difference._id, note._id)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
                 <div class="note-separator"></div>
               </div>
             </div>
             <div v-else>
               <!-- Show only the newest note with edit/delete buttons -->
               <div class="note" v-if="difference.notes.length > 0">
-                <small class="note-timestamp">{{ formatTimestamp(difference.notes[difference.notes.length -
-                  1].timestamp) }}</small>
-                <span v-if="!difference.notes[difference.notes.length - 1].isEditing">{{
-                  difference.notes[difference.notes.length - 1].note }}</span>
-                <input v-if="difference.notes[difference.notes.length - 1].isEditing"
-                  v-model="difference.notes[difference.notes.length - 1].newNote"
-                  @keyup.enter="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)"
-                  @keyup.esc="cancelEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)"
-                  @blur="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)" />
-                <div v-if="!difference.notes[difference.notes.length - 1].isEditing" class="icon-buttons">
+                <small class="note-timestamp">
+                  {{ formatTimestamp(difference.notes[difference.notes.length - 1].timestamp) }}
+                </small>
+
+                <!-- Edit Note Input -->
+                <div v-if="difference.notes[difference.notes.length - 1].isEditing" class="note-input">
+                  <input v-model="difference.notes[difference.notes.length - 1].newNote"
+                    @keyup.enter="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)"
+                    @keyup.esc="cancelEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)" />
                   <button class="icon-button"
-                    @click="enableEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                    <i class="fas fa-edit"></i>
+                    @click="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                    <i class="fas fa-save"></i>
                   </button>
                   <button class="icon-button"
-                    @click="deleteNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                    <i class="fas fa-trash"></i>
+                    @click="cancelEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
-                <button v-if="difference.notes[difference.notes.length - 1].isEditing" class="icon-button"
-                  @click="saveNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
-                  <i class="fas fa-save"></i>
-                </button>
+
+                <!-- Display Note Text and Action Buttons -->
+                <div v-else>
+                  <span>{{ difference.notes[difference.notes.length - 1].note }}</span>
+                  <div class="icon-buttons">
+                    <button class="icon-button"
+                      @click="enableEditMode(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="icon-button"
+                      @click="deleteNotePrompt(difference._id, difference.notes[difference.notes.length - 1]._id)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </td>
@@ -152,7 +185,6 @@
       No changes found for the selected filters.
     </div>
   </div>
-
 </template>
 
 <script setup>
@@ -182,6 +214,30 @@ const selectedTimeInterval = ref('daily');
 // Differences and campaigns
 const differences = ref([]);
 const campaignsMap = ref({});
+
+
+const getColorForChange = (changeKey) => {
+  const mappedKey = keyMapping[changeKey] || changeKey;
+  return colorMapping[mappedKey] || 'black'; // Default to black if no color is found
+};
+
+// Add formatChange to your methods
+const formatChange = (changeValue) => {
+  const oldVal = typeof changeValue.oldValue === 'object' ? JSON.stringify(changeValue.oldValue, null, 2) : changeValue.oldValue;
+  const newVal = typeof changeValue.newValue === 'object' ? JSON.stringify(changeValue.newValue, null, 2) : changeValue.newValue;
+  return `Old: ${oldVal}\nNew: ${newVal}`;
+};
+
+const toggleChangeDetail = (differenceId, changeKey) => {
+  const difference = differences.value.find(diff => diff._id === differenceId);
+  if (difference) {
+    if (!difference.expandedChanges) {
+      // Initialize expandedChanges object if not present
+      difference.expandedChanges = {};
+    }
+    difference.expandedChanges[changeKey] = !difference.expandedChanges[changeKey];
+  }
+};
 
 // Helper function to retrieve the token from cookies
 
@@ -248,10 +304,13 @@ const findDifferences = (obj1, obj2) => {
   for (const key in obj1) {
     if (key === 'changeAuditStamps') continue; // Exclude changeAuditStamps
     if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
-      diffs[key] = true; // Only keep the key
+      diffs[key] = {
+        oldValue: obj1[key],
+        newValue: obj2[key]
+      };
     }
   }
-  return Object.keys(diffs).map(key => keyMapping[key] || key);
+  return diffs;
 };
 
 const checkForChanges = async () => {
@@ -263,47 +322,56 @@ const checkForChanges = async () => {
   const currentCampaigns = await fetchCurrentCampaigns();
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
-  // Process and find differences
+  console.log('Current Campaigns:', currentCampaigns);
+  console.log('LinkedIn Campaigns:', linkedInCampaigns);
+
   const newDifferences = [];
   linkedInCampaigns.forEach((campaign2) => {
-    const campaign1 = currentCampaigns.find((c) => c.id === campaign2.id);
+    console.log('Processing LinkedIn Campaign:', campaign2);
+    const campaign1 = currentCampaigns.find((c) => String(c.id) === String(campaign2.id));
+    console.log('Matching Local Campaign:', campaign1);
+
     if (campaign1) {
       const changes = findDifferences(campaign1, campaign2);
-      if (changes.length > 0) {
-        const changesString = changes.map(change => {
-          const color = colorMapping[change] || 'black';
-          return `<span class="change-key" style="color:${color};"><b>${change}<b/></span>`;
-        }).join('<br>');
+      console.log('Found Differences:', changes);
+
+      if (Object.keys(changes).length > 0) {
         newDifferences.push({
           campaign: campaign2.name,
           date: new Date().toLocaleDateString(),
-          changes: changesString,
+          changes: changes,
           notes: campaign2.notes || [],
           addingNote: false,
           _id: campaign1._id
         });
       }
     } else {
+      console.log('New campaign found:', campaign2);
       addNewChange({
         campaign: campaign2.name,
         date: new Date().toLocaleDateString(),
         changes: 'New campaign added',
         notes: campaign2.notes || [],
         addingNote: false,
-        _id: campaign2._id
+        _id: campaign2._id || ObjectID().toHexString()
       });
     }
   });
 
-  const uniqueDifferences = newDifferences.filter(newDiff =>
-    !differences.value.some(existingDiff =>
-      existingDiff.campaign === newDiff.campaign &&
-      existingDiff.date === newDiff.date &&
-      existingDiff.changes === newDiff.changes
-    )
-  );
+  const uniqueDifferences = newDifferences.filter(newDiff => {
+    return !differences.value.some(existingDiff => {
+      const isSameCampaign = existingDiff.campaign === newDiff.campaign;
+      const isSameDate = existingDiff.date === newDiff.date;
+      const isSameChanges = JSON.stringify(existingDiff.changes) === JSON.stringify(newDiff.changes);
+
+      return isSameCampaign && isSameDate && isSameChanges;
+    });
+  });
+
+  console.log('Unique Differences:', uniqueDifferences);
 
   differences.value = [...uniqueDifferences, ...differences.value];
+  console.log('Updated Differences:', differences.value);
 
   try {
     await api.post('/api/save-campaigns', { campaigns: linkedInCampaigns, accountId: props.selectedAdAccountId }, {
@@ -413,6 +481,9 @@ const fetchAllChanges = async () => {
     differences.value = response.data.reverse().map(change => {
       if (!change._id) {
         change._id = ObjectID().toHexString();
+      }
+      if (!change.expandedChanges) {
+        change.expandedChanges = {};
       }
       return change;
     });
@@ -591,10 +662,12 @@ const enableAddNotePrompt = (id) => {
   difference.addingNote = true;
 };
 
-const cancelAddNotePrompt = (id) => {
-  const difference = differences.value.find(diff => diff._id === id);
-  difference.addingNote = false;
-  difference.newNote = '';
+const cancelAddNotePrompt = (differenceId) => {
+  const difference = differences.value.find(diff => diff._id === differenceId);
+  if (difference) {
+    difference.addingNote = false;
+    difference.newNote = '';
+  }
 };
 
 // Save a new note
@@ -642,7 +715,7 @@ const saveNotePrompt = async (changeId, noteId) => {
   const campaignId = changeId;
   const difference = differences.value.find(diff => diff._id === changeId);
   const note = difference.notes.find(note => note._id === noteId);
-  if (!note.newNote || !accountId || !campaignId) return;
+  if (note.newNote === undefined || !accountId || !campaignId) return;
 
   try {
     await api.post('/api/edit-note', {
@@ -663,11 +736,15 @@ const saveNotePrompt = async (changeId, noteId) => {
 };
 
 
-const cancelEditMode = (changeId, noteId) => {
-  const difference = differences.value.find(diff => diff._id === changeId);
-  const note = difference.notes.find(note => note._id === noteId);
-  note.isEditing = false;
-  note.newNote = note.note;
+const cancelEditMode = (differenceId, noteId) => {
+  const difference = differences.value.find(diff => diff._id === differenceId);
+  if (difference) {
+    const note = difference.notes.find(note => note._id === noteId);
+    if (note) {
+      note.isEditing = false;
+      note.newNote = note.note;
+    }
+  }
 };
 
 // Function to delete a note
@@ -993,5 +1070,42 @@ select {
 
 .dark-caret {
   color: #1C1B21;
+}
+
+.change-item {
+  margin-bottom: 10px;
+}
+
+.change-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.change-header strong {
+  flex-grow: 1;
+}
+
+.chevron-icon {
+  margin-left: 10px;
+  color: #61bca8ff
+}
+
+.change-details {
+  margin-left: 15px;
+  margin-top: 5px;
+  transition: max-height 0.3s ease;
+  overflow: hidden;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
