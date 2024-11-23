@@ -1,8 +1,8 @@
 <!-- HistoryPage.vue -->
 <template>
   <div class="content">
-    <HistoryChecker :key="dateRange.start + dateRange.end" :metrics="metrics" :selectedCampaigns="selectedCampaigns"
-      :selectedAdAccountId="selectedAdAccountId" :dateRange="dateRange" :budget="budget" />
+    <HistoryChecker :metrics="metrics" :selectedCampaigns="selectedCampaigns" :selectedAdAccountId="selectedAdAccountId"
+      :dateRange="dateRange" :budget="budget" />
   </div>
 </template>
 
