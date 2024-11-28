@@ -315,15 +315,46 @@ const addNewChange = (newChange) => {
 
 const findDifferences = (obj1, obj2) => {
   const diffs = {};
+
+  // Loop through the keys of the first object
   for (const key in obj1) {
-    if (key === 'changeAuditStamps') continue; // Exclude changeAuditStamps
-    if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+    if (key === 'changeAuditStamps') continue; // Skip changeAuditStamps
+
+    // Check if the key exists in the second object
+    if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+      if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
+        // Recursively find differences for nested objects
+        const nestedDiffs = findDifferences(obj1[key], obj2[key]);
+
+        if (Object.keys(nestedDiffs).length > 0) {
+          diffs[key] = nestedDiffs; // Add nested changes under the top-level key
+        }
+      } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+        // Add differences for non-object values
+        diffs[key] = {
+          oldValue: obj1[key],
+          newValue: obj2[key]
+        };
+      }
+    } else {
+      // If the key doesn't exist in obj2, it was removed
       diffs[key] = {
         oldValue: obj1[key],
+        newValue: null
+      };
+    }
+  }
+
+  // Handle keys present in obj2 but not in obj1 (added keys)
+  for (const key in obj2) {
+    if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
+      diffs[key] = {
+        oldValue: null,
         newValue: obj2[key]
       };
     }
   }
+
   return diffs;
 };
 
@@ -336,7 +367,6 @@ const checkForChanges = async () => {
   const currentCampaigns = await fetchCurrentCampaigns();
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
-
   const newDifferences = [];
   linkedInCampaigns.forEach((campaign2) => {
     const campaign1 = currentCampaigns.find((c) => String(c.id) === String(campaign2.id));
@@ -348,13 +378,14 @@ const checkForChanges = async () => {
         newDifferences.push({
           campaign: campaign2.name,
           date: new Date().toLocaleDateString(),
-          changes: changes,
+          changes, // Keep the base-level key structure here
           notes: campaign2.notes || [],
           addingNote: false,
           _id: campaign1._id
         });
       }
     } else {
+      // Handle new campaigns
       addNewChange({
         campaign: campaign2.name,
         date: new Date().toLocaleDateString(),
@@ -376,20 +407,15 @@ const checkForChanges = async () => {
     });
   });
 
-
   differences.value = [...uniqueDifferences, ...differences.value];
 
   try {
-    await api.post('/api/save-campaigns', { campaigns: linkedInCampaigns, accountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true
-    });
     await api.post('/api/save-changes', { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId }, {
       headers: { Authorization: `Bearer ${token}` },
       withCredentials: true
     });
   } catch (error) {
-    console.error('Error saving campaigns and changes:', error);
+    console.error('Error saving changes:', error);
   }
 };
 
