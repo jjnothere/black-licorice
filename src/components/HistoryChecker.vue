@@ -65,20 +65,28 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(difference, index) in filteredDifferences" :key="difference._id" :id="`changeRow-${index}`">
+          <tr v-for="(difference) in filteredDifferences" :key="difference._id" :id="`changeRow-${difference._id}`">
             <td class="campaign-name">{{ difference.campaign }}</td>
             <td>{{ difference.date }}</td>
             <td>
-              <div v-for="(changeValue, changeKey) in difference.changes" :key="changeKey" class="change-item">
+              <div v-for="(changeValue, changeKey) in difference.changes" :key="difference._id + '-' + changeKey"
+                class="change-item">
+                <!-- Top-Level Key with Toggle -->
                 <div class="change-header" @click="toggleChangeDetail(difference._id, changeKey)">
                   <strong :style="{ color: getColorForChange(changeKey) }">
                     {{ keyMapping[changeKey] || changeKey }}
                   </strong>
-                  <i :class="difference.expandedChanges[changeKey] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"
+                  <i :class="difference.expandedChanges?.[changeKey] ? 'fas fa-chevron-down' : 'fas fa-chevron-up'"
                     class="chevron-icon"></i>
                 </div>
-                <div v-if="difference.expandedChanges[changeKey]" class="change-details">
-                  {{ formatChange(changeValue) }}
+
+                <!-- Nested Details -->
+                <div v-if="difference.expandedChanges?.[changeKey]" class="change-details">
+                  <div v-for="(nestedValue, nestedKey) in formatNestedChange(changeValue)"
+                    :key="difference._id + '-' + changeKey + '-' + nestedKey">
+                    <span class="nested-key">{{ nestedKey }}:</span>
+                    <span class="nested-value">{{ nestedValue }}</span>
+                  </div>
                 </div>
               </div>
             </td>
@@ -109,7 +117,8 @@
 
               <!-- Display Notes -->
               <div v-if="difference.showAllNotes">
-                <div v-for="note in difference.notes.slice().reverse()" :key="note._id" class="note">
+                <div v-for="note in difference.notes.slice().reverse()" :key="difference._id + '-' + note._id"
+                  class="note">
                   <small class="note-timestamp">{{ formatTimestamp(note.timestamp) }}</small>
 
                   <!-- Edit Note Input -->
@@ -219,34 +228,38 @@ const differences = ref([]);
 const campaignsMap = ref({});
 const isLoading = ref(true);
 
+// Consolidated onMounted hook
 onMounted(async () => {
   isLoading.value = true;
   try {
-    await fetchAllChanges();
-    await checkForChanges();
-    getAnalyticsData();
+    if (props.selectedAdAccountId) {
+      resetChartData();
+      await fetchAllChanges();
+      await checkForChanges();
+      getAnalyticsData();
+    }
   } finally {
     isLoading.value = false;
   }
 });
 
+// Get color for top-level keys
 const getColorForChange = (changeKey) => {
   const mappedKey = keyMapping[changeKey] || changeKey;
-  return colorMapping[mappedKey] || 'black'; // Default to black if no color is found
+  return colorMapping[mappedKey] || 'black'; // Default to black if no color is defined
 };
 
 // Add formatChange to your methods
-const formatChange = (changeValue) => {
-  const oldVal = typeof changeValue.oldValue === 'object' ? JSON.stringify(changeValue.oldValue, null, 2) : changeValue.oldValue;
-  const newVal = typeof changeValue.newValue === 'object' ? JSON.stringify(changeValue.newValue, null, 2) : changeValue.newValue;
-  return `Old: ${oldVal}\nNew: ${newVal}`;
-};
+// const formatChange = (changeValue) => {
+//   const oldVal = typeof changeValue.oldValue === 'object' ? JSON.stringify(changeValue.oldValue, null, 2) : changeValue.oldValue;
+//   const newVal = typeof changeValue.newValue === 'object' ? JSON.stringify(changeValue.newValue, null, 2) : changeValue.newValue;
+//   return `Old: ${oldVal}\nNew: ${newVal}`;
+// };
 
 const toggleChangeDetail = (differenceId, changeKey) => {
-  const difference = differences.value.find(diff => diff._id === differenceId);
+  const difference = differences.value.find((diff) => diff._id === differenceId);
   if (difference) {
     if (!difference.expandedChanges) {
-      // Initialize expandedChanges object if not present
       difference.expandedChanges = {};
     }
     difference.expandedChanges[changeKey] = !difference.expandedChanges[changeKey];
@@ -260,7 +273,18 @@ const getTokenFromCookies = () => {
   const token = cookie ? cookie.split('=')[1] : null;
   return token;
 };
-
+const formatNestedChange = (nestedObject, prefix = '') => {
+  const result = {};
+  for (const key in nestedObject) {
+    const newKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
+      Object.assign(result, formatNestedChange(nestedObject[key], newKey));
+    } else {
+      result[newKey] = nestedObject[key];
+    }
+  }
+  return result;
+};
 // Update fetchCurrentCampaigns to use getTokenFromCookies
 async function fetchCurrentCampaigns() {
   if (!props.selectedAdAccountId) {
@@ -309,7 +333,8 @@ const fetchLinkedInCampaigns = async () => {
 };
 
 const addNewChange = (newChange) => {
-  newChange._id = ObjectID().toHexString(); // Ensure new changes have unique IDs
+  newChange._id = newChange._id || ObjectID().toHexString(); // Ensure _id is set
+  newChange.expandedChanges = {}; // Initialize expandedChanges
   differences.value.push(newChange);
 };
 
@@ -318,7 +343,7 @@ const findDifferences = (obj1, obj2) => {
 
   // Loop through the keys of the first object
   for (const key in obj1) {
-    if (key === 'changeAuditStamps') continue; // Skip changeAuditStamps
+    if (key === 'changeAuditStamps' || key === 'version') continue; // Skip 'changeAuditStamps' and 'version'
 
     // Check if the key exists in the second object
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
@@ -364,10 +389,12 @@ const checkForChanges = async () => {
     console.error('No authorization token found');
     return;
   }
+
   const currentCampaigns = await fetchCurrentCampaigns();
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
   const newDifferences = [];
+
   linkedInCampaigns.forEach((campaign2) => {
     const campaign1 = currentCampaigns.find((c) => String(c.id) === String(campaign2.id));
 
@@ -378,10 +405,11 @@ const checkForChanges = async () => {
         newDifferences.push({
           campaign: campaign2.name,
           date: new Date().toLocaleDateString(),
-          changes, // Keep the base-level key structure here
+          changes,
           notes: campaign2.notes || [],
           addingNote: false,
-          _id: campaign1._id
+          _id: campaign1._id || ObjectID().toHexString(),
+          expandedChanges: {},
         });
       }
     } else {
@@ -392,28 +420,37 @@ const checkForChanges = async () => {
         changes: 'New campaign added',
         notes: campaign2.notes || [],
         addingNote: false,
-        _id: campaign2._id || ObjectID().toHexString()
+        _id: campaign2._id || ObjectID().toHexString(),
+        expandedChanges: {},
       });
     }
   });
 
-  const uniqueDifferences = newDifferences.filter(newDiff => {
-    return !differences.value.some(existingDiff => {
+  const uniqueDifferences = newDifferences.filter((newDiff) => {
+    return !differences.value.some((existingDiff) => {
       const isSameCampaign = existingDiff.campaign === newDiff.campaign;
       const isSameDate = existingDiff.date === newDiff.date;
-      const isSameChanges = JSON.stringify(existingDiff.changes) === JSON.stringify(newDiff.changes);
+      const isSameChanges =
+        JSON.stringify(existingDiff.changes) === JSON.stringify(newDiff.changes);
 
       return isSameCampaign && isSameDate && isSameChanges;
     });
   });
 
-  differences.value = [...uniqueDifferences, ...differences.value];
+  differences.value = [...uniqueDifferences.reverse(), ...differences.value];
+
+  // Sort the differences by date in descending order
+  differences.value.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   try {
-    await api.post('/api/save-changes', { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId }, {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true
-    });
+    await api.post(
+      '/api/save-changes',
+      { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      }
+    );
   } catch (error) {
     console.error('Error saving changes:', error);
   }
@@ -424,21 +461,16 @@ const isChartDataEmpty = computed(() => {
 });
 
 const scrollToChange = (dateLabel) => {
-
-  // Adjust the dateLabel by adding one day
   const adjustedDate = new Date(dateLabel);
-  adjustedDate.setDate(adjustedDate.getDate());
-  const adjustedLabelDate = adjustedDate.toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
+  const adjustedLabelDate = adjustedDate.toISOString().split('T')[0];
 
-
-  const matchingIndex = filteredDifferences.value.findIndex(diff => {
-    const diffDate = new Date(diff.date).toISOString().split('T')[0]; // Normalize to YYYY-MM-DD
-
+  const matchingDifference = filteredDifferences.value.find(diff => {
+    const diffDate = new Date(diff.date).toISOString().split('T')[0];
     return diffDate === adjustedLabelDate;
   });
 
-  if (matchingIndex !== -1) {
-    const changeRow = document.getElementById(`changeRow-${matchingIndex}`);
+  if (matchingDifference) {
+    const changeRow = document.getElementById(`changeRow-${matchingDifference._id}`);
     if (changeRow) {
       changeRow.scrollIntoView({ behavior: 'smooth' });
       changeRow.classList.add('flash-row');
@@ -446,10 +478,10 @@ const scrollToChange = (dateLabel) => {
         changeRow.classList.remove('flash-row');
       }, 3000);
     } else {
-      console.error(`Element changeRow-${matchingIndex} not found`);
+      console.error(`Element changeRow-${matchingDifference._id} not found`);
     }
   } else {
-    console.error('No matching index found for adjusted date:', adjustedLabelDate);
+    console.error('No matching difference found for adjusted date:', adjustedLabelDate);
   }
 };
 
@@ -479,24 +511,19 @@ const toggleNotes = (id) => {
   }
 };
 
-onMounted(async () => {
-  if (props.selectedAdAccountId) {
+watch(
+  [
+    () => props.selectedCampaigns,
+    () => props.dateRange,
+    selectedMetric1,
+    selectedMetric2,
+    selectedTimeInterval
+  ],
+  async () => {
     resetChartData();
-    await checkForChanges();
-    await fetchAllChanges();
-    getAnalyticsData();
+    getAnalyticsData(); // Update chart data when relevant properties change
   }
-});
-
-
-watch([() => props.selectedAdAccountId, props.selectedCampaigns, () => props.dateRange, selectedMetric1, selectedMetric2, selectedTimeInterval], async () => {
-  resetChartData();
-  // await waitForToken(); // Ensure token is available before making requests
-  await checkForChanges();
-  await fetchAllChanges();
-  getAnalyticsData(); // Update chart data if selected campaigns, date range, selected metrics, or time interval change
-});
-
+);
 
 const fetchAllChanges = async () => {
   try {
@@ -511,7 +538,12 @@ const fetchAllChanges = async () => {
       withCredentials: true
     });
     differences.value = response.data.reverse().map(change => {
-      if (!change._id) {
+      // Normalize _id to a string
+      if (change._id && typeof change._id === 'object' && change._id.$oid) {
+        change._id = change._id.$oid;
+      } else if (typeof change._id === 'string') {
+        // _id is already a string, do nothing
+      } else if (!change._id) {
         change._id = ObjectID().toHexString();
       }
       if (!change.expandedChanges) {
@@ -592,7 +624,7 @@ const getAggregatedData = (data, interval) => {
       }
 
       aggregatedData[key].conversions += item.conversions || 0;
-      aggregatedData[key].clicks += item.clicks || 0;
+      aggregatedData[key].clicks += 0;
       aggregatedData[key].impressions += item.impressions || 0;
       aggregatedData[key].spend += parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
 
@@ -625,7 +657,6 @@ const getAnalyticsData = () => {
     .reverse()
     .map(date => {
       const adjustedDate = new Date(date);
-      adjustedDate.setDate(adjustedDate.getDate() + 1); // Shift date forward by one day
       return formatDateLabel(adjustedDate.toISOString().split('T')[0]);
     });
 
@@ -721,7 +752,12 @@ const saveNewNotePrompt = async (changeId) => {
       headers: { Authorization: `Bearer ${token}` },
       withCredentials: true
     });
-    difference.notes.push({ _id: ObjectID().toHexString(), note: difference.newNote, timestamp: new Date().toISOString() });
+    difference.notes.push({
+      _id: ObjectID().toHexString(),
+      note: difference.newNote,
+      timestamp: new Date().toISOString()
+    });
+    difference.notes = [...difference.notes]; // Reassign to trigger reactivity
     difference.newNote = '';
     difference.addingNote = false;
   } catch (error) {
@@ -814,13 +850,6 @@ const formatTimestamp = (timestamp) => {
 </script>
 
 <style scoped>
-.history-checker {
-  position: relative;
-  padding: 15px;
-  background-color: #F9F9F8;
-  border-radius: 20px;
-}
-
 .history-checker {
   position: relative;
   padding: 15px;
