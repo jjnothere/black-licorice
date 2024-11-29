@@ -86,7 +86,7 @@
                 @input="validateGroupBudgetInput" placeholder="Group Budget (Optional)" />
 
               <div class="modal-button-group">
-                <button class="modal-button" @click="createGroup">Create Group</button>
+                <button class="modal-button" @click="createGroup">Create New User Group</button>
                 <button class="modal-button" @click="closeGroupModal">Cancel</button>
               </div>
 
@@ -736,10 +736,21 @@ input[type="radio"] {
   background-color: #e0e0e0;
 }
 
+.modal-text-input:nth-of-type(1) {
+  margin-top: 10px;
+}
+
 .modal-text-input {
   width: 50%;
-  padding: 5px 5px;
+  padding: 8px 0px 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
   margin-bottom: 10px;
+}
+
+.modal-text-input:focus {
+  border-color: #61bca8ff;
 }
 
 .campaign-label {
