@@ -87,6 +87,8 @@
                     <span class="nested-key">{{ nestedKey }}:</span>
                     <span class="nested-value">{{ nestedValue }}</span>
                   </div>
+                  <div v-if="index < Object.entries(formatNestedChange(changeValue)).length - 1" class="separator-line">
+                  </div>
                 </div>
               </div>
             </td>
@@ -108,7 +110,7 @@
               </button>
 
               <!-- Toggle button to expand/collapse notes -->
-              <div v-if="difference.notes.length > 1">
+              <div v-if="difference.notes && difference.notes.length > 1">
                 <button class="icon-button toggle-notes" @click="toggleNotes(difference._id)">
                   <i :class="difference.showAllNotes ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
                   {{ difference.showAllNotes ? 'Show Less' : 'Show All Notes' }}
@@ -151,7 +153,7 @@
               </div>
               <div v-else>
                 <!-- Show only the newest note with edit/delete buttons -->
-                <div class="note" v-if="difference.notes.length > 0">
+                <div class="note" v-if="difference.notes && difference.notes.length > 0">
                   <small class="note-timestamp">
                     {{ formatTimestamp(difference.notes[difference.notes.length - 1].timestamp) }}
                   </small>
@@ -275,15 +277,39 @@ const getTokenFromCookies = () => {
 };
 const formatNestedChange = (nestedObject, prefix = '') => {
   const result = {};
-  for (const key in nestedObject) {
-    const newKey = prefix ? `${prefix}.${key}` : key;
-    if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-      Object.assign(result, formatNestedChange(nestedObject[key], newKey));
-    } else {
-      result[newKey] = nestedObject[key];
+  if (Array.isArray(nestedObject)) {
+    const values = [];
+    nestedObject.forEach((item) => {
+      if (typeof item === 'object' && item !== null) {
+        Object.assign(result, formatNestedChange(item, prefix));
+      } else {
+        values.push(item);
+      }
+    });
+    if (values.length > 0) {
+      result[prefix] = values;
+    }
+  } else if (typeof nestedObject === 'object' && nestedObject !== null) {
+    for (const key in nestedObject) {
+      if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key))) {
+        if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
+          Object.assign(result, formatNestedChange(nestedObject[key], prefix));
+        }
+      } else {
+        const newKey = prefix ? `${prefix}\n${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
+        if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
+          Object.assign(result, formatNestedChange(nestedObject[key], newKey));
+        } else {
+          result[newKey] = nestedObject[key];
+        }
+      }
     }
   }
   return result;
+};
+
+const capitalizeFirstLetter = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
 };
 // Update fetchCurrentCampaigns to use getTokenFromCookies
 async function fetchCurrentCampaigns() {
@@ -490,20 +516,6 @@ const resetChartData = () => {
   chartDataReady.value = false;
 };
 
-// const waitForToken = async () => {
-//   return new Promise((resolve) => {
-//     const checkToken = () => {
-//       const token = localStorage.getItem('token');
-//       if (token) {
-//         resolve(token);
-//       } else {
-//         setTimeout(checkToken, 100); // Check again after a short delay
-//       }
-//     };
-//     checkToken();
-//   });
-// };
-
 const toggleNotes = (id) => {
   const difference = differences.value.find(diff => diff._id === id);
   if (difference) {
@@ -521,7 +533,7 @@ watch(
   ],
   async () => {
     resetChartData();
-    getAnalyticsData(); // Update chart data when relevant properties change
+    await getAnalyticsData(); // Update chart data when relevant properties change
   }
 );
 
@@ -1168,5 +1180,16 @@ select {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.change-details div {
+  padding-bottom: 10px;
+  border-bottom: #ccc 1px solid;
+  margin-bottom: 10px;
+}
+
+.change-details div:last-child {
+
+  border: none;
 }
 </style>
