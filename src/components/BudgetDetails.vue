@@ -11,7 +11,7 @@
                                 `Budget: $${formattedBudget}` }}</p>
                         </template>
                         <template v-else>
-                            Budget: $
+                            <span>Budget: $</span>
                             <input type="text" id="budget" v-model="formattedBudget" @input="validateBudgetInput"
                                 @change="saveBudget" placeholder="Enter Budget" />
                         </template>
@@ -346,6 +346,27 @@ const saveBudget = async () => {
 .budget-input {
     margin-top: 5px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+}
+
+.budget-input span {
+    margin-right: 5px;
+}
+
+.budget-input input[type="text"] {
+    width: 50%;
+    padding: 5px 0px 5px 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    font-size: .9em;
+}
+
+.budget-input input[type="text"]:focus {
+    border-color: #61bca8ff;
 }
 
 /* Keep the date range section aligned to the right */
