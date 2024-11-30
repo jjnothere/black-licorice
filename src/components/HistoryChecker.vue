@@ -82,12 +82,13 @@
 
                 <!-- Nested Details -->
                 <div v-if="difference.expandedChanges?.[changeKey]" class="change-details">
-                  <div v-for="(nestedValue, nestedKey) in formatNestedChange(changeValue)"
-                    :key="difference._id + '-' + changeKey + '-' + nestedKey">
-                    <span class="nested-key">{{ nestedKey }}:</span>
-                    <span class="nested-value">{{ nestedValue }}</span>
-                  </div>
-                  <div v-if="index < Object.entries(formatNestedChange(changeValue)).length - 1" class="separator-line">
+                  <div v-for="(entry, index) in getFormattedChanges(changeValue)"
+                    :key="difference._id + '-' + changeKey + '-' + entry.key">
+                    <span class="nested-key">{{ entry.key }}:</span>
+                    <span class="nested-value">{{ entry.value }}</span>
+
+                    <!-- Separator Line -->
+                    <div v-if="index < getFormattedChanges(changeValue).length - 1" class="separator-line"></div>
                   </div>
                 </div>
               </div>
@@ -274,6 +275,12 @@ const getTokenFromCookies = () => {
   const cookie = document.cookie.split('; ').find(row => row.startsWith('accessToken='));
   const token = cookie ? cookie.split('=')[1] : null;
   return token;
+};
+
+// Define getFormattedChanges function
+const getFormattedChanges = (changeValue) => {
+  const formatted = formatNestedChange(changeValue);
+  return Object.entries(formatted).map(([key, value]) => ({ key, value }));
 };
 const formatNestedChange = (nestedObject, prefix = '') => {
   const result = {};
