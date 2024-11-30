@@ -1183,13 +1183,14 @@ select {
 }
 
 .change-details div {
-  padding-bottom: 10px;
   border-bottom: #ccc 1px solid;
+  padding-bottom: 10px;
   margin-bottom: 10px;
 }
 
 .change-details div:last-child {
-
   border: none;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
 }
 </style>
