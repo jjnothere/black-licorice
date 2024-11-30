@@ -82,13 +82,14 @@
 
                 <!-- Nested Details -->
                 <div v-if="difference.expandedChanges?.[changeKey]" class="change-details">
-                  <div v-for="(entry, index) in getFormattedChanges(changeValue)"
+                  <div
+                    v-for="(entry, index) in formattedChanges = getFormattedChanges(changeValue, difference.geoInfoMap)"
                     :key="difference._id + '-' + changeKey + '-' + entry.key">
                     <span class="nested-key">{{ entry.key }}:</span>
                     <span class="nested-value">{{ entry.value }}</span>
 
                     <!-- Separator Line -->
-                    <div v-if="index < getFormattedChanges(changeValue).length - 1" class="separator-line"></div>
+                    <div v-if="index < formattedChanges.length - 1" class="separator-line"></div>
                   </div>
                 </div>
               </div>
@@ -252,6 +253,35 @@ const getColorForChange = (changeKey) => {
   return colorMapping[mappedKey] || 'black'; // Default to black if no color is defined
 };
 
+
+const fetchGeoInformation = async (geoId) => {
+  console.log("🐒 🐒 🐒 🐒 ~ geoId:", geoId);
+  const token = getTokenFromCookies();
+  if (!token) {
+    console.error('No authorization token found');
+    return null;
+  }
+  try {
+    const response = await api.get(`/api/linkedin/geo/${geoId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true,
+    });
+
+    const locationName = response.data?.defaultLocalizedName?.value;
+    if (locationName) {
+      console.log("🐒 🐒 🐒 ~ response:", locationName);
+    } else {
+      console.log('fetchGeoInformationfetchGeoInformation Location not found for geoId:', geoId);
+    }
+
+    return response.data; // Return the fetched data
+  } catch (error) {
+    console.error(`Error fetching geo information for ID ${geoId}:`, error);
+    return null;
+  }
+};
+
+
 // Add formatChange to your methods
 // const formatChange = (changeValue) => {
 //   const oldVal = typeof changeValue.oldValue === 'object' ? JSON.stringify(changeValue.oldValue, null, 2) : changeValue.oldValue;
@@ -278,19 +308,36 @@ const getTokenFromCookies = () => {
 };
 
 // Define getFormattedChanges function
-const getFormattedChanges = (changeValue) => {
-  const formatted = formatNestedChange(changeValue);
+const getFormattedChanges = (changeValue, geoInfoMap) => {
+  const formatted = formatNestedChange(changeValue, '', geoInfoMap);
   return Object.entries(formatted).map(([key, value]) => ({ key, value }));
 };
-const formatNestedChange = (nestedObject, prefix = '') => {
+
+const formatNestedChange = (nestedObject, prefix = '', geoInfoMap = {}) => {
   const result = {};
+
   if (Array.isArray(nestedObject)) {
     const values = [];
     nestedObject.forEach((item) => {
       if (typeof item === 'object' && item !== null) {
-        Object.assign(result, formatNestedChange(item, prefix));
+        Object.assign(result, formatNestedChange(item, prefix, geoInfoMap));
       } else {
-        values.push(item);
+        // Check if the item is a geo URN
+        const match = item.match(/urn:li:geo:(\d+)/);
+        console.log("🐒 ~ match:", match)
+        if (match) {
+          const geoId = match[1];
+          const geoInfo = geoInfoMap[geoId];
+          console.log("@@@@@@@🐒 ~ geoInfo:", geoInfo)
+          if (geoInfo && geoInfo.defaultLocalizedName && geoInfo.defaultLocalizedName.value) {
+            values.push(geoInfo.defaultLocalizedName.value);
+          } else {
+            console.log('pooppoopLocation not found for geoId:', geoId);
+            values.push(`Location not found (ID: ${geoId})`);
+          }
+        } else {
+          values.push(item);
+        }
       }
     });
     if (values.length > 0) {
@@ -300,14 +347,29 @@ const formatNestedChange = (nestedObject, prefix = '') => {
     for (const key in nestedObject) {
       if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key))) {
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          Object.assign(result, formatNestedChange(nestedObject[key], prefix));
+          Object.assign(result, formatNestedChange(nestedObject[key], prefix, geoInfoMap));
         }
       } else {
         const newKey = prefix ? `${prefix}\n${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          Object.assign(result, formatNestedChange(nestedObject[key], newKey));
+          Object.assign(result, formatNestedChange(nestedObject[key], newKey, geoInfoMap));
         } else {
-          result[newKey] = nestedObject[key];
+          // Check if the value is a geo URN
+          const value = nestedObject[key];
+          const match = value.match(/urn:li:geo:(\d+)/);
+          let displayValue = value;
+          if (match) {
+            const geoId = match[1];
+            const geoInfo = geoInfoMap[geoId];
+            console.log("🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoInfo:", geoInfo)
+            if (geoInfo && geoInfo.defaultLocalizedName && geoInfo.defaultLocalizedName.value) {
+              displayValue = geoInfo.defaultLocalizedName.value;
+            } else {
+              console.log('obamamamamaLocation not found for geoId:', geoId);
+              displayValue = `Location not found (ID: ${geoId})`;
+            }
+          }
+          result[newKey] = displayValue;
         }
       }
     }
@@ -371,21 +433,31 @@ const addNewChange = (newChange) => {
   differences.value.push(newChange);
 };
 
-const findDifferences = (obj1, obj2) => {
+const findDifferences = (obj1, obj2, geoIds = []) => {
   const diffs = {};
 
   // Loop through the keys of the first object
   for (const key in obj1) {
-    if (key === 'changeAuditStamps' || key === 'version') continue; // Skip 'changeAuditStamps' and 'version'
+    if (key === 'changeAuditStamps' || key === 'version') continue;
+    if (key === 'urn:li:adTargetingFacet:profileLocations') {
+      console.log("🐒 ~ key5:", key)
+      const extractGeoIds = (urns) => {
+        return urns.map(urn => {
+          const match = urn.match(/urn:li:geo:(\d+)/);
+          return match ? match[1] : null;
+        }).filter(id => id !== null);
+      };
+      const oldIds = Array.isArray(obj1[key]) ? extractGeoIds(obj1[key]) : [];
+      const newIds = Array.isArray(obj2[key]) ? extractGeoIds(obj2[key]) : [];
+      geoIds.push(...oldIds, ...newIds);
+    }
 
-    // Check if the key exists in the second object
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
         // Recursively find differences for nested objects
-        const nestedDiffs = findDifferences(obj1[key], obj2[key]);
-
+        const nestedDiffs = findDifferences(obj1[key], obj2[key], geoIds);
         if (Object.keys(nestedDiffs).length > 0) {
-          diffs[key] = nestedDiffs; // Add nested changes under the top-level key
+          diffs[key] = nestedDiffs;
         }
       } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
         // Add differences for non-object values
@@ -393,13 +465,28 @@ const findDifferences = (obj1, obj2) => {
           oldValue: obj1[key],
           newValue: obj2[key]
         };
+
+        // Collect geo IDs
+
       }
     } else {
-      // If the key doesn't exist in obj2, it was removed
+      // Key removed
       diffs[key] = {
         oldValue: obj1[key],
         newValue: null
       };
+
+      // Collect geo IDs
+      if (key === 'urn:li:adTargetingFacet:profileLocations') {
+        const extractGeoIds = (urns) => {
+          return urns.map(urn => {
+            const match = urn.match(/urn:li:geo:(\d+)/);
+            return match ? match[1] : null;
+          }).filter(id => id !== null);
+        };
+        const oldIds = Array.isArray(obj1[key]) ? extractGeoIds(obj1[key]) : [];
+        geoIds.push(...oldIds);
+      }
     }
   }
 
@@ -410,6 +497,20 @@ const findDifferences = (obj1, obj2) => {
         oldValue: null,
         newValue: obj2[key]
       };
+      console.log("🐒 ~ key:", key)
+
+      // Collect geo IDs
+      if (key === 'urn:li:adTargetingFacet:profileLocations') {
+        console.log("🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒 ~ key:", key)
+        const extractGeoIds = (urns) => {
+          return urns.map(urn => {
+            const match = urn.match(/urn:li:geo:(\d+)/);
+            return match ? match[1] : null;
+          }).filter(id => id !== null);
+        };
+        const newIds = Array.isArray(obj2[key]) ? extractGeoIds(obj2[key]) : [];
+        geoIds.push(...newIds);
+      }
     }
   }
 
@@ -427,12 +528,13 @@ const checkForChanges = async () => {
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
   const newDifferences = [];
+  const geoIds = []; // Initialize an array to collect geo IDs
 
-  linkedInCampaigns.forEach((campaign2) => {
+  for (const campaign2 of linkedInCampaigns) {
     const campaign1 = currentCampaigns.find((c) => String(c.id) === String(campaign2.id));
 
     if (campaign1) {
-      const changes = findDifferences(campaign1, campaign2);
+      const changes = findDifferences(campaign1, campaign2, geoIds); // Pass geoIds array
 
       if (Object.keys(changes).length > 0) {
         newDifferences.push({
@@ -443,6 +545,7 @@ const checkForChanges = async () => {
           addingNote: false,
           _id: campaign1._id || ObjectID().toHexString(),
           expandedChanges: {},
+          geoInfoMap: {}, // Initialize geoInfoMap
         });
       }
     } else {
@@ -455,10 +558,29 @@ const checkForChanges = async () => {
         addingNote: false,
         _id: campaign2._id || ObjectID().toHexString(),
         expandedChanges: {},
+        geoInfoMap: {}, // Initialize geoInfoMap
       });
     }
+  }
+
+  // Fetch geo information for collected geo IDs
+  const uniqueGeoIds = [...new Set(geoIds)]; // Remove duplicates
+  const geoInfoMap = {}; // Map of geoId to geo information
+
+  await Promise.all(uniqueGeoIds.map(async (geoId) => {
+    const geoInfo = await fetchGeoInformation(geoId);
+    console.log("🐒 ~ geoInfo:", geoInfo)
+    if (geoInfo) {
+      geoInfoMap[geoId] = geoInfo;
+    }
+  }));
+
+  // Attach geoInfoMap to each difference
+  newDifferences.forEach((difference) => {
+    difference.geoInfoMap = geoInfoMap;
   });
 
+  // Now proceed with the rest of your code
   const uniqueDifferences = newDifferences.filter((newDiff) => {
     return !differences.value.some((existingDiff) => {
       const isSameCampaign = existingDiff.campaign === newDiff.campaign;
@@ -1189,10 +1311,14 @@ select {
   opacity: 0;
 }
 
-.change-details div {
-  border-bottom: #ccc 1px solid;
+.nested-key {
+  font-weight: bold;
+}
+
+.change-details div:nth-of-type(even) {
   padding-bottom: 10px;
   margin-bottom: 10px;
+  border-bottom: #ccc 1px solid;
 }
 
 .change-details div:last-child {
