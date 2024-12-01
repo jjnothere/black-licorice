@@ -247,15 +247,6 @@ const getColorForChange = (changeKey) => {
   return colorMapping[mappedKey] || 'black'; // Default to black if no color is defined
 };
 
-
-
-// Add formatChange to your methods
-// const formatChange = (changeValue) => {
-//   const oldVal = typeof changeValue.oldValue === 'object' ? JSON.stringify(changeValue.oldValue, null, 2) : changeValue.oldValue;
-//   const newVal = typeof changeValue.newValue === 'object' ? JSON.stringify(changeValue.newValue, null, 2) : changeValue.newValue;
-//   return `Old: ${oldVal}\nNew: ${newVal}`;
-// };
-
 const toggleChangeDetail = (differenceId, changeKey) => {
   const difference = differences.value.find((diff) => diff._id === differenceId);
   if (difference) {
@@ -275,7 +266,6 @@ const getTokenFromCookies = () => {
 };
 
 const extractUrns = (value, urns = []) => {
-  console.log("🐒 ~ value:", value)
   const urnPattern = /urn:li:([a-zA-Z]+):([^\s]+)/g;
   let match;
   while ((match = urnPattern.exec(value)) !== null) {
@@ -619,6 +609,25 @@ const toggleNotes = (id) => {
 };
 
 watch(
+  () => props.selectedAdAccountId,
+  async (newAdAccountId) => {
+    if (newAdAccountId) {
+      isLoading.value = true;
+      try {
+        resetChartData(); // Reset chart and table
+        differences.value = []; // Clear previous differences
+        await fetchAllChanges(); // Fetch changes for the new ad account
+        await checkForChanges(); // Update the differences table
+        getAnalyticsData(); // Update chart data if needed
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+watch(
   [
     () => props.selectedCampaigns,
     () => props.dateRange,
@@ -731,7 +740,7 @@ const getAggregatedData = (data, interval) => {
       }
 
       aggregatedData[key].conversions += item.conversions || 0;
-      aggregatedData[key].clicks += 0;
+      aggregatedData[key].clicks += item.clicks || 0;
       aggregatedData[key].impressions += item.impressions || 0;
       aggregatedData[key].spend += parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
 
@@ -771,7 +780,6 @@ const getAnalyticsData = () => {
   const metric2Data = selectedMetric2.value !== 'none'
     ? labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]][selectedMetric2.value])
     : [];
-
   const pointBackgroundColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'red' : 'black');
   const pointBorderColors = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 'darkred' : 'black');
   const pointRadius = labels.map((_, index) => aggregatedData[Object.keys(aggregatedData).reverse()[index]].hasChanges ? 4 : 3);
