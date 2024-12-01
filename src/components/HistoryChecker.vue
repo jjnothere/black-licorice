@@ -609,25 +609,6 @@ const toggleNotes = (id) => {
 };
 
 watch(
-  () => props.selectedAdAccountId,
-  async (newAdAccountId) => {
-    if (newAdAccountId) {
-      isLoading.value = true;
-      try {
-        resetChartData(); // Reset chart and table
-        differences.value = []; // Clear previous differences
-        await fetchAllChanges(); // Fetch changes for the new ad account
-        await checkForChanges(); // Update the differences table
-        getAnalyticsData(); // Update chart data if needed
-      } finally {
-        isLoading.value = false;
-      }
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   [
     () => props.selectedCampaigns,
     () => props.dateRange,
@@ -962,6 +943,25 @@ const formatTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return date.toLocaleString();
 };
+
+watch(
+  () => props.selectedAdAccountId,
+  async (newAdAccountId) => {
+    if (newAdAccountId) {
+      isLoading.value = true;
+      try {
+        resetChartData(); // Reset chart and table
+        differences.value = []; // Clear previous differences
+        await fetchAllChanges(); // Fetch changes for the new ad account
+        await checkForChanges(); // Update the differences table
+        getAnalyticsData(); // Update chart data if needed
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
