@@ -71,7 +71,6 @@
             <td>
               <div v-for="(changeValue, changeKey) in difference.changes" :key="difference._id + '-' + changeKey"
                 class="change-item">
-                <!-- Top-Level Key with Toggle -->
                 <div class="change-header" @click="toggleChangeDetail(difference._id, changeKey)">
                   <strong :style="{ color: getColorForChange(changeKey) }">
                     {{ keyMapping[changeKey] || changeKey }}
@@ -80,16 +79,11 @@
                     class="chevron-icon"></i>
                 </div>
 
-                <!-- Nested Details -->
                 <div v-if="difference.expandedChanges?.[changeKey]" class="change-details">
-                  <div
-                    v-for="(entry, index) in formattedChanges = getFormattedChanges(changeValue, difference.geoInfoMap)"
+                  <div v-for="(entry) in getFormattedChanges(changeValue, difference.urnInfoMap)"
                     :key="difference._id + '-' + changeKey + '-' + entry.key">
                     <span class="nested-key">{{ entry.key }}:</span>
-                    <span class="nested-value">{{ entry.value }}</span>
-
-                    <!-- Separator Line -->
-                    <div v-if="index < formattedChanges.length - 1" class="separator-line"></div>
+                    <span class="nested-value">&nbsp;{{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}</span>
                   </div>
                 </div>
               </div>
@@ -254,33 +248,6 @@ const getColorForChange = (changeKey) => {
 };
 
 
-const fetchGeoInformation = async (geoId) => {
-  console.log("🐒 🐒 🐒 🐒 ~ geoId:", geoId);
-  const token = getTokenFromCookies();
-  if (!token) {
-    console.error('No authorization token found');
-    return null;
-  }
-  try {
-    const response = await api.get(`/api/linkedin/geo/${geoId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      withCredentials: true,
-    });
-
-    const locationName = response.data?.defaultLocalizedName?.value;
-    if (locationName) {
-      console.log("🐒 🐒 🐒 ~ response:", locationName);
-    } else {
-      console.log('fetchGeoInformationfetchGeoInformation Location not found for geoId:', geoId);
-    }
-
-    return response.data; // Return the fetched data
-  } catch (error) {
-    console.error(`Error fetching geo information for ID ${geoId}:`, error);
-    return null;
-  }
-};
-
 
 // Add formatChange to your methods
 // const formatChange = (changeValue) => {
@@ -307,37 +274,37 @@ const getTokenFromCookies = () => {
   return token;
 };
 
-// Define getFormattedChanges function
-const getFormattedChanges = (changeValue, geoInfoMap) => {
-  const formatted = formatNestedChange(changeValue, '', geoInfoMap);
-  return Object.entries(formatted).map(([key, value]) => ({ key, value }));
+const extractUrns = (value, urns = []) => {
+  console.log("🐒 ~ value:", value)
+  const urnPattern = /urn:li:([a-zA-Z]+):([^\s]+)/g;
+  let match;
+  while ((match = urnPattern.exec(value)) !== null) {
+    urns.push({ urnType: match[1], urnId: match[2] });
+  }
 };
 
-const formatNestedChange = (nestedObject, prefix = '', geoInfoMap = {}) => {
+// Define getFormattedChanges function
+const getFormattedChanges = (changeValue, urnInfoMap) => {
+  const formatted = formatNestedChange(changeValue, '', urnInfoMap);
+  return Object.entries(formatted).map(([key, value]) => ({
+    key,
+    value: Array.isArray(value) ? value.join(', ') : value, // Join arrays for display
+  }));
+};
+
+const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
   const result = {};
 
   if (Array.isArray(nestedObject)) {
     const values = [];
-    nestedObject.forEach((item) => {
+    nestedObject.forEach((item, index) => {
       if (typeof item === 'object' && item !== null) {
-        Object.assign(result, formatNestedChange(item, prefix, geoInfoMap));
+        // Recursively process nested objects
+        Object.assign(result, formatNestedChange(item, `${prefix}[${index}]`, urnInfoMap));
       } else {
-        // Check if the item is a geo URN
-        const match = item.match(/urn:li:geo:(\d+)/);
-        console.log("🐒 ~ match:", match)
-        if (match) {
-          const geoId = match[1];
-          const geoInfo = geoInfoMap[geoId];
-          console.log("@@@@@@@🐒 ~ geoInfo:", geoInfo)
-          if (geoInfo && geoInfo.defaultLocalizedName && geoInfo.defaultLocalizedName.value) {
-            values.push(geoInfo.defaultLocalizedName.value);
-          } else {
-            console.log('pooppoopLocation not found for geoId:', geoId);
-            values.push(`Location not found (ID: ${geoId})`);
-          }
-        } else {
-          values.push(item);
-        }
+        // Replace URNs with meaningful information
+        const formattedValue = replaceUrnWithInfo(item, urnInfoMap);
+        values.push(formattedValue);
       }
     });
     if (values.length > 0) {
@@ -346,30 +313,22 @@ const formatNestedChange = (nestedObject, prefix = '', geoInfoMap = {}) => {
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
       if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key))) {
+        // Skip over 'and', 'or', and numeric keys but process their children
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          Object.assign(result, formatNestedChange(nestedObject[key], prefix, geoInfoMap));
+          Object.assign(result, formatNestedChange(nestedObject[key], prefix, urnInfoMap));
         }
       } else {
+        // Create a new prefix with the current key
         const newKey = prefix ? `${prefix}\n${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
+
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          Object.assign(result, formatNestedChange(nestedObject[key], newKey, geoInfoMap));
+          // Recursively process nested objects
+          Object.assign(result, formatNestedChange(nestedObject[key], newKey, urnInfoMap));
         } else {
-          // Check if the value is a geo URN
+          // Replace URNs with meaningful information
           const value = nestedObject[key];
-          const match = value.match(/urn:li:geo:(\d+)/);
-          let displayValue = value;
-          if (match) {
-            const geoId = match[1];
-            const geoInfo = geoInfoMap[geoId];
-            console.log("🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoI🐒 ~ geoInfo:", geoInfo)
-            if (geoInfo && geoInfo.defaultLocalizedName && geoInfo.defaultLocalizedName.value) {
-              displayValue = geoInfo.defaultLocalizedName.value;
-            } else {
-              console.log('obamamamamaLocation not found for geoId:', geoId);
-              displayValue = `Location not found (ID: ${geoId})`;
-            }
-          }
-          result[newKey] = displayValue;
+          const formattedValue = replaceUrnWithInfo(value, urnInfoMap);
+          result[newKey] = formattedValue;
         }
       }
     }
@@ -433,88 +392,106 @@ const addNewChange = (newChange) => {
   differences.value.push(newChange);
 };
 
-const findDifferences = (obj1, obj2, geoIds = []) => {
+const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
   const diffs = {};
 
-  // Loop through the keys of the first object
   for (const key in obj1) {
     if (key === 'changeAuditStamps' || key === 'version') continue;
-    if (key === 'urn:li:adTargetingFacet:profileLocations') {
-      console.log("🐒 ~ key5:", key)
-      const extractGeoIds = (urns) => {
-        return urns.map(urn => {
-          const match = urn.match(/urn:li:geo:(\d+)/);
-          return match ? match[1] : null;
-        }).filter(id => id !== null);
-      };
-      const oldIds = Array.isArray(obj1[key]) ? extractGeoIds(obj1[key]) : [];
-      const newIds = Array.isArray(obj2[key]) ? extractGeoIds(obj2[key]) : [];
-      geoIds.push(...oldIds, ...newIds);
-    }
-
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
-        // Recursively find differences for nested objects
-        const nestedDiffs = findDifferences(obj1[key], obj2[key], geoIds);
+        const nestedDiffs = findDifferences(obj1[key], obj2[key], urns, urnInfoMap);
         if (Object.keys(nestedDiffs).length > 0) {
           diffs[key] = nestedDiffs;
         }
       } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
-        // Add differences for non-object values
         diffs[key] = {
-          oldValue: obj1[key],
-          newValue: obj2[key]
+          oldValue: replaceUrnWithInfo(obj1[key], urnInfoMap),
+          newValue: replaceUrnWithInfo(obj2[key], urnInfoMap),
         };
-
-        // Collect geo IDs
-
+        extractUrnsFromValue(obj1[key], urns);
+        extractUrnsFromValue(obj2[key], urns);
       }
     } else {
-      // Key removed
       diffs[key] = {
-        oldValue: obj1[key],
-        newValue: null
+        oldValue: replaceUrnWithInfo(obj1[key], urnInfoMap),
+        newValue: null,
       };
-
-      // Collect geo IDs
-      if (key === 'urn:li:adTargetingFacet:profileLocations') {
-        const extractGeoIds = (urns) => {
-          return urns.map(urn => {
-            const match = urn.match(/urn:li:geo:(\d+)/);
-            return match ? match[1] : null;
-          }).filter(id => id !== null);
-        };
-        const oldIds = Array.isArray(obj1[key]) ? extractGeoIds(obj1[key]) : [];
-        geoIds.push(...oldIds);
-      }
+      extractUrnsFromValue(obj1[key], urns);
     }
   }
 
-  // Handle keys present in obj2 but not in obj1 (added keys)
   for (const key in obj2) {
     if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
       diffs[key] = {
         oldValue: null,
-        newValue: obj2[key]
+        newValue: replaceUrnWithInfo(obj2[key], urnInfoMap),
       };
-      console.log("🐒 ~ key:", key)
-
-      // Collect geo IDs
-      if (key === 'urn:li:adTargetingFacet:profileLocations') {
-        console.log("🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒🐒 ~ key:", key)
-        const extractGeoIds = (urns) => {
-          return urns.map(urn => {
-            const match = urn.match(/urn:li:geo:(\d+)/);
-            return match ? match[1] : null;
-          }).filter(id => id !== null);
-        };
-        const newIds = Array.isArray(obj2[key]) ? extractGeoIds(obj2[key]) : [];
-        geoIds.push(...newIds);
-      }
+      extractUrnsFromValue(obj2[key], urns);
     }
   }
 
   return diffs;
+};
+
+const fetchUrnInformation = async (urns) => {
+  const urnInfoMap = {};
+  await Promise.all(
+    urns.map(async ({ urnType, urnId }) => {
+      const name = await fetchUrnInfo(urnType, urnId);
+      urnInfoMap[`urn:li:${urnType}:${urnId}`] = name;
+    })
+  );
+  return urnInfoMap;
+};
+
+const replaceUrnWithInfo = (value, urnInfoMap) => {
+  if (typeof value === 'string') {
+    const urnPattern = /urn:li:([a-zA-Z]+):([^\s]+)/g;
+    return value.replace(urnPattern, (match) => {
+      return urnInfoMap[match] || match; // Use name from urnInfoMap or fallback to the original URN
+    });
+  } else if (typeof value === 'object' && value !== null) {
+    const replacedObject = {};
+    for (const key in value) {
+      replacedObject[key] = replaceUrnWithInfo(value[key], urnInfoMap);
+    }
+    return replacedObject;
+  }
+  return value;
+};
+
+const fetchUrnInfo = async (urnType, urnId) => {
+  try {
+    const response = await api.get('/api/linkedin/targeting-entities', {
+      params: {
+        urnType: urnType.trim(),
+        urnId: urnId.trim(),
+      },
+      withCredentials: true,
+    });
+
+    const targetingData = response.data.name; // Ensure we only get the name
+    if (!targetingData) {
+      console.warn(`No data found for URN: urn:li:${urnType}:${urnId}`);
+      return `Unknown (${urnType})`;
+    }
+    return targetingData;
+  } catch (error) {
+    console.error(`Error fetching URN info for ${urnType}:${urnId}`, error);
+    return `Error (${urnType})`;
+  }
+};
+
+const extractUrnsFromValue = (value, urns) => {
+  if (typeof value === 'string') {
+    extractUrns(value, urns);
+  } else if (Array.isArray(value)) {
+    value.forEach((item) => extractUrnsFromValue(item, urns));
+  } else if (typeof value === 'object' && value !== null) {
+    for (const key in value) {
+      extractUrnsFromValue(value[key], urns);
+    }
+  }
 };
 
 const checkForChanges = async () => {
@@ -528,13 +505,13 @@ const checkForChanges = async () => {
   const linkedInCampaigns = await fetchLinkedInCampaigns();
 
   const newDifferences = [];
-  const geoIds = []; // Initialize an array to collect geo IDs
+  const urns = []; // Collect URNs here
 
   for (const campaign2 of linkedInCampaigns) {
     const campaign1 = currentCampaigns.find((c) => String(c.id) === String(campaign2.id));
 
     if (campaign1) {
-      const changes = findDifferences(campaign1, campaign2, geoIds); // Pass geoIds array
+      const changes = findDifferences(campaign1, campaign2, urns);
 
       if (Object.keys(changes).length > 0) {
         newDifferences.push({
@@ -545,7 +522,7 @@ const checkForChanges = async () => {
           addingNote: false,
           _id: campaign1._id || ObjectID().toHexString(),
           expandedChanges: {},
-          geoInfoMap: {}, // Initialize geoInfoMap
+          urnInfoMap: {}, // Will be filled after fetching URN info
         });
       }
     } else {
@@ -558,26 +535,18 @@ const checkForChanges = async () => {
         addingNote: false,
         _id: campaign2._id || ObjectID().toHexString(),
         expandedChanges: {},
-        geoInfoMap: {}, // Initialize geoInfoMap
+        urnInfoMap: {},
       });
     }
   }
 
-  // Fetch geo information for collected geo IDs
-  const uniqueGeoIds = [...new Set(geoIds)]; // Remove duplicates
-  const geoInfoMap = {}; // Map of geoId to geo information
+  // Fetch URN information
+  const uniqueUrns = Array.from(new Set(urns.map(JSON.stringify))).map(JSON.parse);
+  const urnInfoMap = await fetchUrnInformation(uniqueUrns);
 
-  await Promise.all(uniqueGeoIds.map(async (geoId) => {
-    const geoInfo = await fetchGeoInformation(geoId);
-    console.log("🐒 ~ geoInfo:", geoInfo)
-    if (geoInfo) {
-      geoInfoMap[geoId] = geoInfo;
-    }
-  }));
-
-  // Attach geoInfoMap to each difference
+  // Attach urnInfoMap to each difference
   newDifferences.forEach((difference) => {
-    difference.geoInfoMap = geoInfoMap;
+    difference.urnInfoMap = urnInfoMap;
   });
 
   // Now proceed with the rest of your code
@@ -592,15 +561,12 @@ const checkForChanges = async () => {
     });
   });
 
-  differences.value = [...uniqueDifferences.reverse(), ...differences.value];
-
-  // Sort the differences by date in descending order
-  differences.value.sort((a, b) => new Date(b.date) - new Date(a.date));
+  differences.value = [...uniqueDifferences, ...differences.value];
 
   try {
     await api.post(
       '/api/save-changes',
-      { changes: uniqueDifferences, adAccountId: props.selectedAdAccountId },
+      { changes: uniqueDifferences.reverse(), adAccountId: props.selectedAdAccountId },
       {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
