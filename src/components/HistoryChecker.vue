@@ -302,8 +302,8 @@ const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
     }
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
-      if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key))) {
-        // Skip over 'and', 'or', and numeric keys but process their children
+      if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key)) || key.startsWith('urn:li:adTargetingFacet:')) {
+        // Skip over 'and', 'or', numeric keys, and 'urn:li:adTargetingFacet' but process their children
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
           Object.assign(result, formatNestedChange(nestedObject[key], prefix, urnInfoMap));
         }
