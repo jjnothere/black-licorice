@@ -737,7 +737,7 @@ const getAggregatedData = (data, interval) => {
 const formatDateLabel = (dateString) => {
   const date = new Date(dateString);
   const month = date.getMonth() + 1; // No leading zero for the month
-  const day = date.getDate(); // No leading zero for the day
+  const day = date.getDate() + 1; // No leading zero for the day
   const year = date.getFullYear();
   return `${month}/${day}/${year}`; // Format as "M/D/YYYY"
 };
