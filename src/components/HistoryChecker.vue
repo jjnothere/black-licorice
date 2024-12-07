@@ -294,49 +294,47 @@ const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
   const result = {};
 
   if (Array.isArray(nestedObject)) {
-    const values = [];
-    nestedObject.forEach((item, index) => {
-      if (typeof item === 'object' && item !== null) {
-        // Recursively process nested objects
-        Object.assign(result, formatNestedChange(item, `${prefix}[${index}]`, urnInfoMap));
-      } else {
-        // Replace URNs with meaningful information
-        const formattedValue = replaceUrnWithInfo(item, urnInfoMap);
-        values.push(formattedValue);
-      }
+    nestedObject.forEach((item) => {
+      const nestedResult = formatNestedChange(item, prefix, urnInfoMap);
+      Object.assign(result, nestedResult);
     });
-    if (values.length > 0) {
-      result[prefix] = values;
-    }
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
-      if (['and', 'or'].includes(key.toLowerCase()) || !isNaN(Number(key)) || key.startsWith('urn:li:adTargetingFacet:')) {
-        // Skip over 'and', 'or', numeric keys, and 'urn:li:adTargetingFacet' but process their children
-        if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          Object.assign(result, formatNestedChange(nestedObject[key], prefix, urnInfoMap));
-        }
-      } else {
-        // Create a new prefix with the current key
-        const newKey = prefix ? `${prefix}\n${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
+      if (key.startsWith('urn:li:adTargetingFacet:')) {
+        // Simplify the key by removing 'urn:li:adTargetingFacet:' and '[number]'
+        const simplifiedKey = key
+          .replace('urn:li:adTargetingFacet:', '')
+          .replace(/\[\d+\]/g, ''); // Remove [number]
 
+        for (const innerKey in nestedObject[key]) {
+          const formattedKey = `${prefix} ${simplifiedKey}`.trim();
+          const nestedResult = formatNestedChange(nestedObject[key][innerKey], formattedKey, urnInfoMap);
+          Object.assign(result, nestedResult);
+        }
+      } else if (!isNaN(Number(key)) || ['and', 'or'].includes(key.toLowerCase())) {
+        // Process numeric keys, 'and', 'or' recursively
+        const nestedResult = formatNestedChange(nestedObject[key], prefix, urnInfoMap);
+        Object.assign(result, nestedResult);
+      } else {
+        // Handle other keys
+        const formattedKey = prefix ? `${prefix} ${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          // Recursively process nested objects
-          Object.assign(result, formatNestedChange(nestedObject[key], newKey, urnInfoMap));
+          const nestedResult = formatNestedChange(nestedObject[key], formattedKey, urnInfoMap);
+          Object.assign(result, nestedResult);
         } else {
           // Replace URNs with meaningful information
           const value = nestedObject[key];
           const formattedValue = replaceUrnWithInfo(value, urnInfoMap);
-          result[newKey] = formattedValue;
+          result[formattedKey] = formattedValue;
         }
       }
     }
   }
+
   return result;
 };
 
-const capitalizeFirstLetter = (string) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
+
 // Update fetchCurrentCampaigns to use getTokenFromCookies
 async function fetchCurrentCampaigns() {
   if (!props.selectedAdAccountId) {
@@ -444,18 +442,13 @@ const fetchUrnInformation = async (urns) => {
 
 const replaceUrnWithInfo = (value, urnInfoMap) => {
   if (typeof value === 'string') {
-    const urnPattern = /urn:li:([a-zA-Z]+):([^\s]+)/g;
-    return value.replace(urnPattern, (match) => {
-      return urnInfoMap[match] || match; // Use name from urnInfoMap or fallback to the original URN
-    });
-  } else if (typeof value === 'object' && value !== null) {
-    const replacedObject = {};
-    for (const key in value) {
-      replacedObject[key] = replaceUrnWithInfo(value[key], urnInfoMap);
-    }
-    return replacedObject;
+    return urnInfoMap[value] || value; // Replace URN with mapped info or keep the original
   }
   return value;
+};
+
+const capitalizeFirstLetter = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
 const fetchUrnInfo = async (urnType, urnId) => {
