@@ -83,7 +83,15 @@
                   <div v-for="(entry) in getFormattedChanges(changeValue, difference.urnInfoMap)"
                     :key="difference._id + '-' + changeKey + '-' + entry.key">
                     <span class="nested-key">{{ entry.key }}:</span>
-                    <span class="nested-value">&nbsp;{{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}</span>
+                    <span class="nested-value">
+                      <!-- Convert milliseconds to readable date -->
+                      <template v-if="changeKey === 'runSchedule'">
+                        {{ formatRunSchedule(entry.value) }}
+                      </template>
+                      <template v-else>
+                        {{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
+                      </template>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -594,6 +602,12 @@ const scrollToChange = (dateLabel) => {
   } else {
     console.error('No matching difference found for adjusted date:', adjustedLabelDate);
   }
+};
+
+const formatRunSchedule = (timestamp) => {
+  if (!timestamp) return 'Invalid timestamp';
+  const date = new Date(parseFloat(timestamp));
+  return date.toLocaleString(); // Converts to "MM/DD/YYYY, HH:MM:SS"
 };
 
 const resetChartData = () => {
