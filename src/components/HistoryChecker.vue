@@ -86,10 +86,10 @@
                     <span class="nested-value">
                       <!-- Convert milliseconds to readable date -->
                       <template v-if="changeKey === 'runSchedule'">
-                        {{ formatRunSchedule(entry.value) }}
+                        &nbsp;{{ formatRunSchedule(entry.value) }}
                       </template>
                       <template v-else>
-                        {{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
+                        &nbsp;{{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
                       </template>
                     </span>
                   </div>
