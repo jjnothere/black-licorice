@@ -7,7 +7,7 @@ import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/ProfilePage.vue'
 import { useAuth, isTokenExpired } from '@/composables/auth'
 
-const { setAuth } = useAuth()
+const { setAuth, refreshAccessToken } = useAuth()
 
 // Helper function to retrieve a cookie
 const getCookie = (name) => {
@@ -68,15 +68,16 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiresAuth) {
     if (!token || isTokenExpired(token)) {
-      setAuth(false)
-      return next('/auth') // Redirect to auth if token missing/expired
-    } else {
-      setAuth(true)
-      return next() // Proceed if token is valid
+      const refreshed = await refreshAccessToken()
+      if (!refreshed) {
+        setAuth(false)
+        return next('/auth') // Redirect to auth if refresh fails
+      }
     }
+    setAuth(true)
   }
 
-  next() // Default navigation if no authentication needed
+  next() // Proceed if no authentication needed
 })
 
 export default router

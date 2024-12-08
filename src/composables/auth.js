@@ -31,6 +31,18 @@ const getTokenFromCookies = () => {
   return cookie ? cookie.split('=')[1] : null
 }
 
+// Refresh the access token using the refresh token
+const refreshAccessToken = async () => {
+  try {
+    const response = await api.post('/api/refresh-token', {}, { withCredentials: true })
+    console.log('Access token refreshed:', response.data)
+    return true // Refresh succeeded
+  } catch (error) {
+    console.error('Error refreshing access token:', error)
+    return false // Refresh failed
+  }
+}
+
 export function useAuth() {
   // Function to set authentication status
   const setAuth = (isAuthenticated) => {
@@ -38,30 +50,34 @@ export function useAuth() {
   }
 
   // Check authentication status and get user profile if token exists
-  // checkAuthStatus function
   const checkAuthStatus = async () => {
-    const token = getTokenFromCookies() // Retrieves token from cookies
+    const token = getTokenFromCookies()
+    console.log('🐒 ~ token:', token)
 
-    if (token && !isTokenExpired(token)) {
-      try {
-        const response = await api.get('/api/user-profile', {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        })
-        setAuth(true)
-        user.email = response.data.email
-        user.accountId = response.data.accountId
-      } catch (error) {
-        console.error('🐒 ~ Error retrieving user profile:', error)
-        document.cookie = 'accessToken=; Max-Age=0' // Clear token if request fails
+    if (!token || isTokenExpired(token)) {
+      const refreshed = await refreshAccessToken()
+      console.log('🐒 ~ refreshed:', refreshed)
+      if (!refreshed) {
+        // If refresh failed, log the user out
+        document.cookie = 'accessToken=; Max-Age=0' // Clear expired token
         setAuth(false)
+        return
       }
-    } else {
+    }
+
+    try {
+      const response = await api.get('/api/user-profile', { withCredentials: true })
+      setAuth(true)
+      user.email = response.data.email
+      user.accountId = response.data.accountId
+    } catch (error) {
+      console.error('Error retrieving user profile:', error)
+      document.cookie = 'accessToken=; Max-Age=0'
       setAuth(false)
     }
   }
 
-  // Function to set initial auth state on app creation
+  // Set initial auth state on app creation
   const setInitialAuthState = () => {
     const token = getTokenFromCookies()
     isLoggedIn.value = token && !isTokenExpired(token)
@@ -72,6 +88,7 @@ export function useAuth() {
     user,
     setAuth,
     checkAuthStatus,
-    setInitialAuthState // Export the new function
+    setInitialAuthState,
+    refreshAccessToken // Export for use in router
   }
 }
