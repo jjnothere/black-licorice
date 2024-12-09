@@ -83,13 +83,14 @@
                   <div v-for="(entry) in getFormattedChanges(changeValue, difference.urnInfoMap)"
                     :key="difference._id + '-' + changeKey + '-' + entry.key">
                     <span class="nested-key">{{ entry.key }}:</span>
+                    <br />
                     <span class="nested-value">
                       <!-- Convert milliseconds to readable date -->
                       <template v-if="changeKey === 'runSchedule'">
-                        &nbsp;{{ formatRunSchedule(entry.value) }}
+                        {{ formatRunSchedule(entry.value) }}
                       </template>
                       <template v-else>
-                        &nbsp;{{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
+                        {{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
                       </template>
                     </span>
                   </div>
