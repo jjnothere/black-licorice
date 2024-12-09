@@ -283,25 +283,24 @@ const extractUrns = (value, urns = []) => {
 
 // Define getFormattedChanges function
 const getFormattedChanges = (changeValue, urnInfoMap) => {
-  const formatted = formatNestedChange(changeValue, '', urnInfoMap);
-  return Object.entries(formatted).map(([key, value]) => ({
+  const formattedChanges = formatNestedChange(changeValue, '', urnInfoMap);
+  return formattedChanges.map(({ key, value }) => ({
     key,
     value: Array.isArray(value) ? value.join(', ') : value, // Join arrays for display
   }));
 };
 
 const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
-  const result = {};
+  const result = [];
 
   if (Array.isArray(nestedObject)) {
     nestedObject.forEach((item) => {
       const nestedResult = formatNestedChange(item, prefix, urnInfoMap);
-      Object.assign(result, nestedResult);
+      result.push(...nestedResult); // Append all nested results
     });
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
       if (key.startsWith('urn:li:adTargetingFacet:')) {
-        // Simplify the key by removing 'urn:li:adTargetingFacet:' and '[number]'
         const simplifiedKey = key
           .replace('urn:li:adTargetingFacet:', '')
           .replace(/\[\d+\]/g, ''); // Remove [number]
@@ -309,29 +308,26 @@ const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
         for (const innerKey in nestedObject[key]) {
           const formattedKey = `${prefix} ${simplifiedKey}`.trim();
           const nestedResult = formatNestedChange(nestedObject[key][innerKey], formattedKey, urnInfoMap);
-          Object.assign(result, nestedResult);
+          result.push(...nestedResult); // Append all nested results
         }
       } else if (!isNaN(Number(key)) || ['and', 'or'].includes(key.toLowerCase())) {
-        // Process numeric keys, 'and', 'or' recursively
         const nestedResult = formatNestedChange(nestedObject[key], prefix, urnInfoMap);
-        Object.assign(result, nestedResult);
+        result.push(...nestedResult); // Append all nested results
       } else {
-        // Handle other keys
         const formattedKey = prefix ? `${prefix} ${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
         if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
           const nestedResult = formatNestedChange(nestedObject[key], formattedKey, urnInfoMap);
-          Object.assign(result, nestedResult);
+          result.push(...nestedResult); // Append all nested results
         } else {
-          // Replace URNs with meaningful information
           const value = nestedObject[key];
           const formattedValue = replaceUrnWithInfo(value, urnInfoMap);
-          result[formattedKey] = formattedValue;
+          result.push({ key: formattedKey, value: formattedValue }); // Add individual change
         }
       }
     }
   }
 
-  return result;
+  return result; // Return list of all changes
 };
 
 
