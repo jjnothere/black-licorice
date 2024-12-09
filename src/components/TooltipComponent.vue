@@ -50,28 +50,31 @@ watch(() => props.text, adjustTooltipPosition);
 }
 
 .tooltip-text {
+  position: fixed;
   visibility: hidden;
   background-color: #333;
   color: #fff;
   text-align: center;
   padding: 5px 10px;
   border-radius: 4px;
-  position: absolute;
-  bottom: 125%;
+  bottom: auto;
+  /* Reset bottom property */
   left: 0;
-  white-space: nowrap;
-  z-index: 10;
-  /* Ensure it's above other elements */
+  /* Reset left property */
+  transform: none;
+  /* Reset transform */
+  z-index: 1000;
+  /* Ensure it appears above other elements */
   font-size: 0.8em;
-  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s, transform 0.3s;
 }
 
 /* Show tooltip */
 .tooltip-container:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
+  cursor: default;
 }
 
 /* Example of dynamic adjustment */

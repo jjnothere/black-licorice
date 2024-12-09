@@ -259,31 +259,31 @@ const SeniorityCodes = {
 
 // Color mappings for displaying changes
 const colorMapping = {
-  Account: '#FF5733', // Bright Red
-  'Associated Entity': '#33C3FF', // Light Blue
-  'Audience Expansion': '#28A745', // Green
-  'Campaign Group': '#AF7AC5', // Purple
-  'Cost Type': '#FFB533', // Orange
-  'Creative Selection': '#FF69B4', // Pink
-  'Daily Budget': '#17A2B8', // Cyan
-  Format: '#FFD700', // Gold/Yellow
-  ID: '#FF33C9', // Magenta
-  Locale: '#8B4513', // Saddle Brown
-  Name: '#32CD32', // Lime Green
-  'Objective Type': '#000080', // Navy Blue
-  'Offsite Delivery': '#808000', // Olive Green
-  'Offsite Preferences': '#20B2AA', // Light Sea Green
-  'Optimization Target Type': '#800000', // Maroon
-  'Pacing Strategy': '#FF4500', // Orange Red
-  'Run Schedule': '#4682B4', // Steel Blue
-  'Serving Statuses': '#1E90FF', // Dodger Blue
-  Status: '#228B22', // Forest Green
-  'Story Delivery': '#DC143C', // Crimson Red
-  'Targeting Criteria': '#FF8C00', // Dark Orange
-  Test: '#00CED1', // Dark Turquoise
-  Type: '#9932CC', // Dark Orchid
+  Account: '#6A5ACD', // Slate Blue
+  'Associated Entity': '#B22222', // Firebrick
+  'Audience Expansion': '#87CEFA', // Light Sky Blue
+  'Campaign Group': '#FFD700', // Gold
+  'Cost Type': '#FF7F50', // Coral
+  'Creative Selection': '#FFB6C1', // Light Pink
+  'Daily Budget': '#32CD32', // Lime Green
+  Format: '#FFA07A', // Light Salmon
+  ID: '#8A2BE2', // Blue Violet
+  Locale: '#2E8B57', // Sea Green
+  Name: '#F08080', // Light Coral
+  'Objective Type': '#1E90FF', // Dodger Blue
+  'Offsite Delivery': '#FF4500', // Orange Red
+  'Offsite Preferences': '#4682B4', // Steel Blue
+  'Optimization Target Type': '#9ACD32', // Yellow Green
+  'Pacing Strategy': '#6495ED', // Cornflower Blue
+  'Run Schedule': '#DC143C', // Crimson
+  'Serving Statuses': '#FF6347', // Tomato
+  Status: '#2F4F4F', // Dark Slate Gray
+  'Story Delivery': '#8B4513', // Saddle Brown
+  'Targeting Criteria': '#FFA500', // Orange
+  Test: '#5F9EA0', // Cadet Blue
+  Type: '#800080', // Purple
   'Unit Cost': '#DAA520', // Goldenrod
-  Version: '#FF6347' // Tomato
+  Version: '#00CED1' // Dark Turquoise
 }
 
 // Key mappings for differences
