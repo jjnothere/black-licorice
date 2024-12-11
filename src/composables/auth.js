@@ -8,7 +8,6 @@ const user = reactive({
   accountId: ''
 })
 
-// Helper function to check if the token is expired
 export const isTokenExpired = (token) => {
   const isJwt = (token) => token.split('.').length === 3
   if (!isJwt(token)) {
@@ -25,35 +24,28 @@ export const isTokenExpired = (token) => {
   }
 }
 
-// Helper function to retrieve the token from cookies
 const getTokenFromCookies = () => {
   const cookie = document.cookie.split('; ').find((row) => row.startsWith('accessToken='))
   return cookie ? cookie.split('=')[1] : null
 }
 
 export function useAuth() {
-  // Function to set authentication status
   const setAuth = (isAuthenticated) => {
     isLoggedIn.value = isAuthenticated
   }
 
-  // Check authentication status and get user profile if token exists
-  // checkAuthStatus function
   const checkAuthStatus = async () => {
-    const token = getTokenFromCookies() // Retrieves token from cookies
+    const token = getTokenFromCookies()
 
     if (token && !isTokenExpired(token)) {
       try {
-        const response = await api.get('/api/user-profile', {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        })
+        const response = await api.get('/api/user-profile') // no need for Authorization header anymore, cookies included
         setAuth(true)
         user.email = response.data.email
         user.accountId = response.data.accountId
       } catch (error) {
-        console.error('🐒 ~ Error retrieving user profile:', error)
-        document.cookie = 'accessToken=; Max-Age=0' // Clear token if request fails
+        console.error('Error retrieving user profile:', error)
+        document.cookie = 'accessToken=; Max-Age=0'
         setAuth(false)
       }
     } else {
@@ -61,7 +53,6 @@ export function useAuth() {
     }
   }
 
-  // Function to set initial auth state on app creation
   const setInitialAuthState = () => {
     const token = getTokenFromCookies()
     isLoggedIn.value = token && !isTokenExpired(token)
@@ -72,6 +63,6 @@ export function useAuth() {
     user,
     setAuth,
     checkAuthStatus,
-    setInitialAuthState // Export the new function
+    setInitialAuthState
   }
 }

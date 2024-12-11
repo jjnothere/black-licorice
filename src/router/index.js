@@ -1,3 +1,4 @@
+// router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomePage.vue'
 import BudgetTracker from '@/views/BudgetPacing.vue'
@@ -6,11 +7,12 @@ import Auth from '@/views/AuthVue.vue'
 import AuthLayout from '@/components/AuthLayout.vue'
 import Profile from '@/views/ProfilePage.vue'
 import { useAuth, isTokenExpired } from '@/composables/auth'
+import axios from 'axios'
 
 const { setAuth } = useAuth()
 
 // Helper function to retrieve a cookie
-const getCookie = (name) => {
+function getCookie(name) {
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
   return match ? decodeURIComponent(match[2]) : null
 }
@@ -60,23 +62,44 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const token = getCookie('accessToken') // Retrieve token from cookies
+  const token = getCookie('accessToken')
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
-  if (to.path.startsWith('/auth')) {
-    return next() // Allow navigation to /auth routes
+  // If the route doesn't require auth, just proceed
+  if (!requiresAuth) {
+    return next()
   }
 
-  if (to.meta.requiresAuth) {
-    if (!token || isTokenExpired(token)) {
+  // We have an access token. Check if it's expired.
+  if (!token || isTokenExpired(token)) {
+    // Token is expired. Let's attempt to refresh.
+    const refreshToken = getCookie('refreshToken')
+    if (!refreshToken) {
+      // No refresh token means we can't refresh
       setAuth(false)
-      return next('/auth') // Redirect to auth if token missing/expired
-    } else {
-      setAuth(true)
-      return next() // Proceed if token is valid
+      return next('/auth')
     }
-  }
 
-  next() // Default navigation if no authentication needed
+    // Attempt to refresh the token
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/refresh-token`,
+        {},
+        { withCredentials: true }
+      )
+      // If successful, we have a new access token now.
+      setAuth(true) // User is still authenticated
+      return next() // Proceed to the requested route
+    } catch (error) {
+      console.error('Refresh token failed:', error)
+      setAuth(false)
+      return next('/auth')
+    }
+  } else {
+    // Token is valid, user is authenticated
+    setAuth(true)
+    return next()
+  }
 })
 
 export default router
