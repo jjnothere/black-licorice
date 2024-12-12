@@ -450,20 +450,26 @@ const capitalizeFirstLetter = (string) => {
 
 const fetchUrnInfo = async (urnType, urnId) => {
   try {
-    const response = await api.get('/api/linkedin/targeting-entities', {
-      params: {
-        urnType: urnType.trim(),
-        urnId: urnId.trim(),
-      },
+    let endpoint = '/api/linkedin/targeting-entities';
+    let params = { urnType: urnType.trim(), urnId: urnId.trim() };
+
+    if (urnType === 'adSegment') {
+      // Use the new adSegments route
+      endpoint = `/api/linkedin/adSegments/${urnId.trim()}`;
+      params = {}; // No params needed since we use the URL param
+    }
+
+    const response = await api.get(endpoint, {
+      params,
       withCredentials: true,
     });
 
-    const targetingData = response.data.name; // Ensure we only get the name
-    if (!targetingData) {
+    const name = response.data.name;
+    if (!name) {
       console.warn(`No data found for URN: urn:li:${urnType}:${urnId}`);
       return `Unknown (${urnType})`;
     }
-    return targetingData;
+    return name;
   } catch (error) {
     console.error(`Error fetching URN info for ${urnType}:${urnId}`, error);
     return `Error (${urnType})`;
