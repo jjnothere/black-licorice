@@ -398,6 +398,21 @@ async function fetchCurrentCampaigns() {
   }
 }
 
+const fetchCampaignGroupName = async (accountId, groupId) => {
+  try {
+    const token = getTokenFromCookies();
+    const response = await api.get('/api/linkedin/ad-campaign-group-name', {
+      params: { accountId, groupId },
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true,
+    });
+    return response.data.name;
+  } catch (error) {
+    console.error('Error fetching campaign group name:', error);
+    return 'Unknown';
+  }
+};
+
 const fetchLinkedInCampaigns = async () => {
   const token = getTokenFromCookies();
   if (!token) {
@@ -427,7 +442,7 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
   const diffs = {};
 
   for (const key in obj1) {
-    if (key === 'changeAuditStamps' || key === 'version' || key === 'campaignGroup') continue;
+    if (key === 'changeAuditStamps' || key === 'version') continue;
 
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       const val1 = obj1[key];
@@ -575,6 +590,15 @@ const checkForChanges = async () => {
     if (campaign1) {
       const changes = findDifferences(campaign1, campaign2, urns);
 
+      // If the change involves a campaign group, fetch its name
+      if (changes.campaignGroup) {
+        const accountId = campaign2.account.split(':').pop();
+        const groupId = changes.campaignGroup.newValue?.split(':').pop();
+        if (groupId) {
+          changes.campaignGroup.newValue = await fetchCampaignGroupName(accountId, groupId);
+        }
+      }
+
       if (Object.keys(changes).length > 0) {
         newDifferences.push({
           campaign: campaign2.name,
@@ -611,7 +635,7 @@ const checkForChanges = async () => {
     difference.urnInfoMap = urnInfoMap;
   });
 
-  // Now proceed with the rest of your code
+  // Filter and save differences
   const uniqueDifferences = newDifferences.filter((newDiff) => {
     return !differences.value.some((existingDiff) => {
       const isSameCampaign = existingDiff.campaign === newDiff.campaign;
