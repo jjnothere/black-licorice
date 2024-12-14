@@ -85,12 +85,31 @@
                     <span class="nested-key">{{ entry.key }}:</span>
                     <br />
                     <span class="nested-value">
-                      <!-- Convert milliseconds to readable date -->
+                      <!-- If runSchedule and value is a string, format as a date -->
                       <template v-if="changeKey === 'runSchedule'">
-                        {{ formatRunSchedule(entry.value) }}
+                        <template v-if="Array.isArray(entry.value)">
+                          <div v-for="(item, idx) in entry.value" :key="idx">
+                            {{ formatRunSchedule(item) }}
+                          </div>
+                        </template>
+                        <template v-else>
+                          {{ formatRunSchedule(entry.value) }}
+                        </template>
                       </template>
+
+                      <!-- For non-runSchedule keys -->
                       <template v-else>
-                        {{ replaceUrnWithInfo(entry.value, difference.urnInfoMap) }}
+                        <template v-if="Array.isArray(entry.value)">
+                          <!-- Print each array item on its own line -->
+                          <ul class="list-container">
+                            <li v-for="(item, idx) in entry.value" :key="idx" class="list-item">
+                              {{ item }}
+                            </li>
+                          </ul>
+                        </template>
+                        <template v-else>
+                          {{ entry.value }}
+                        </template>
                       </template>
                     </span>
                   </div>
@@ -287,48 +306,67 @@ const getFormattedChanges = (changeValue, urnInfoMap) => {
   const formattedChanges = formatNestedChange(changeValue, '', urnInfoMap);
   return formattedChanges.map(({ key, value }) => ({
     key,
-    value: Array.isArray(value) ? value.join(', ') : value, // Join arrays for display
+    value // Do not join arrays here, leave them as arrays if they are arrays
   }));
 };
+
+// Add a helper function at the top of your script
+function cleanUpKey(keyString) {
+  return keyString
+    .replace(/urn:li:adTargetingFacet:/gi, '')      // Remove urn:li:adTargetingFacet:
+    .replace(/\bAnd\b\s*\d*/gi, '')                // Remove "And 0", "And 1", etc.
+    .replace(/\bOr\b\s*\d*/gi, '')                 // Remove "Or 0", "Or 1", etc.
+    .replace(/\s+/g, ' ')                          // Normalize excessive spaces
+    .trim();
+}
 
 const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
   const result = [];
 
+  // Handle added/removed keys if present
+  if (nestedObject && typeof nestedObject === 'object' &&
+    (Array.isArray(nestedObject.added) || Array.isArray(nestedObject.removed))) {
+
+    // Clean the prefix before using it
+    let cleanedPrefix = cleanUpKey(prefix);
+
+    if (nestedObject.added && nestedObject.added.length > 0) {
+      const addedItems = nestedObject.added.map(item => replaceUrnWithInfo(item, urnInfoMap));
+      result.push({ key: `${cleanedPrefix ? cleanedPrefix + ' ' : ''}Added`, value: addedItems });
+    }
+
+    if (nestedObject.removed && nestedObject.removed.length > 0) {
+      const removedItems = nestedObject.removed.map(item => replaceUrnWithInfo(item, urnInfoMap));
+      result.push({ key: `${cleanedPrefix ? cleanedPrefix + ' ' : ''}Removed`, value: removedItems });
+    }
+
+    return result;
+  }
+
   if (Array.isArray(nestedObject)) {
     nestedObject.forEach((item) => {
       const nestedResult = formatNestedChange(item, prefix, urnInfoMap);
-      result.push(...nestedResult); // Append all nested results
+      result.push(...nestedResult);
     });
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
-      if (key.startsWith('urn:li:adTargetingFacet:')) {
-        const simplifiedKey = key
-          .replace('urn:li:adTargetingFacet:', '')
-          .replace(/\[\d+\]/g, ''); // Remove [number]
-
-        for (const innerKey in nestedObject[key]) {
-          const formattedKey = `${prefix} ${simplifiedKey}`.trim();
-          const nestedResult = formatNestedChange(nestedObject[key][innerKey], formattedKey, urnInfoMap);
-          result.push(...nestedResult); // Append all nested results
-        }
-      } else if (!isNaN(Number(key)) || ['and', 'or'].includes(key.toLowerCase())) {
-        const nestedResult = formatNestedChange(nestedObject[key], prefix, urnInfoMap);
-        result.push(...nestedResult); // Append all nested results
+      let formattedKey = prefix ? `${prefix} ${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
+      if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
+        const nestedResult = formatNestedChange(nestedObject[key], formattedKey, urnInfoMap);
+        result.push(...nestedResult);
       } else {
-        const formattedKey = prefix ? `${prefix} ${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
-        if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
-          const nestedResult = formatNestedChange(nestedObject[key], formattedKey, urnInfoMap);
-          result.push(...nestedResult); // Append all nested results
-        } else {
-          const value = nestedObject[key];
-          const formattedValue = replaceUrnWithInfo(value, urnInfoMap);
-          result.push({ key: formattedKey, value: formattedValue }); // Add individual change
-        }
+        const value = nestedObject[key];
+        const formattedValue = replaceUrnWithInfo(value, urnInfoMap);
+
+        // Clean the key before pushing
+        formattedKey = cleanUpKey(formattedKey);
+
+        result.push({ key: formattedKey, value: formattedValue });
       }
     }
   }
 
-  return result; // Return list of all changes
+  return result;
 };
 
 
@@ -389,22 +427,51 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
   const diffs = {};
 
   for (const key in obj1) {
-    if (key === 'changeAuditStamps' || key === 'version') continue;
+    if (key === 'changeAuditStamps' || key === 'version' || key === 'campaignGroup') continue;
+
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
-      if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
-        const nestedDiffs = findDifferences(obj1[key], obj2[key], urns, urnInfoMap);
+      const val1 = obj1[key];
+      const val2 = obj2[key];
+
+      // Check if we are at a facet key (e.g. "urn:li:adTargetingFacet:skills")
+      if (key.startsWith('urn:li:adTargetingFacet:') && Array.isArray(val1) && Array.isArray(val2)) {
+        // Perform added/removed logic for facet arrays
+        const oldSet = new Set(val1);
+        const newSet = new Set(val2);
+
+        const removedItems = [...oldSet].filter(x => !newSet.has(x));
+        const addedItems = [...newSet].filter(x => !oldSet.has(x));
+
+        if (removedItems.length > 0 || addedItems.length > 0) {
+          diffs[key] = {
+            added: addedItems.map(v => replaceUrnWithInfo(v, urnInfoMap)),
+            removed: removedItems.map(v => replaceUrnWithInfo(v, urnInfoMap))
+          };
+          removedItems.forEach(item => extractUrnsFromValue(item, urns));
+          addedItems.forEach(item => extractUrnsFromValue(item, urns));
+        }
+      } else if (
+        // If it's an object or array and not a facet key, just recurse
+        (typeof val1 === 'object' && typeof val2 === 'object') &&
+        !(Array.isArray(val1) && Array.isArray(val2) && key.startsWith('urn:li:adTargetingFacet:'))
+      ) {
+        // This includes 'and', 'or', numeric keys, etc.
+        const nestedDiffs = findDifferences(val1, val2, urns, urnInfoMap);
         if (Object.keys(nestedDiffs).length > 0) {
           diffs[key] = nestedDiffs;
         }
-      } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+      } else if (JSON.stringify(val1) !== JSON.stringify(val2)) {
+        // Normal difference logic for non-facet keys
         diffs[key] = {
-          oldValue: replaceUrnWithInfo(obj1[key], urnInfoMap),
-          newValue: replaceUrnWithInfo(obj2[key], urnInfoMap),
+          oldValue: replaceUrnWithInfo(val1, urnInfoMap),
+          newValue: replaceUrnWithInfo(val2, urnInfoMap),
         };
-        extractUrnsFromValue(obj1[key], urns);
-        extractUrnsFromValue(obj2[key], urns);
+        extractUrnsFromValue(val1, urns);
+        extractUrnsFromValue(val2, urns);
       }
+
     } else {
+      // Key only in obj1
       diffs[key] = {
         oldValue: replaceUrnWithInfo(obj1[key], urnInfoMap),
         newValue: null,
@@ -413,6 +480,7 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
     }
   }
 
+  // Keys only in obj2
   for (const key in obj2) {
     if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
       diffs[key] = {
@@ -1299,15 +1367,20 @@ select {
   font-weight: bold;
 }
 
-.change-details div:nth-of-type(even) {
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: #ccc 1px solid;
+.list-container {
+  list-style-type: disc;
+  /* Adds bullets to the list */
+  margin: 5px 0 5px 20px;
+  /* Space between items and indentation */
+  padding: 0;
 }
 
-.change-details div:last-child {
-  border: none;
-  padding-bottom: 0px;
-  margin-bottom: 0px;
+.list-item {
+  margin-bottom: 5px;
+}
+
+.single-value {
+  display: block;
+  margin: 5px 0;
 }
 </style>
