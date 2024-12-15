@@ -350,7 +350,15 @@ const formatNestedChange = (nestedObject, prefix = '', urnInfoMap = {}) => {
     });
   } else if (typeof nestedObject === 'object' && nestedObject !== null) {
     for (const key in nestedObject) {
+      // Skip numeric keys but include their values directly in the parent structure
+      if (!isNaN(key)) {
+        const nestedResult = formatNestedChange(nestedObject[key], prefix, urnInfoMap);
+        result.push(...nestedResult);
+        continue;
+      }
+
       let formattedKey = prefix ? `${prefix} ${capitalizeFirstLetter(key)}` : capitalizeFirstLetter(key);
+
       if (typeof nestedObject[key] === 'object' && nestedObject[key] !== null) {
         const nestedResult = formatNestedChange(nestedObject[key], formattedKey, urnInfoMap);
         result.push(...nestedResult);
@@ -632,6 +640,7 @@ const checkForChanges = async () => {
 
   // Attach urnInfoMap to each difference
   newDifferences.forEach((difference) => {
+    console.log("🐒 ~ difference:", difference)
     difference.urnInfoMap = urnInfoMap;
   });
 
