@@ -450,14 +450,31 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
   const diffs = {};
 
   for (const key in obj1) {
-    if (key === 'changeAuditStamps' || key === 'version') continue;
+    if (key === 'changeAuditStamps' || key === 'version' || key === 'campaignGroup') continue;
 
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       const val1 = obj1[key];
       const val2 = obj2[key];
 
-      if (key === 'creatives' && Array.isArray(val1) && Array.isArray(val2)) {
-        // Handle creative changes
+      // Handle targeting criteria (added/removed logic)
+      if (key.startsWith('urn:li:adTargetingFacet:') && Array.isArray(val1) && Array.isArray(val2)) {
+        const oldSet = new Set(val1);
+        const newSet = new Set(val2);
+
+        const removedItems = [...oldSet].filter((x) => !newSet.has(x));
+        const addedItems = [...newSet].filter((x) => !oldSet.has(x));
+
+        if (removedItems.length > 0 || addedItems.length > 0) {
+          diffs[key] = {
+            added: addedItems.map((v) => replaceUrnWithInfo(v, urnInfoMap)),
+            removed: removedItems.map((v) => replaceUrnWithInfo(v, urnInfoMap)),
+          };
+          removedItems.forEach((item) => extractUrnsFromValue(item, urns));
+          addedItems.forEach((item) => extractUrnsFromValue(item, urns));
+        }
+      }
+      // Handle creatives
+      else if (key === 'creatives' && Array.isArray(val1) && Array.isArray(val2)) {
         const creativeDiffs = [];
 
         // Map existing creatives by ID for easy comparison
@@ -488,10 +505,12 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
         if (creativeDiffs.length > 0) {
           diffs[key] = creativeDiffs;
         }
-      } else if (
-        // If it's an object or array and not creatives, recurse
-        (typeof val1 === 'object' && typeof val2 === 'object') &&
-        !(Array.isArray(val1) && Array.isArray(val2) && key === 'creatives')
+      }
+      // Recurse for nested objects
+      else if (
+        typeof val1 === 'object' &&
+        typeof val2 === 'object' &&
+        !(Array.isArray(val1) && Array.isArray(val2) && key.startsWith('urn:li:adTargetingFacet:'))
       ) {
         const nestedDiffs = findDifferences(val1, val2, urns, urnInfoMap);
         if (Object.keys(nestedDiffs).length > 0) {
@@ -506,7 +525,6 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
         extractUrnsFromValue(val2, urns);
       }
     } else {
-      // Key only in obj1
       diffs[key] = {
         oldValue: replaceUrnWithInfo(obj1[key], urnInfoMap),
         newValue: null,
@@ -515,7 +533,6 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
     }
   }
 
-  // Keys only in obj2
   for (const key in obj2) {
     if (!Object.prototype.hasOwnProperty.call(obj1, key)) {
       diffs[key] = {
