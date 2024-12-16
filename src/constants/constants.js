@@ -267,7 +267,7 @@ const colorMapping = {
   'Creative Selection': '#FFB6C1', // Light Pink
   'Daily Budget': '#32CD32', // Lime Green
   Format: '#FFA07A', // Light Salmon
-  ID: '#8A2BE2', // Blue Violet
+  ID: 'black', // Blue Violet
   Locale: '#2E8B57', // Sea Green
   Name: '#F08080', // Light Coral
   'Objective Type': '#1E90FF', // Dodger Blue
@@ -283,7 +283,8 @@ const colorMapping = {
   Test: '#5F9EA0', // Cadet Blue
   Type: '#800080', // Purple
   'Unit Cost': '#DAA520', // Goldenrod
-  Version: '#00CED1' // Dark Turquoise
+  Version: '#00CED1', // Dark Turquoise
+  Creatives: '#8E4260'
 }
 
 // Key mappings for differences
@@ -312,6 +313,7 @@ const keyMapping = {
   test: 'Test',
   type: 'Campaign Type',
   unitCost: 'Unit Cost',
-  version: 'Version'
+  version: 'Version',
+  creatives: 'Creatives'
 }
 export { countryCodes, SeniorityCodes, colorMapping, keyMapping }

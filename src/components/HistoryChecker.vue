@@ -456,35 +456,48 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
       const val1 = obj1[key];
       const val2 = obj2[key];
 
-      // Check if we are at a facet key (e.g. "urn:li:adTargetingFacet:skills")
-      if (key.startsWith('urn:li:adTargetingFacet:') && Array.isArray(val1) && Array.isArray(val2)) {
-        // Perform added/removed logic for facet arrays
-        const oldSet = new Set(val1);
-        const newSet = new Set(val2);
+      if (key === 'creatives' && Array.isArray(val1) && Array.isArray(val2)) {
+        // Handle creative changes
+        const creativeDiffs = [];
 
-        const removedItems = [...oldSet].filter(x => !newSet.has(x));
-        const addedItems = [...newSet].filter(x => !oldSet.has(x));
+        // Map existing creatives by ID for easy comparison
+        const creativeMap1 = val1.reduce((map, creative) => {
+          map[creative.id] = creative;
+          return map;
+        }, {});
+        const creativeMap2 = val2.reduce((map, creative) => {
+          map[creative.id] = creative;
+          return map;
+        }, {});
 
-        if (removedItems.length > 0 || addedItems.length > 0) {
-          diffs[key] = {
-            added: addedItems.map(v => replaceUrnWithInfo(v, urnInfoMap)),
-            removed: removedItems.map(v => replaceUrnWithInfo(v, urnInfoMap))
-          };
-          removedItems.forEach(item => extractUrnsFromValue(item, urns));
-          addedItems.forEach(item => extractUrnsFromValue(item, urns));
+        // Check for changes in `isServing` property
+        for (const creativeId in creativeMap1) {
+          if (
+            creativeMap2[creativeId] &&
+            creativeMap1[creativeId].isServing !== creativeMap2[creativeId].isServing
+          ) {
+            const name = creativeMap2[creativeId].name || 'Unnamed Creative';
+            const newState = creativeMap2[creativeId].isServing;
+            creativeDiffs.push({
+              name,
+              isServing: newState ? 'Set to: true' : 'Set to: false',
+            });
+          }
+        }
+
+        if (creativeDiffs.length > 0) {
+          diffs[key] = creativeDiffs;
         }
       } else if (
-        // If it's an object or array and not a facet key, just recurse
+        // If it's an object or array and not creatives, recurse
         (typeof val1 === 'object' && typeof val2 === 'object') &&
-        !(Array.isArray(val1) && Array.isArray(val2) && key.startsWith('urn:li:adTargetingFacet:'))
+        !(Array.isArray(val1) && Array.isArray(val2) && key === 'creatives')
       ) {
-        // This includes 'and', 'or', numeric keys, etc.
         const nestedDiffs = findDifferences(val1, val2, urns, urnInfoMap);
         if (Object.keys(nestedDiffs).length > 0) {
           diffs[key] = nestedDiffs;
         }
       } else if (JSON.stringify(val1) !== JSON.stringify(val2)) {
-        // Normal difference logic for non-facet keys
         diffs[key] = {
           oldValue: replaceUrnWithInfo(val1, urnInfoMap),
           newValue: replaceUrnWithInfo(val2, urnInfoMap),
@@ -492,7 +505,6 @@ const findDifferences = (obj1, obj2, urns = [], urnInfoMap = {}) => {
         extractUrnsFromValue(val1, urns);
         extractUrnsFromValue(val2, urns);
       }
-
     } else {
       // Key only in obj1
       diffs[key] = {
@@ -640,7 +652,6 @@ const checkForChanges = async () => {
 
   // Attach urnInfoMap to each difference
   newDifferences.forEach((difference) => {
-    console.log("🐒 ~ difference:", difference)
     difference.urnInfoMap = urnInfoMap;
   });
 
