@@ -940,6 +940,7 @@ const getAnalyticsData = () => {
         }
       },
       y: {
+        position: 'right',
         title: {
           display: true,
           text: 'Value'
