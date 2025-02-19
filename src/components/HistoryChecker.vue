@@ -827,46 +827,67 @@ const getAggregatedData = (data, interval) => {
 
   data.forEach((item) => {
     const dateParts = item.id.split('-');
-    if (dateParts.length === 4) {
-      const originalDate = new Date(`${dateParts[3]}-${dateParts[1]}-${dateParts[2]}`);
-      let keyDate;
 
-      switch (interval) {
-        case 'weekly':
-          keyDate = getWeekStart(new Date(originalDate));
-          break;
-        case 'monthly':
-          keyDate = getMonthStart(new Date(originalDate));
-          break;
-        case 'quarterly':
-          keyDate = getQuarterStart(new Date(originalDate));
-          break;
-        case 'daily':
-        default:
-          keyDate = originalDate;
-          break;
-      }
+    // Ensure we have a valid date
+    if (dateParts.length < 3) {
+      console.error("Invalid date format in item ID:", item.id);
+      return;
+    }
 
-      const key = keyDate.toISOString().split('T')[0]; // Use YYYY-MM-DD format
+    // Constructing a properly formatted date string
+    const year = dateParts[3];
+    const month = String(dateParts[1]).padStart(2, '0'); // Ensure two-digit month
+    const day = String(dateParts[2]).padStart(2, '0');   // Ensure two-digit day
 
-      if (!aggregatedData[key]) {
-        aggregatedData[key] = {
-          conversions: 0,
-          clicks: 0,
-          impressions: 0,
-          spend: 0,
-          hasChanges: false
-        };
-      }
+    // Safari requires the date to be in `YYYY/MM/DD` or `YYYY-MM-DDT00:00:00Z`
+    const originalDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
 
-      aggregatedData[key].conversions += item.conversions || 0;
-      aggregatedData[key].clicks += item.clicks || 0;
-      aggregatedData[key].impressions += item.impressions || 0;
-      aggregatedData[key].spend += parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
+    if (isNaN(originalDate.getTime())) {
+      console.error("getAggregatedData: Invalid originalDate", item.id);
+      return;
+    }
 
-      if (filteredDifferences.value.some(diff => new Date(diff.date).toLocaleDateString() === keyDate.toLocaleDateString())) {
-        aggregatedData[key].hasChanges = true;
-      }
+    let keyDate;
+    switch (interval) {
+      case 'weekly':
+        keyDate = getWeekStart(new Date(originalDate));
+        break;
+      case 'monthly':
+        keyDate = getMonthStart(new Date(originalDate));
+        break;
+      case 'quarterly':
+        keyDate = getQuarterStart(new Date(originalDate));
+        break;
+      case 'daily':
+      default:
+        keyDate = originalDate;
+        break;
+    }
+
+    if (!keyDate || isNaN(keyDate.getTime())) {
+      console.error("getAggregatedData: Invalid keyDate", keyDate);
+      return;
+    }
+
+    const key = keyDate.toISOString().split('T')[0]; // Use YYYY-MM-DD format
+
+    if (!aggregatedData[key]) {
+      aggregatedData[key] = {
+        conversions: 0,
+        clicks: 0,
+        impressions: 0,
+        spend: 0,
+        hasChanges: false
+      };
+    }
+
+    aggregatedData[key].conversions += item.conversions || 0;
+    aggregatedData[key].clicks += item.clicks || 0;
+    aggregatedData[key].impressions += item.impressions || 0;
+    aggregatedData[key].spend += parseFloat(item.spend.replace(/[^0-9.-]+/g, '')) || 0;
+
+    if (filteredDifferences.value.some(diff => new Date(diff.date).toLocaleDateString() === keyDate.toLocaleDateString())) {
+      aggregatedData[key].hasChanges = true;
     }
   });
 
