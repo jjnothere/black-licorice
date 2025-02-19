@@ -807,46 +807,61 @@ const filteredDifferences = computed(() => {
   });
 });
 
-const getWeekStart = (date, startDate) => {
-  const adjustedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  adjustedDate.setDate(adjustedDate.getDate() - adjustedDate.getDay()); // Move to the start of the week (Sunday)
+const getWeekStart = (date, startDate, endDate) => {
+  let weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Move to the start of the week (Sunday)
 
-  // 🔥 If the computed week start is **before the selected start date**, clamp it.
-  if (adjustedDate < startDate) {
-    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()); // Force it to selected start date
+  // 🔥 Clamp to selected start date
+  if (weekStart < startDate) {
+    weekStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   }
 
-  return adjustedDate;
+  // 🔥 Ensure we don’t go beyond the end date
+  if (weekStart > endDate) {
+    return null; // Ignore this data point
+  }
+
+  return weekStart;
 };
 
-const getMonthStart = (date, startDate) => {
-  const monthStartDate = new Date(date.getFullYear(), date.getMonth(), 1);
+const getMonthStart = (date, startDate, endDate) => {
+  let monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
 
-  // 🔥 Clamp to selected start date if month start is before it
-  if (monthStartDate < startDate) {
-    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  // 🔥 Clamp to selected start date
+  if (monthStart < startDate) {
+    monthStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   }
 
-  return monthStartDate;
+  // 🔥 Ensure we don’t go beyond the end date
+  if (monthStart > endDate) {
+    return null; // Ignore this data point
+  }
+
+  return monthStart;
 };
 
-const getQuarterStart = (date, startDate) => {
-  const quarterStartMonth = Math.floor(date.getMonth() / 3) * 3; // 0, 3, 6, 9
-  const quarterStartDate = new Date(date.getFullYear(), quarterStartMonth, 1);
+const getQuarterStart = (date, startDate, endDate) => {
+  let quarterStartMonth = Math.floor(date.getMonth() / 3) * 3; // 0, 3, 6, 9
+  let quarterStart = new Date(date.getFullYear(), quarterStartMonth, 1);
 
-  // 🔥 Clamp to selected start date if quarter start is before it
-  if (quarterStartDate < startDate) {
-    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  // 🔥 Clamp to selected start date
+  if (quarterStart < startDate) {
+    quarterStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
   }
 
-  return quarterStartDate;
+  // 🔥 Ensure we don’t go beyond the end date
+  if (quarterStart > endDate) {
+    return null; // Ignore this data point
+  }
+
+  return quarterStart;
 };
 
 const getAggregatedData = (data, interval) => {
   const aggregatedData = {};
 
-  const selectedStartDate = new Date(props.dateRange.start); // Ensure we use the correct start date
-
+  const selectedStartDate = new Date(props.dateRange.start);
+  const selectedEndDate = new Date(props.dateRange.end);
 
   data.forEach((item) => {
     const dateParts = item.id.split('-');
@@ -869,13 +884,13 @@ const getAggregatedData = (data, interval) => {
     let keyDate;
     switch (interval) {
       case 'weekly':
-        keyDate = getWeekStart(originalDate, selectedStartDate); // Clamp within range
+        keyDate = getWeekStart(originalDate, selectedStartDate, selectedEndDate);
         break;
       case 'monthly':
-        keyDate = getMonthStart(originalDate, selectedStartDate); // 🔥 Clamp within range
+        keyDate = getMonthStart(originalDate, selectedStartDate, selectedEndDate);
         break;
       case 'quarterly':
-        keyDate = getQuarterStart(originalDate, selectedStartDate); // 🔥 Clamp within range
+        keyDate = getQuarterStart(originalDate, selectedStartDate, selectedEndDate);
         break;
       case 'daily':
       default:
