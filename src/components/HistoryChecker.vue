@@ -807,38 +807,59 @@ const filteredDifferences = computed(() => {
   });
 });
 
+const getWeekStart = (date, startDate) => {
+  const adjustedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  adjustedDate.setDate(adjustedDate.getDate() - adjustedDate.getDay()); // Move to the start of the week (Sunday)
+
+  // 🔥 If the computed week start is **before the selected start date**, clamp it.
+  if (adjustedDate < startDate) {
+    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()); // Force it to selected start date
+  }
+
+  return adjustedDate;
+};
+
+const getMonthStart = (date, startDate) => {
+  const monthStartDate = new Date(date.getFullYear(), date.getMonth(), 1);
+
+  // 🔥 Clamp to selected start date if month start is before it
+  if (monthStartDate < startDate) {
+    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  }
+
+  return monthStartDate;
+};
+
+const getQuarterStart = (date, startDate) => {
+  const quarterStartMonth = Math.floor(date.getMonth() / 3) * 3; // 0, 3, 6, 9
+  const quarterStartDate = new Date(date.getFullYear(), quarterStartMonth, 1);
+
+  // 🔥 Clamp to selected start date if quarter start is before it
+  if (quarterStartDate < startDate) {
+    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  }
+
+  return quarterStartDate;
+};
+
 const getAggregatedData = (data, interval) => {
   const aggregatedData = {};
 
-  const getWeekStart = (date) => {
-    const adjustedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()); // Ensure local date
-    adjustedDate.setDate(adjustedDate.getDate() - adjustedDate.getDay()); // Move to the start of the week (Sunday)
-    return adjustedDate;
-  };
+  const selectedStartDate = new Date(props.dateRange.start); // Ensure we use the correct start date
 
-  const getMonthStart = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1); // Set local start of the month
-  };
-
-  const getQuarterStart = (date) => {
-    const quarter = Math.floor(date.getMonth() / 3);
-    return new Date(date.getFullYear(), quarter * 3, 1); // Set local start of the quarter
-  };
 
   data.forEach((item) => {
     const dateParts = item.id.split('-');
 
-    // Ensure we have a valid date
     if (dateParts.length < 3) {
       console.error("Invalid date format in item ID:", item.id);
       return;
     }
 
-    // Construct a **local date** instead of relying on UTC parsing
     const year = parseInt(dateParts[3], 10);
     const month = parseInt(dateParts[1], 10) - 1; // Zero-based month
     const day = parseInt(dateParts[2], 10);
-    const originalDate = new Date(year, month, day); // Ensure it stays in local time
+    const originalDate = new Date(year, month, day);
 
     if (isNaN(originalDate.getTime())) {
       console.error("getAggregatedData: Invalid originalDate", item.id);
@@ -848,13 +869,13 @@ const getAggregatedData = (data, interval) => {
     let keyDate;
     switch (interval) {
       case 'weekly':
-        keyDate = getWeekStart(originalDate);
+        keyDate = getWeekStart(originalDate, selectedStartDate); // Clamp within range
         break;
       case 'monthly':
-        keyDate = getMonthStart(originalDate);
+        keyDate = getMonthStart(originalDate, selectedStartDate); // 🔥 Clamp within range
         break;
       case 'quarterly':
-        keyDate = getQuarterStart(originalDate);
+        keyDate = getQuarterStart(originalDate, selectedStartDate); // 🔥 Clamp within range
         break;
       case 'daily':
       default:
@@ -867,7 +888,7 @@ const getAggregatedData = (data, interval) => {
       return;
     }
 
-    const key = keyDate.toISOString().split('T')[0]; // Use YYYY-MM-DD format
+    const key = keyDate.toISOString().split('T')[0];
 
     if (!aggregatedData[key]) {
       aggregatedData[key] = {
