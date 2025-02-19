@@ -811,18 +811,18 @@ const getAggregatedData = (data, interval) => {
   const aggregatedData = {};
 
   const getWeekStart = (date) => {
-    const dayOfWeek = date.getDay();
-    const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust when day is Sunday
-    return new Date(date.setDate(diff));
+    const adjustedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()); // Ensure local date
+    adjustedDate.setDate(adjustedDate.getDate() - adjustedDate.getDay()); // Move to the start of the week (Sunday)
+    return adjustedDate;
   };
 
   const getMonthStart = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
+    return new Date(date.getFullYear(), date.getMonth(), 1); // Set local start of the month
   };
 
   const getQuarterStart = (date) => {
     const quarter = Math.floor(date.getMonth() / 3);
-    return new Date(date.getFullYear(), quarter * 3, 1);
+    return new Date(date.getFullYear(), quarter * 3, 1); // Set local start of the quarter
   };
 
   data.forEach((item) => {
@@ -834,13 +834,11 @@ const getAggregatedData = (data, interval) => {
       return;
     }
 
-    // Constructing a properly formatted date string
-    const year = dateParts[3];
-    const month = String(dateParts[1]).padStart(2, '0'); // Ensure two-digit month
-    const day = String(dateParts[2]).padStart(2, '0');   // Ensure two-digit day
-
-    // Safari requires the date to be in `YYYY/MM/DD` or `YYYY-MM-DDT00:00:00Z`
-    const originalDate = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    // Construct a **local date** instead of relying on UTC parsing
+    const year = parseInt(dateParts[3], 10);
+    const month = parseInt(dateParts[1], 10) - 1; // Zero-based month
+    const day = parseInt(dateParts[2], 10);
+    const originalDate = new Date(year, month, day); // Ensure it stays in local time
 
     if (isNaN(originalDate.getTime())) {
       console.error("getAggregatedData: Invalid originalDate", item.id);
@@ -850,13 +848,13 @@ const getAggregatedData = (data, interval) => {
     let keyDate;
     switch (interval) {
       case 'weekly':
-        keyDate = getWeekStart(new Date(originalDate));
+        keyDate = getWeekStart(originalDate);
         break;
       case 'monthly':
-        keyDate = getMonthStart(new Date(originalDate));
+        keyDate = getMonthStart(originalDate);
         break;
       case 'quarterly':
-        keyDate = getQuarterStart(new Date(originalDate));
+        keyDate = getQuarterStart(originalDate);
         break;
       case 'daily':
       default:
@@ -895,9 +893,9 @@ const getAggregatedData = (data, interval) => {
 };
 
 const formatDateLabel = (dateString) => {
-  const date = new Date(dateString);
-  const month = date.getMonth() + 1; // No leading zero for the month
-  const day = date.getDate() + 1; // No leading zero for the day
+  const date = new Date(dateString + "T00:00:00"); // Ensure time is set to 00:00:00 to prevent shifting
+  const month = date.getMonth() + 1; // Ensure 1-based month
+  const day = date.getDate(); // No leading zero for the day
   const year = date.getFullYear();
   return `${month}/${day}/${year}`; // Format as "M/D/YYYY"
 };
