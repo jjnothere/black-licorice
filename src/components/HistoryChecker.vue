@@ -1024,6 +1024,7 @@ const cancelAddNotePrompt = (differenceId) => {
   }
 };
 
+// saveNewNotePrompt function
 // Save a new note
 const saveNewNotePrompt = async (changeId) => {
   const token = getTokenFromCookies();
